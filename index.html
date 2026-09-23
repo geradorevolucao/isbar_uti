@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Modelo ISBAR para avaliação diária de paciente em leito de CTI">
+<meta name="theme-color" content="#1D4E6E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ISBAR CTI">
+<title>ISBAR CTI</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231D4E6E'/%3E%3Cpath d='M14 34h9l4-10 6 20 5-14 3 4h9' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#F4F6F8; --card:#FFFFFF; --ink:#1B2631; --muted:#5B6B7A; --line:#D5DDE4;
+  --accent:#1D4E6E; --accent-ink:#FFFFFF; --band:#E3ECF2; --field:#FFFFFF;
+  --ok:#2E7D4F; --ok-bg:#E3F2E8; --warn-bg:#FFF4E0; --warn:#8A5A00;
+  --calc-bg:#EEF3F7; --focus:#2F7BB0;
+  --radius:10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F151B; --card:#172029; --ink:#E4EAF0; --muted:#98A7B5; --line:#2C3945;
+    --accent:#6FA8D0; --accent-ink:#0F151B; --band:#1E2B37; --field:#111920;
+    --ok:#7BC99A; --ok-bg:#16301F; --warn-bg:#2E2412; --warn:#E3B764;
+    --calc-bg:#1B2631; --focus:#6FA8D0;
+    color-scheme: dark;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+button,input,select,textarea{font:inherit;color:inherit}
+
+/* ---------- barra superior ---------- */
+header.top{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);padding:8px 16px 0;padding-top:calc(8px + env(safe-area-inset-top))}
+.top-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;max-width:980px;margin:0 auto}
+.brand{font-weight:700;color:var(--accent);font-size:1.05rem;margin-right:auto;white-space:nowrap}
+.status{font-size:.78rem;color:var(--muted);white-space:nowrap}
+.pt-row{display:flex;gap:8px;align-items:center;max-width:980px;margin:8px auto 0}
+.pt-row select{flex:1;min-width:0;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--field);padding:0 10px}
+nav.jump{display:flex;gap:6px;max-width:980px;margin:8px auto 0;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+nav.jump a{flex:0 0 auto;text-decoration:none;color:var(--accent);background:var(--band);border-radius:999px;padding:5px 12px;font-size:.85rem;font-weight:600}
+
+.btn{height:40px;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:0 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.danger{color:#B3261E}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.danger{color:#F2B8B5}}
+
+details.menu{position:relative}
+details.menu>summary{list-style:none}
+details.menu>summary::-webkit-details-marker{display:none}
+details.menu .menu-list{position:absolute;right:0;top:46px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:6px;display:flex;flex-direction:column;min-width:220px;z-index:30}
+details.menu .menu-list button{border:0;background:none;text-align:left;padding:10px 12px;border-radius:6px;cursor:pointer}
+details.menu .menu-list button:hover{background:var(--band)}
+
+/* ---------- conteúdo ---------- */
+main{max-width:980px;margin:0 auto;padding:12px 16px}
+.notice{background:var(--warn-bg);color:var(--warn);border-radius:var(--radius);padding:10px 12px;font-size:.85rem;margin:8px 0 4px}
+section.sec{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin:14px 0;overflow:hidden;scroll-margin-top:150px}
+.sec-h{display:flex;align-items:center;gap:12px;background:var(--band);padding:0 14px 0 0}
+.sec-h .letter{background:var(--accent);color:var(--accent-ink);font-weight:800;font-size:1.3rem;width:46px;height:46px;display:grid;place-items:center}
+.sec-h h2{margin:0;font-size:1rem;letter-spacing:.02em;color:var(--accent);flex:1}
+.sec-body{padding:6px 14px 14px}
+
+details.grp{border-top:1px solid var(--line)}
+details.grp:first-child{border-top:0}
+details.grp>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:12px 0;font-weight:700;color:var(--accent)}
+details.grp>summary::-webkit-details-marker{display:none}
+details.grp>summary::before{content:"▸";display:inline-block;transition:transform .15s;color:var(--muted)}
+details.grp[open]>summary::before{transform:rotate(90deg)}
+details.grp>summary .t{flex:1}
+.plain-grp{padding-top:6px}
+
+.badge{font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--band);color:var(--muted);white-space:nowrap}
+.badge.done{background:var(--ok-bg);color:var(--ok)}
+
+.row{display:flex;flex-wrap:wrap;gap:10px 12px;margin:0 0 10px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld>label,.fld>.lbl,fieldset.fld>legend{font-size:.8rem;color:var(--muted);font-weight:500;padding:0}
+.w-xs{flex:0 1 6.5rem}.w-s{flex:0 1 9.5rem}.w-m{flex:1 1 13rem}.w-l{flex:2 1 18rem}.w-full{flex:1 1 100%}.w-auto{flex:0 1 auto}
+.inp{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;background:var(--field);min-height:44px}
+.inp:focus-within{border-color:var(--focus);box-shadow:0 0 0 3px color-mix(in srgb,var(--focus) 25%,transparent)}
+.inp input,.inp textarea{flex:1;min-width:0;border:0;background:transparent;padding:10px;outline:none}
+.inp textarea{resize:vertical;min-height:72px;line-height:1.4}
+.inp .u{padding:0 10px 0 0;color:var(--muted);font-size:.8rem;white-space:nowrap}
+.inp .sep{color:var(--muted);padding:0 2px}
+.inp.calc{background:var(--calc-bg);border-style:dashed}
+.inp.calc input{font-weight:600}
+.calc-tag{font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);margin-left:4px}
+.inp.gcs span{color:var(--muted);font-size:.85rem;padding-left:8px}
+.inp.gcs input{width:2.6rem;flex:0 0 auto;text-align:center;padding:10px 4px}
+.inp.gcs .tot{margin-left:auto;padding:0 10px;font-weight:700;color:var(--ink)}
+
+fieldset.fld{border:0;margin:0;padding:0}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{position:relative}
+.opt input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.opt span{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--field);font-size:.9rem;cursor:pointer;user-select:none}
+.opt span::before{content:"";width:14px;height:14px;border:1.5px solid var(--muted);border-radius:3px;flex:0 0 auto}
+.opt input[type=radio]+span::before{border-radius:50%}
+.opt input:checked+span{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.opt input:checked+span::before{background:var(--accent-ink);border-color:var(--accent-ink);box-shadow:inset 0 0 0 2px var(--accent)}
+.opt input:focus-visible+span{outline:3px solid var(--focus);outline-offset:2px}
+.hint{font-size:.72rem;color:var(--muted);margin:-4px 0 10px}
+
+footer.refs{max-width:980px;margin:0 auto;padding:0 16px 24px;font-size:.8rem;color:var(--muted)}
+footer.refs details{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px}
+footer.refs summary{cursor:pointer;font-weight:600;color:var(--accent)}
+footer.refs ol{padding-left:1.3rem;margin:8px 0 0}
+footer.refs li{margin:4px 0}
+
+/* ---------- barra inferior ---------- */
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+.bottom .in{max-width:980px;margin:0 auto;display:flex;gap:8px}
+.bottom .btn{flex:1;height:46px}
+
+/* ---------- diálogo do texto ---------- */
+dialog{border:0;border-radius:14px;padding:0;width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 40px);background:var(--card);color:var(--ink)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.dlg{display:flex;flex-direction:column;max-height:calc(100vh - 40px)}
+.dlg header{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.dlg header h3{margin:0;flex:1;font-size:1rem;color:var(--accent)}
+.dlg textarea{flex:1;min-height:50vh;border:0;padding:14px;background:var(--field);font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:none;outline:none}
+.dlg .acts{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line);flex-wrap:wrap}
+.dlg .acts .btn{flex:1}
+
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s;z-index:50}
+.toast.show{opacity:1}
+
+/* ---------- impressão ---------- */
+@media print{
+  :root{--bg:#fff;--card:#fff;--field:#fff;--ink:#000;--line:#999;--band:#EDEDED;--accent:#1D4E6E;--calc-bg:#fff}
+  body{padding:0;font-size:11px}
+  header.top,.bottom,.notice,footer.refs details:not([open]),.toast,dialog{display:none!important}
+  main{padding:0;max-width:none}
+  section.sec{border:0;margin:0 0 6px;break-inside:auto}
+  .sec-h,.sec-h .letter,.opt input:checked+span{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sec-h .letter{width:28px;height:28px;font-size:1rem}
+  details.grp>summary{padding:4px 0}
+  details.grp>summary::before,.badge{display:none}
+  .row{gap:4px 8px;margin-bottom:4px;break-inside:avoid}
+  .inp{min-height:26px;border-radius:0;border-width:0 0 1px 0}
+  .inp input,.inp textarea{padding:3px 4px}
+  .inp textarea{min-height:34px;resize:none}
+  .opt span{min-height:22px;padding:0 6px;font-size:10px}
+  .opt input:checked+span{background:#000;color:#fff}
+  .hint{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-row">
+    <span class="brand">ISBAR · CTI</span>
+    <span class="status" id="status" aria-live="polite"></span>
+  </div>
+  <div class="pt-row">
+    <label for="ptSelect" class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Paciente</label>
+    <select id="ptSelect" aria-label="Paciente selecionado"></select>
+    <button class="btn" id="btnNew" type="button" title="Novo paciente">+ Novo</button>
+    <details class="menu" id="menu">
+      <summary class="btn" role="button" aria-label="Mais opções">⋯</summary>
+      <div class="menu-list">
+        <button type="button" data-act="print">Imprimir / salvar PDF</button>
+        <button type="button" data-act="expand">Expandir todos os sistemas</button>
+        <button type="button" data-act="collapse">Recolher todos os sistemas</button>
+        <button type="button" data-act="export">Exportar backup (.json)</button>
+        <button type="button" data-act="import">Importar backup (.json)</button>
+        <button type="button" data-act="clear" class="danger">Limpar campos deste paciente</button>
+        <button type="button" data-act="delete" class="danger">Excluir este paciente</button>
+      </div>
+    </details>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
+  </div>
+  <nav class="jump" aria-label="Seções">
+    <a href="#sec-I">I · Identificação</a>
+    <a href="#sec-S">S · Situação</a>
+    <a href="#sec-B">B · Histórico</a>
+    <a href="#sec-A">A · Avaliação</a>
+    <a href="#sec-R">R · Plano</a>
+  </nav>
+</header>
+
+<main id="app">
+  <p class="notice" id="privacy">Os dados ficam salvos apenas neste navegador, neste aparelho. Nada é enviado para a internet. Limpar os dados do navegador apaga os pacientes; use “Exportar backup” se precisar guardá-los.</p>
+  <div id="form"></div>
+</main>
+
+<footer class="refs">
+  <details>
+    <summary>Referências</summary>
+    <ol>
+      <li>Marshall S, Harrison J, Flanagan B. The teaching of a structured tool improves the clarity and content of interprofessional clinical communication. <i>Qual Saf Health Care</i>. 2009;18(2):137-40.</li>
+      <li>Vincent JL. Give your patient a fast hug (at least) once a day. <i>Crit Care Med</i>. 2005;33(6):1225-9.</li>
+      <li>Marra A, Ely EW, Pandharipande PP, Patel MB. The ABCDEF Bundle in Critical Care. <i>Crit Care Clin</i>. 2017;33(2):225-43.</li>
+      <li>Devlin JW, et al. Clinical Practice Guidelines for the Prevention and Management of Pain, Agitation/Sedation, Delirium, Immobility, and Sleep Disruption in Adult Patients in the ICU (PADIS). <i>Crit Care Med</i>. 2018;46(9):e825-73.</li>
+      <li>Sessler CN, et al. The Richmond Agitation-Sedation Scale. <i>Am J Respir Crit Care Med</i>. 2002;166(10):1338-44.</li>
+      <li>Ely EW, et al. Delirium in mechanically ventilated patients: validity and reliability of the CAM-ICU. <i>JAMA</i>. 2001;286(21):2703-10.</li>
+      <li>Vincent JL, et al. The SOFA score to describe organ dysfunction/failure. <i>Intensive Care Med</i>. 1996;22(7):707-10.</li>
+      <li>KDIGO Clinical Practice Guideline for Acute Kidney Injury. <i>Kidney Int Suppl</i>. 2012;2(1):1-138.</li>
+      <li>Evans L, et al. Surviving Sepsis Campaign: International Guidelines for Management of Sepsis and Septic Shock 2021. <i>Crit Care Med</i>. 2021;49(11):e1063-143.</li>
+      <li>Singer P, et al. ESPEN guideline on clinical nutrition in the intensive care unit. <i>Clin Nutr</i>. 2019;38(1):48-79.</li>
+      <li>Teasdale G, Jennett B. Assessment of coma and impaired consciousness: a practical scale. <i>Lancet</i>. 1974;2(7872):81-4. (Glasgow total)</li>
+      <li>The Acute Respiratory Distress Syndrome Network. Ventilation with lower tidal volumes as compared with traditional tidal volumes for acute lung injury and ARDS. <i>N Engl J Med</i>. 2000;342(18):1301-8. (Peso predito e VC em mL/kg)</li>
+      <li>Amato MBP, et al. Driving pressure and survival in the acute respiratory distress syndrome. <i>N Engl J Med</i>. 2015;372(8):747-55. (Driving pressure)</li>
+      <li>ARDS Definition Task Force. Acute respiratory distress syndrome: the Berlin Definition. <i>JAMA</i>. 2012;307(23):2526-33. (Relação P/F)</li>
+      <li>Kraut JA, Madias NE. Serum anion gap: its uses and limitations in clinical medicine. <i>Clin J Am Soc Nephrol</i>. 2007;2(1):162-74. (Ânion gap)</li>
+    </ol>
+  </details>
+</footer>
+
+<div class="bottom">
+  <div class="in">
+    <button class="btn" type="button" id="btnPrint">Imprimir</button>
+    <button class="btn primary" type="button" id="btnText">Gerar texto ISBAR</button>
+  </div>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <div class="dlg">
+    <header>
+      <h3 id="dlgTitle">Texto ISBAR</h3>
+      <button class="btn" type="button" id="dlgClose" aria-label="Fechar">✕</button>
+    </header>
+    <textarea id="out" readonly aria-label="Texto gerado"></textarea>
+    <div class="acts">
+      <button class="btn" type="button" id="btnTxt">Baixar .txt</button>
+      <button class="btn primary" type="button" id="btnCopy">Copiar texto</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+"use strict";
+
+/* =====================================================================
+   MODELO (esquema dos campos)
+   t: text | num | area | date | radio | check | calc | pair | gcs
+   w: xs | s | m | l | full | auto  (largura)
+   u: unidade   tl: rótulo usado no texto gerado (quando diferente)
+   ===================================================================== */
+const F = (k, l, t = "text", o = {}) => ({ k, l, t, ...o });
+const SN = ["sim", "não"];
+
+const MODEL = [
+ { id: "I", title: "IDENTIFICAÇÃO", groups: [ { rows: [
+   [F("data_aval","Data da avaliação","date")],
+   [F("nome","Nome","text",{w:"l"}), F("idade","Idade","num",{u:"anos"}), F("sexo","Sexo","radio",{opts:["M","F"]}), F("leito","Leito","text",{w:"xs"})],
+   [F("peso","Peso","num",{w:"s",u:"kg"}), F("altura","Altura","num",{w:"s",u:"cm"}), F("pp","Peso predito","calc",{w:"s",u:"kg",fn:"pp"})],
+   [F("adm_hosp","Admissão hospitalar","date"), F("adm_cti","Admissão no CTI","date"), F("dcti","D de CTI","num",{tl:"D de CTI"})],
+   [F("proc","Procedência","radio",{opts:["PS","Enfermaria","Bloco","Outro serviço"]}), F("proc_outro","Outro serviço (qual)","text",{w:"m"})],
+   [F("alergias","Alergias","text",{w:"m"}), F("isolamento","Isolamento","text",{w:"m"})],
+   [F("diretivas","Diretivas/limitação terapêutica","text",{w:"full"})]
+ ]}]},
+
+ { id: "S", title: "SITUAÇÃO", groups: [ { rows: [
+   [F("motivo","Motivo da internação no CTI","area")],
+   [F("dx1","Diagnóstico ativo 1","text",{w:"full"})],
+   [F("dx2","Diagnóstico ativo 2","text",{w:"full"})],
+   [F("dx3","Diagnóstico ativo 3","text",{w:"full"})],
+   [F("intercorr","Intercorrências nas últimas 24 h","area")],
+   [F("sofa","SOFA atual","num"), F("sofa_ant","SOFA anterior","num"), F("apache","APACHE II/SAPS 3 na admissão","text",{w:"s"})],
+   [F("evolucao","Evolução global","radio",{opts:["melhora","estável","piora"]})]
+ ]}]},
+
+ { id: "B", title: "BACKGROUND (HISTÓRICO)", groups: [ { rows: [
+   [F("comorb","Comorbidades","area")],
+   [F("funcional","Funcionalidade prévia","text",{w:"full"})],
+   [F("meds","Medicações de uso domiciliar","area")],
+   [F("proced","Procedimentos/cirurgias nesta internação","area")],
+   [F("atb_prev","Antimicrobianos e culturas prévios","area")]
+ ]}]},
+
+ { id: "A", title: "AVALIAÇÃO POR SISTEMAS", groups: [
+  { title: "Neurológico", rows: [
+   [F("sedacao","Sedação","text",{w:"l"}), F("sed_dose","Dose","text",{w:"m",tl:"Dose da sedação"})],
+   [F("analgesia","Analgesia","text",{w:"l"}), F("anal_dose","Dose","text",{w:"m",tl:"Dose da analgesia"})],
+   [F("rass","RASS","text",{w:"xs"}), F("rass_alvo","RASS alvo","text",{w:"xs"}), F("dor","Dor (CPOT/BPS/EVN)","text",{w:"s"})],
+   [F("gcs","Glasgow","gcs",{w:"m"}), F("pupilas","Pupilas","text",{w:"m"})],
+   [F("deficit","Déficit focal","text",{w:"full"})],
+   [F("cam","CAM-ICU","radio",{opts:["positivo","negativo","não avaliável"]})],
+   [F("despertar","Despertar diário realizado?","radio",{opts:SN}), F("despertar_mot","Motivo","text",{w:"l",tl:"Motivo (despertar)"})]
+  ], hint: "Glasgow: no paciente intubado, digite T no campo V (ex.: O3 VT M5 = 8T)." },
+  { title: "Cardiovascular / hemodinâmico", rows: [
+   [F("pa","PA","pair",{keys:["pas","pad"],sep:"/",u:"mmHg"}), F("pam","PAM","calc",{fn:"pam"}), F("fc","FC","num"), F("ritmo","Ritmo","text",{w:"m"})],
+   [F("dva","Vasopressor/inotrópico","text",{w:"l"}), F("dva_dose","Dose","text",{w:"s",u:"mcg/kg/min",tl:"Dose do vasopressor/inotrópico"}), F("dva_tend","Tendência","radio",{opts:["↑","↓","="]})],
+   [F("lactato","Lactato","num"), F("lact_ant","Lactato anterior","num"), F("tec","TEC","num",{u:"s"}), F("livedo","Livedo","text",{w:"s"})],
+   [F("svco2","SvcO2","num"), F("gapco2","Gap CO2","num")],
+   [F("pocus","Fluidorresponsividade/POCUS","area")],
+   [F("bh24","Balanço hídrico 24 h","num",{w:"s",u:"mL"}), F("bh_acum","BH acumulado","num",{w:"s",u:"mL"})],
+   [F("cardio_ex","ECG/ECO/troponina/BNP","area")]
+  ]},
+  { title: "Respiratório", rows: [
+   [F("suporte","Suporte","check",{opts:["AA","CN","CNAF","VNI","TOT","TQT"]})],
+   [F("cn_l","CN","num",{u:"L/min",tl:"CN"}), F("cnaf_l","CNAF fluxo","num",{u:"L/min"}), F("cnaf_fio2","CNAF FiO2","num"), F("resp_d","D do dispositivo","num")],
+   [F("tot_n","TOT nº","text",{w:"xs"}), F("rima","Rima","num",{u:"cm"}), F("cuff","Cuff","num",{w:"s",u:"cmH2O"})],
+   [F("vm_modo","VM: modo","text",{w:"m"}), F("vc","VC","num",{w:"s",u:"mL"}), F("vckg","VC/peso predito","calc",{w:"s",u:"mL/kg PP",fn:"vckg"})],
+   [F("peep","PEEP","num"), F("fio2","FiO2 (VM)","num"), F("fr","FR","num")],
+   [F("ppico","Ppico","num"), F("pplato","Pplatô","num"), F("dp","Driving pressure","calc",{fn:"dp"}), F("cst","Complacência","calc",{w:"s",u:"mL/cmH2O",fn:"cst"})],
+   [F("ph","pH","num"), F("paco2","PaCO2","num"), F("pao2","PaO2","num"), F("hco3","HCO3","num"), F("be","BE","num"), F("pf","P/F","calc",{fn:"pf"})],
+   [F("spo2","SpO2","num",{u:"%"}), F("spo2_alvo","SpO2 alvo","text",{w:"xs"}), F("secrecao","Secreção","text",{w:"m"})],
+   [F("imagem","Imagem (RX/USG)","text",{w:"full"})],
+   [F("tre","Apto a TRE?","radio",{opts:SN}), F("tre_mot","Motivo","text",{w:"l",tl:"Motivo (TRE)"})],
+   [F("tre_res","Resultado do TRE","text",{w:"full"})],
+   [F("prona","Prona/bloqueador neuromuscular","text",{w:"full"})]
+  ], hint: "P/F calculada com a FiO2 da VM (ou, se vazia, a da CNAF). FiO2 aceita 40 ou 0,4. Driving pressure = Pplatô − PEEP; complacência = VC / (Pplatô − PEEP)." },
+  { title: "Renal / metabólico", rows: [
+   [F("diurese","Diurese","num",{w:"s",u:"mL/24 h"}), F("dkgh","Diurese/kg/h","calc",{w:"s",u:"mL/kg/h",fn:"dkgh"}), F("kdigo","KDIGO","text",{w:"xs"})],
+   [F("ur","Ur","num"), F("cr","Cr","num"), F("cr_basal","Cr basal","num")],
+   [F("trs","TRS","radio",{opts:["não","sim"]}), F("trs_mod","Modalidade","text",{w:"m",tl:"Modalidade da TRS"}), F("uf","UF","text",{w:"s"})],
+   [F("na","Na","num"), F("k","K","num"), F("cl","Cl","num"), F("mg","Mg","num"), F("p","P","num"), F("cai","Cai","num"), F("ag","Ânion gap","calc",{fn:"ag"})],
+   [F("glic","Glicemias","pair",{keys:["glic_min","glic_max"],sep:" a "}), F("insulina","Insulina","text",{w:"m"}), F("hipoglic","Hipoglicemia","text",{w:"s"})]
+  ], hint: "Diurese/kg/h usa o peso informado em Identificação. Ânion gap = Na − (Cl + HCO3), com o HCO3 da gasometria." },
+  { title: "Gastrointestinal / nutrição", rows: [
+   [F("dieta","Dieta","check",{opts:["zero","VO","enteral","parenteral"]}), F("vazao","Vazão","num",{u:"mL/h"})],
+   [F("meta_kcal","Meta calórica","num",{w:"s",u:"kcal"}), F("meta_ptn","Meta proteica","num",{w:"s",u:"g"}), F("atingido","Atingido","num",{u:"%"})],
+   [F("intoler","Intolerância (vômitos, distensão, resíduo)","text",{w:"full"})],
+   [F("evac","Última evacuação","text",{w:"m"}), F("pia","PIA","text",{w:"xs"})],
+   [F("exame_abd","Exame abdominal","text",{w:"full"})],
+   [F("tgo","TGO","num"), F("tgp","TGP","num"), F("bt","BT","num"), F("fa","FA","num"), F("ggt","GGT","num"), F("alb","Albumina","num"), F("lipase","Lipase","num")]
+  ]},
+  { title: "Hematológico", rows: [
+   [F("hb","Hb","num"), F("leuco","Leuco","num"), F("plaq","Plaq","num"), F("inr","INR","num"), F("ttpa","TTPa","num"), F("fibrin","Fibrinogênio","num")],
+   [F("sangramento","Sangramento","text",{w:"full"})],
+   [F("hemocomp","Hemocomponentes","text",{w:"full"})],
+   [F("anticoag","Anticoagulação plena","text",{w:"full"})]
+  ]},
+  { title: "Infeccioso", rows: [
+   [F("tmax","Tmáx","num",{u:"°C"}), F("pcr","PCR/PCT","text",{w:"s"}), F("pcr_tend","Tendência","text",{w:"s",tl:"Tendência PCR/PCT"})],
+   [F("foco","Foco provável","text",{w:"full"})],
+   [F("atb","Antimicrobiano(s)","text",{w:"l"}), F("atb_d","D","num",{tl:"D do antimicrobiano"}), F("atb_de","de (dias)","num",{tl:"Duração prevista (dias)"}), F("atb_ajuste","Ajuste renal?","radio",{opts:SN})],
+   [F("culturas","Culturas (data / material / resultado)","area")],
+   [F("descalon","Descalonamento ou suspensão possível?","text",{w:"full"})]
+  ]},
+  { title: "Dispositivos", rows: [
+   [F("cvc","CVC: sítio","text",{w:"m"}), F("cvc_d","D","num",{tl:"CVC D"}), F("pai","PAI","text",{w:"m"}), F("pai_d","D","num",{tl:"PAI D"}), F("svd_d","SVD: D","num",{tl:"SVD D"})],
+   [F("drenos","Drenos","text",{w:"l"}), F("drenos_deb","Débito","text",{w:"s",tl:"Débito dos drenos"})],
+   [F("disp_outros","Outros","text",{w:"full",tl:"Outros dispositivos"})],
+   [F("retirar","Algum pode ser retirado hoje?","text",{w:"full"})]
+  ]},
+  { title: "Pele / mobilidade", rows: [
+   [F("lpp","Lesão por pressão","text",{w:"l"}), F("braden","Braden","num")],
+   [F("feridas","Feridas","text",{w:"full"})],
+   [F("mobil","Nível de mobilização/fisioterapia","text",{w:"full"})]
+  ]},
+  { title: "Checklist FAST HUGS BID", rows: [
+   [F("fhb","Itens checados","check",{opts:["Dieta","Analgesia","Sedação","Tromboprofilaxia","Cabeceira 30–45°","Profilaxia de úlcera de estresse","Glicemia","TRE","Hábito intestinal","Cateteres","Descalonamento de antimicrobianos"]})],
+   [F("trombo","Tromboprofilaxia (qual)","text",{w:"m"}), F("pue","Profilaxia de úlcera de estresse indicada?","text",{w:"m"})]
+  ]},
+  { title: "Família", rows: [
+   [F("boletim","Boletim realizado?","radio",{opts:SN})],
+   [F("pontos","Pontos discutidos","area")]
+  ]}
+ ]},
+
+ { id: "R", title: "RECOMENDAÇÕES / PLANO", groups: [
+  { title: "Problemas e condutas", rows: [
+   [F("p1","Problema 1","text",{w:"full"})], [F("c1","→ Conduta","area",{tl:"Conduta 1"})],
+   [F("p2","Problema 2","text",{w:"full"})], [F("c2","→ Conduta","area",{tl:"Conduta 2"})],
+   [F("p3","Problema 3","text",{w:"full"})], [F("c3","→ Conduta","area",{tl:"Conduta 3"})]
+  ]},
+  { title: "Metas para 24 h", rows: [
+   [F("m_pam","PAM ≥","num",{tl:"PAM ≥"}), F("m_spo2","SpO2","pair",{keys:["m_spo2a","m_spo2b"],sep:"–",u:"%"}), F("m_bh","BH","text",{w:"s"}), F("m_rass","RASS","text",{w:"xs"}), F("m_glic","Glicemia","pair",{keys:["m_glica","m_glicb"],sep:"–"})]
+  ]},
+  { title: "Pendências e seguimento", rows: [
+   [F("exames","Exames pendentes/a solicitar","area")],
+   [F("pareceres","Pareceres","text",{w:"full"})],
+   [F("pendencias","Pendências para o plantão","area")],
+   [F("chamar","Chamar se","area")],
+   [F("prognostico","Prognóstico/cuidados paliativos","text",{w:"full"})],
+   [F("alta","Previsão de alta do CTI","text",{w:"full"})]
+  ]}
+ ]}
+];
+
+const DEFAULT_W = { text:"m", num:"xs", area:"full", date:"s", radio:"auto", check:"full", calc:"xs", pair:"s", gcs:"m" };
+
+/* =====================================================================
+   ARMAZENAMENTO LOCAL
+   ===================================================================== */
+const KEY = "isbar-cti-v1";
+let storageOK = true;
+let store = { current: null, patients: {} };
+
+function loadStore(){
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw){ const s = JSON.parse(raw); if (s && typeof s.patients === "object") store = s; }
+  } catch(e){ storageOK = false; }
+}
+let saveTimer = null;
+function saveSoon(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 400);
+}
+function saveNow(){
+  const p = cur(); if (p) p.updated = Date.now();
+  try { localStorage.setItem(KEY, JSON.stringify(store)); setStatus("Salvo às " + hhmm(new Date())); }
+  catch(e){ storageOK = false; setStatus("Não foi possível salvar neste navegador"); }
+}
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const cur = () => store.patients[store.current];
+function newPatient(){
+  const id = uid();
+  store.patients[id] = { updated: Date.now(), data: { data_aval: todayISO() } };
+  store.current = id;
+  return id;
+}
+
+/* =====================================================================
+   UTILITÁRIOS
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+function el(tag, attrs = {}, ...kids){
+  const e = document.createElement(tag);
+  for (const [a,v] of Object.entries(attrs)){
+    if (v == null || v === false) continue;
+    if (a === "class") e.className = v; else if (a === "text") e.textContent = v; else e.setAttribute(a, v === true ? "" : v);
+  }
+  for (const k of kids) if (k != null) e.append(k);
+  return e;
+}
+const pad2 = n => String(n).padStart(2,"0");
+const hhmm = d => pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+function todayISO(){ const d = new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+function brDate(iso){ const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||""); return m ? `${m[3]}/${m[2]}/${m[1]}` : (iso||""); }
+function num(v){ if (v == null) return NaN; const s = String(v).trim().replace(",", "."); return s === "" ? NaN : Number(s); }
+function fmt(v, d){ if (!isFinite(v)) return ""; return v.toFixed(d).replace(".", ","); }
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 1800); }
+function setStatus(msg){ $("#status").textContent = msg; }
+const D = () => (cur() ? cur().data : {});
+
+/* =====================================================================
+   CAMPOS CALCULADOS
+   ===================================================================== */
+const CALC = {
+  ppRaw(d){ const h = num(d.altura); if (!(h > 0) || !d.sexo) return NaN; return (d.sexo === "M" ? 50 : 45.5) + 0.91 * (h - 152.4); },
+  pp(d){ return fmt(CALC.ppRaw(d), 1); },
+  pam(d){ const a = num(d.pas), b = num(d.pad); return (a > 0 && b > 0) ? fmt((a + 2*b)/3, 0) : ""; },
+  vckg(d){ const vc = num(d.vc), p = CALC.ppRaw(d); return (vc > 0 && p > 0) ? fmt(vc/p, 1) : ""; },
+  dp(d){ const pl = num(d.pplato), pe = num(d.peep); return (isFinite(pl) && isFinite(pe)) ? fmt(pl - pe, 0) : ""; },
+  cst(d){ const vc = num(d.vc), dp = num(d.pplato) - num(d.peep); return (vc > 0 && dp > 0) ? fmt(vc/dp, 1) : ""; },
+  pf(d){ const po = num(d.pao2); let fi = num(d.fio2); if (!(fi > 0)) fi = num(d.cnaf_fio2); if (!(po > 0 && fi > 0)) return ""; if (fi > 1) fi = fi/100; return fi <= 1 ? fmt(po/fi, 0) : ""; },
+  dkgh(d){ const u = num(d.diurese), p = num(d.peso); return (u >= 0 && p > 0) ? fmt(u/p/24, 2) : ""; },
+  ag(d){ const na = num(d.na), cl = num(d.cl), hc = num(d.hco3); return [na,cl,hc].every(isFinite) ? fmt(na - cl - hc, 1) : ""; },
+  gcs(d){
+    const o = num(d.gcs_o), m = num(d.gcs_m), vr = String(d.gcs_v || "").trim();
+    if (!(o > 0 && m > 0) || !vr) return "";
+    const v = num(vr);
+    return isFinite(v) ? String(o + v + m) : (o + m) + vr.toUpperCase();
+  }
+};
+
+/* =====================================================================
+   RENDERIZAÇÃO DO FORMULÁRIO
+   ===================================================================== */
+const fieldsIndex = [];   // todos os campos, com referência ao grupo
+
+function inputFor(k, extra = {}){
+  return el("input", { id: "f_" + k, "data-k": k, type: "text", autocomplete: "off", ...extra });
+}
+
+function renderField(f){
+  const w = "w-" + (f.w || DEFAULT_W[f.t]);
+  const id = "f_" + f.k;
+  switch (f.t){
+    case "text": case "num": case "date": {
+      const attrs = f.t === "num" ? { inputmode: "decimal", enterkeyhint: "next" } : f.t === "date" ? { type: "date" } : { autocapitalize: "sentences" };
+      return el("div", { class: "fld " + w },
+        el("label", { for: id, text: f.l }),
+        el("div", { class: "inp" }, inputFor(f.k, attrs), f.u ? el("span", { class: "u", text: f.u }) : null));
+    }
+    case "area":
+      return el("div", { class: "fld " + w },
+        el("label", { for: id, text: f.l }),
+        el("div", { class: "inp" }, el("textarea", { id, "data-k": f.k, rows: "3", autocapitalize: "sentences" })));
+    case "calc": {
+      const lab = el("label", { for: id, text: f.l }); lab.append(el("span", { class: "calc-tag", text: "auto", title: "Calculado automaticamente" }));
+      return el("div", { class: "fld " + w }, lab,
+        el("div", { class: "inp calc" }, el("input", { id, "data-calc": f.fn, readonly: true, tabindex: "-1" }), f.u ? el("span", { class: "u", text: f.u }) : null));
+    }
+    case "pair": {
+      const [a, b] = f.keys;
+      return el("div", { class: "fld " + w },
+        el("label", { for: "f_" + a, text: f.l }),
+        el("div", { class: "inp" },
+          inputFor(a, { inputmode: "decimal", "aria-label": f.l + " (1º valor)" }),
+          el("span", { class: "sep", text: f.sep.trim() || f.sep }),
+          inputFor(b, { inputmode: "decimal", "aria-label": f.l + " (2º valor)" }),
+          f.u ? el("span", { class: "u", text: f.u }) : null));
+    }
+    case "gcs": {
+      const box = el("div", { class: "inp gcs" });
+      [["O","gcs_o"],["V","gcs_v"],["M","gcs_m"]].forEach(([l,k]) => {
+        box.append(el("span", { text: l }), inputFor(k, { inputmode: k === "gcs_v" ? "text" : "numeric", "aria-label": "Glasgow " + l, maxlength: "2" }));
+      });
+      box.append(el("span", { class: "tot", "data-calc-out": "gcs", "aria-live": "polite" }));
+      return el("div", { class: "fld " + w }, el("span", { class: "lbl", text: f.l, title: "No paciente intubado, digite T no campo V" }), box);
+    }
+    case "radio": case "check": {
+      const fs = el("fieldset", { class: "fld " + w }, el("legend", { text: f.l }));
+      const opts = el("div", { class: "opts" });
+      f.opts.forEach(o => {
+        opts.append(el("label", { class: "opt" },
+          el("input", { type: f.t === "radio" ? "radio" : "checkbox", name: f.k, value: o, "data-k": f.k, "data-multi": f.t === "check" ? "1" : null }),
+          el("span", { text: o })));
+      });
+      fs.append(opts);
+      return fs;
+    }
+  }
+}
+
+function renderForm(){
+  const root = $("#form");
+  MODEL.forEach(sec => {
+    const body = el("div", { class: "sec-body" });
+    const secEl = el("section", { class: "sec", id: "sec-" + sec.id },
+      el("div", { class: "sec-h" }, el("span", { class: "letter", text: sec.id }), el("h2", { text: sec.title }),
+         sec.groups.length === 1 && !sec.groups[0].title ? el("span", { class: "badge", "data-badge": sec.id + "-0" }) : null),
+      body);
+    sec.groups.forEach((g, gi) => {
+      const gid = sec.id + "-" + gi;
+      const content = el("div");
+      g.rows.forEach(r => {
+        const row = el("div", { class: "row" });
+        r.forEach(f => { row.append(renderField(f)); fieldsIndex.push({ f, gid }); });
+        content.append(row);
+      });
+      if (g.hint) content.append(el("p", { class: "hint", text: g.hint }));
+      if (g.title){
+        const det = el("details", { class: "grp", open: true },
+          el("summary", {}, el("span", { class: "t", text: g.title }), el("span", { class: "badge", "data-badge": gid })),
+          content);
+        body.append(det);
+      } else {
+        content.className = "plain-grp";
+        body.append(content);
+      }
+    });
+    root.append(secEl);
+  });
+}
+
+/* =====================================================================
+   LIGAÇÃO ENTRE FORMULÁRIO E DADOS
+   ===================================================================== */
+function fillForm(){
+  const d = D();
+  document.querySelectorAll("#form [data-k]").forEach(inp => {
+    const k = inp.dataset.k, v = d[k];
+    if (inp.type === "checkbox") inp.checked = Array.isArray(v) && v.includes(inp.value);
+    else if (inp.type === "radio") inp.checked = v === inp.value;
+    else inp.value = v == null ? "" : v;
+  });
+  refreshDerived();
+}
+
+function onInput(e){
+  const inp = e.target; const k = inp && inp.dataset ? inp.dataset.k : null;
+  if (!k || !cur()) return;
+  const d = cur().data;
+  if (inp.type === "checkbox"){
+    const vals = [...document.querySelectorAll(`#form input[name="${k}"]:checked`)].map(x => x.value);
+    if (vals.length) d[k] = vals; else delete d[k];
+  } else if (inp.type === "radio"){
+    d[k] = inp.value;
+  } else {
+    if (inp.value === "") delete d[k]; else d[k] = inp.value;
+  }
+  refreshDerived();
+  if (k === "nome" || k === "leito") refreshSelect();
+  saveSoon();
+}
+
+/* desmarcar um radio ao tocar de novo nele */
+function onRadioClick(e){
+  const inp = e.target;
+  if (inp.type !== "radio" || !cur()) return;
+  if (inp.dataset.was === "1"){
+    inp.checked = false; delete cur().data[inp.dataset.k]; inp.dataset.was = "";
+    refreshDerived(); saveSoon();
+  }
+  document.querySelectorAll(`#form input[name="${inp.name}"]`).forEach(x => x.dataset.was = x.checked ? "1" : "");
+}
+
+function isFilled(f, d){
+  if (f.t === "calc") return null;
+  if (f.t === "pair") return f.keys.some(k => d[k] != null && d[k] !== "");
+  if (f.t === "gcs") return ["gcs_o","gcs_v","gcs_m"].some(k => d[k] != null && d[k] !== "");
+  const v = d[f.k];
+  return Array.isArray(v) ? v.length > 0 : (v != null && v !== "");
+}
+
+function refreshDerived(){
+  const d = D();
+  document.querySelectorAll("#form [data-calc]").forEach(i => i.value = CALC[i.dataset.calc](d));
+  document.querySelectorAll("#form [data-calc-out]").forEach(s => { const v = CALC[s.dataset.calcOut](d); s.textContent = v ? "= " + v : ""; });
+  const tally = {};
+  fieldsIndex.forEach(({ f, gid }) => {
+    const r = isFilled(f, d); if (r === null) return;
+    tally[gid] = tally[gid] || [0,0]; tally[gid][1]++; if (r) tally[gid][0]++;
+  });
+  document.querySelectorAll("[data-badge]").forEach(b => {
+    const t = tally[b.dataset.badge] || [0,0];
+    b.textContent = t[0] + "/" + t[1];
+    b.classList.toggle("done", t[1] > 0 && t[0] === t[1]);
+  });
+}
+
+function ptLabel(p){
+  const d = p.data || {};
+  const parts = [];
+  if (d.leito) parts.push("Leito " + d.leito);
+  if (d.nome) parts.push(d.nome);
+  return parts.length ? parts.join(" – ") : "Paciente sem identificação";
+}
+function refreshSelect(){
+  const sel = $("#ptSelect");
+  const ids = Object.keys(store.patients).sort((a,b) => {
+    const la = String(store.patients[a].data.leito || "~"), lb = String(store.patients[b].data.leito || "~");
+    return la.localeCompare(lb, "pt-BR", { numeric: true });
+  });
+  sel.replaceChildren(...ids.map(id => el("option", { value: id, text: ptLabel(store.patients[id]) })));
+  sel.value = store.current;
+}
+
+/* =====================================================================
+   TEXTO ISBAR
+   ===================================================================== */
+function valueText(f, d){
+  const u = f.u ? " " + f.u : "";
+  switch (f.t){
+    case "calc": { const v = CALC[f.fn](d); return v ? v + u : ""; }
+    case "date": return d[f.k] ? brDate(d[f.k]) : "";
+    case "check": return Array.isArray(d[f.k]) && d[f.k].length ? d[f.k].join(", ") : "";
+    case "pair": { const [a,b] = f.keys; if (!d[a] && !d[b]) return ""; return (d[a] || "?") + f.sep + (d[b] || "?") + u; }
+    case "gcs": {
+      if (!["gcs_o","gcs_v","gcs_m"].some(k => d[k])) return "";
+      const t = CALC.gcs(d);
+      return `O${d.gcs_o || "?"} V${d.gcs_v || "?"} M${d.gcs_m || "?"}` + (t ? " = " + t : "");
+    }
+    default: return d[f.k] != null && d[f.k] !== "" ? String(d[f.k]).trim() + u : "";
+  }
+}
+
+function buildText(){
+  const d = D();
+  const out = [];
+  const head = ["ISBAR – CTI"];
+  if (d.leito) head.push("Leito " + d.leito);
+  if (d.data_aval) head.push(brDate(d.data_aval));
+  out.push(head.join(" | "));
+
+  MODEL.forEach(sec => {
+    const secLines = [];
+    sec.groups.forEach(g => {
+      const gLines = [];
+      g.rows.forEach(r => {
+        const inline = [];
+        r.forEach(f => {
+          if (f.k === "data_aval") return;
+          const v = valueText(f, d);
+          if (!v) return;
+          const lab = f.tl || f.l;
+          if (f.t === "area") gLines.push(`${lab}: ${v}`);
+          else inline.push(`${lab}: ${v}`);
+        });
+        if (inline.length) gLines.push(inline.join(" | "));
+      });
+      if (gLines.length){
+        if (g.title) secLines.push(`[${g.title}]`);
+        secLines.push(...gLines);
+      }
+    });
+    if (secLines.length){
+      out.push("", `${sec.id} – ${sec.title}`, ...secLines);
+    }
+  });
+  return out.join("\n");
+}
+
+async function copyText(txt){
+  try {
+    await navigator.clipboard.writeText(txt);
+    return true;
+  } catch(e){
+    const ta = $("#out"); ta.focus(); ta.select();
+    try { return document.execCommand("copy"); } catch(_){ return false; }
+  }
+}
+
+function download(name, content, type){
+  const blob = new Blob([content], { type });
+  const a = el("a", { href: URL.createObjectURL(blob), download: name });
+  document.body.append(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function fileSafe(s){ return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w-]+/g,"_").slice(0,40); }
+
+/* =====================================================================
+   AÇÕES
+   ===================================================================== */
+function switchTo(id){ store.current = id; fillForm(); refreshSelect(); saveSoon(); window.scrollTo({ top: 0 }); }
+
+function doPrint(){
+  const dets = [...document.querySelectorAll("details.grp")];
+  const closed = dets.filter(x => !x.open); closed.forEach(x => x.open = true);
+  window.print();
+  setTimeout(() => closed.forEach(x => x.open = false), 500);
+}
+
+function importBackup(file){
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const s = JSON.parse(r.result);
+      if (!s || typeof s.patients !== "object") throw new Error("formato");
+      let n = 0;
+      for (const [id, p] of Object.entries(s.patients)){
+        if (!p || typeof p.data !== "object") continue;
+        const clean = {};
+        for (const [k, v] of Object.entries(p.data)){
+          if (typeof v === "string") clean[k] = v.slice(0, 5000);
+          else if (Array.isArray(v)) clean[k] = v.filter(x => typeof x === "string").slice(0, 30);
+        }
+        const nid = store.patients[id] ? uid() : id;
+        store.patients[nid] = { updated: Number(p.updated) || Date.now(), data: clean };
+        n++;
+      }
+      if (!n) throw new Error("vazio");
+      if (!store.patients[store.current]) store.current = Object.keys(store.patients)[0];
+      fillForm(); refreshSelect(); saveNow();
+      toast(n + (n === 1 ? " paciente importado" : " pacientes importados"));
+    } catch(e){ toast("Arquivo de backup inválido"); }
+  };
+  r.readAsText(file);
+}
+
+function onMenu(act){
+  $("#menu").open = false;
+  const p = cur();
+  switch (act){
+    case "print": doPrint(); break;
+    case "expand": document.querySelectorAll("details.grp").forEach(x => x.open = true); break;
+    case "collapse": document.querySelectorAll("details.grp").forEach(x => x.open = false); break;
+    case "export":
+      download(`isbar-cti-backup-${todayISO()}.json`, JSON.stringify(store, null, 1), "application/json");
+      break;
+    case "import": $("#importFile").click(); break;
+    case "clear":
+      if (p && confirm(`Limpar todos os campos de “${ptLabel(p)}”?`)){
+        p.data = { data_aval: todayISO() }; fillForm(); refreshSelect(); saveNow(); toast("Campos limpos");
+      }
+      break;
+    case "delete":
+      if (p && confirm(`Excluir “${ptLabel(p)}”? Esta ação não pode ser desfeita.`)){
+        delete store.patients[store.current];
+        const ids = Object.keys(store.patients);
+        if (ids.length) store.current = ids[0]; else newPatient();
+        fillForm(); refreshSelect(); saveNow(); toast("Paciente excluído");
+      }
+      break;
+  }
+}
+
+/* =====================================================================
+   INICIALIZAÇÃO
+   ===================================================================== */
+loadStore();
+if (!store.current || !store.patients[store.current]){
+  const ids = Object.keys(store.patients);
+  if (ids.length) store.current = ids[0]; else newPatient();
+}
+renderForm();
+fillForm();
+refreshSelect();
+if (!storageOK){
+  const n = $("#privacy"); n.textContent = "Atenção: este navegador não permite salvar dados (modo privativo ou armazenamento bloqueado). O que for digitado se perde ao fechar a página.";
+}
+setStatus(storageOK ? "Salvamento automático" : "Sem salvamento");
+
+const form = $("#form");
+form.addEventListener("input", onInput);
+form.addEventListener("change", onInput);
+form.addEventListener("click", onRadioClick);
+
+$("#ptSelect").addEventListener("change", e => switchTo(e.target.value));
+$("#btnNew").addEventListener("click", () => { newPatient(); fillForm(); refreshSelect(); saveNow(); $("#f_nome").focus(); toast("Novo paciente criado"); });
+$("#menu").addEventListener("click", e => { const b = e.target.closest("button[data-act]"); if (b) onMenu(b.dataset.act); });
+document.addEventListener("click", e => { const m = $("#menu"); if (m.open && !m.contains(e.target)) m.open = false; });
+$("#importFile").addEventListener("change", e => { const f = e.target.files[0]; if (f) importBackup(f); e.target.value = ""; });
+$("#btnPrint").addEventListener("click", doPrint);
+
+const dlg = $("#dlg");
+$("#btnText").addEventListener("click", () => { $("#out").value = buildText(); dlg.showModal(); });
+$("#dlgClose").addEventListener("click", () => dlg.close());
+dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
+$("#btnCopy").addEventListener("click", async () => { toast(await copyText($("#out").value) ? "Texto copiado" : "Não foi possível copiar"); });
+$("#btnTxt").addEventListener("click", () => {
+  const d = D();
+  download(`ISBAR_${fileSafe(d.leito ? "leito" + d.leito : "paciente")}_${d.data_aval || todayISO()}.txt`, $("#out").value, "text/plain;charset=utf-8");
+});
+
+window.addEventListener("pagehide", saveNow);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveNow(); });
+})();
+</script>
+</body>
+</html>
