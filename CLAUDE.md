@@ -22,8 +22,13 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 ## Modelos de evolução (objeto `TPL`)
 - **`cti`, ISBAR:** I/S/B/A/R, com a avaliação por sistemas e o checklist FAST HUGS BID. Campos calculados: PAM; Glasgow total (V = T no paciente intubado); peso predito (fórmula ARDSNet); VC em mL/kg de peso predito; driving pressure; complacência; P/F; diurese em mL/kg/h; ânion gap.
 - **`enf`, Enfermaria de clínica médica:** Lista de problemas, Contexto, HPP, MUC, Evolução diária, Dados vitais, Exame físico, Exames complementares e Condutas. Cada problema tem 4 subtópicos: Apresentação, Etiologia, Propedêutica e Plano de cuidados (campo do tipo `problems`). "Nova evolução do dia" apaga os campos diários e soma 1 ao DIH.
-- **`ic`, Interconsulta de hematologia:** inclui história hematológica, exame dirigido e exames agrupados (hemograma, esfregaço, hemólise, ferro/vitaminas, coagulação). "Nova avaliação" apaga os campos de seguimento.
-- Tipos de campo: `text`, `num`, `area`, `date`, `radio`, `check`, `calc`, `pair`, `gcs`, `list`, `problems`. Opções: `tl` (rótulo no texto gerado; `""` imprime só o valor), `daily` (apagado na nova evolução), `ph` (exemplo em cinza, não entra no texto).
+- **`ic`, Interconsulta de hematologia:** segue a folha de rosto da interconsulta da residência (docx enviado pelo autor). O modelo é dinâmico (`build: icModel`): o campo `ic_mom` escolhe entre 1ª avaliação, Avaliações subsequentes e Após diagnóstico; neste último, `ic_dx` escolhe o bloco da doença (aplasia de medula óssea, PTI, trombose, mieloma múltiplo, linfoma, SMD, leucemia aguda), seguido de Internação (comorbidades, cateter, transfusão, profilaxias, intercorrências) e Evolução (DE, evolução, ao exame, CD).
+  - Campos com o mesmo significado usam a mesma chave em todos os modelos, para os dados serem aproveitados na troca.
+  - O texto (`icText`) segue o formato da folha: começa com `# INTERCONSULTA – HEMATOLOGIA #`. As seções Identificação e Momento não entram no texto. Os grupos têm `tx: { h, m }` (`in`: uma linha; `bl`: título e linhas "- "; `lf`: um campo por linha) e os campos podem ter `blk` (subtítulo do bloco, como "1) INFECCIOSA").
+  - Superfície corpórea calculada pela fórmula de Mosteller.
+  - "Nova avaliação" apaga Evolução, Ao exame e CD, passa a 1ª avaliação para Avaliações subsequentes e avança o "Hoje D" da QT pelos dias passados.
+  - Dados do modelo antigo da IC continuam guardados; `tipo: "Seguimento"` é migrado para `ic_mom: "Avaliações subsequentes"`.
+- Tipos de campo: `text`, `num`, `area`, `date`, `radio`, `check`, `calc`, `pair`, `gcs`, `list`, `problems`. Opções: `def` (valor padrão de um radio), `tl` (rótulo no texto gerado; `""` imprime só o valor), `daily` (apagado na nova evolução), `ph` (exemplo em cinza, não entra no texto).
 
 ## Dados
 - **Armazenamento local:** `localStorage["isbar-cti-v1"]` guarda `{ mode, currentBy, patients: { id: { tpl, updated, data, presc } }, settings, sync }`. A chave antiga foi mantida para preservar os dados já salvos; `normalizeStore()` migra a versão antiga, que tinha só CTI.
