@@ -47,9 +47,10 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 - **Nos testes, clicar em `#homeGo` antes de interagir**, porque a tela inicial cobre o app.
 - **`supabase-setup.sql`:** testado em PostgreSQL 16 local com um esquema `auth` simulado (`auth.users`, `auth.uid()`, papéis `anon`/`authenticated`): RLS entre dois usuários, upsert mais antigo ignorado, *tombstone* aceito e reexecução do script.
 
-## Pendências
-- **Enforce HTTPS no GitHub Pages:** o DNS está correto (4 registros A apontando para o GitHub e CNAME `www` para `geradorevolucao.github.io`), mas o certificado ainda não tinha sido emitido. Sugestão: remover e salvar de novo o domínio em Settings → Pages.
-- **Supabase:** criar o projeto, rodar `supabase-setup.sql`, definir o Site URL como `https://anamnesia.net.br` e desativar novos cadastros depois de criar a conta.
+## Situação da publicação
+- **HTTPS:** o site abre em `https://anamnesia.net.br`, necessário para a conta funcionar.
+- **Supabase:** projeto criado, `supabase-setup.sql` executado e sincronização testada pelo autor entre celular e PC.
+- **A conferir:** se os novos cadastros foram desativados no Supabase (Authentication → Sign In / Providers → "Allow new users to sign up").
 
 ## Decisões do autor
 - Grafia: **"Anamnesia"**, sem acento.
