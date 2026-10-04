@@ -651,73 +651,231 @@ const ENF = [
  ]}]}
 ];
 
-/* ---------------- INTERCONSULTA – HEMATOLOGIA ---------------- */
-const IC = [
- { id: "ID", letter: "ID", title: "IDENTIFICAÇÃO", nav: "Identificação", groups: [ { rows: [
+/* ---------------- INTERCONSULTA – HEMATOLOGIA ----------------
+   Modelos da folha de rosto da interconsulta da Hematologia (residência):
+   1ª avaliação, avaliações subsequentes e, após o diagnóstico, um bloco por doença.
+   O formulário muda conforme "Momento da interconsulta" (ic_mom) e "Diagnóstico" (ic_dx).
+   tx (no grupo) define o texto gerado:
+     h: título no texto;  m: "in" (tudo em uma linha: "H: a / b"),
+     "bl" (linha "H:" e depois uma linha "- " por fileira do formulário),
+     "lf" (cada campo na sua própria linha, sem título).
+   blk (no campo): subtítulo do bloco ("1) INFECCIOSA"), impresso só se algo abaixo for preenchido. */
+const IC_MOM = ["1ª avaliação", "Avaliações subsequentes", "Após diagnóstico"];
+const IC_DX_BEN = ["Aplasia de medula óssea", "Púrpura trombocitopênica idiopática (PTI)", "Trombose"];
+const IC_DX_ONC = ["Mieloma múltiplo", "Linfoma", "Síndrome mielodisplásica", "Leucemia aguda"];
+const G = (title, tx, rows, o = {}) => ({ title, tx, rows, ...o });
+
+const IC_HEAD = [
+ { id: "ID", letter: "ID", title: "IDENTIFICAÇÃO", nav: "Identificação", noText: true, groups: [ { rows: [
    [F("nome","Nome","text",{w:"l"}), F("idade","Idade","num",{u:"anos"}), F("sexo","Sexo","radio",{opts:["M","F"]}), F("leito","Leito","text",{w:"xs"})],
-   [F("data_aval","Data da avaliação","date"), F("tipo","Tipo","radio",{opts:["1ª avaliação","Seguimento"]})],
-   [F("setor","Setor/clínica solicitante","text",{w:"m"}), F("solicitante","Médico solicitante","text",{w:"m"}), F("data_solic","Data da solicitação","date")]
+   [F("data_aval","Data da avaliação","date")]
  ]}]},
- { id: "MI", letter: "MI", title: "MOTIVO DA INTERCONSULTA", nav: "Motivo", groups: [ { rows: [
-   [F("motivo_ic","Motivo / pergunta do solicitante","area",{tl:"",rows:3})]
- ]}]},
- { id: "RC", letter: "RC", title: "RESUMO DO CASO", nav: "Resumo", groups: [
-  { title: "História", rows: [
-   [F("resumo","Resumo do caso (história e evolução na internação)","area",{tl:"",rows:5})],
-   [F("evol_ic","Evolução desde a última avaliação (seguimento)","area",{daily:true})],
-   [F("hpp","HPP / comorbidades","area",{rows:2})],
-   [F("meds","Medicações em uso","area",{rows:2})],
-   [F("alergias","Alergias","text",{w:"full"})]
-  ]},
-  { title: "História hematológica", rows: [
-   [F("sint_b","Sintomas B","check",{opts:["febre","sudorese noturna","perda de peso"]})],
-   [F("h_sang","História de sangramento (pessoal)","text",{w:"full"})],
-   [F("h_transf","História transfusional (transfusões prévias, reações)","text",{w:"full"})],
-   [F("h_acoag","Anticoagulantes / antiagregantes em uso","text",{w:"full"})],
-   [F("h_fam","História familiar hematológica","text",{w:"full"})]
-  ]}
- ]},
- { id: "EF", letter: "EF", title: "EXAME FÍSICO", nav: "Exame físico", daily: true, groups: [ { rows: [
-   [F("pa","PA","pair",{keys:["pas","pad"],sep:"/",u:"mmHg"}), F("pam","PAM","calc",{fn:"pam"}), F("fc","FC","num",{u:"bpm"}), F("fr","FR","num",{u:"irpm"}), F("tax","Tax","num",{u:"°C"}), F("spo2","SpO2","num",{u:"%"})],
-   [F("ef_linf","Linfonodomegalias (sítio, tamanho, características)","text",{w:"full"})],
-   [F("ef_hepesp","Fígado e baço","text",{w:"full"})],
-   [F("ef_hemor","Sinais hemorrágicos (petéquias, equimoses, sangramento mucoso)","text",{w:"full"})],
-   [F("ef","Demais achados","area",{tl:"Demais achados",rows:3})]
- ]}]},
- { id: "EC", letter: "EC", title: "EXAMES COMPLEMENTARES", nav: "Exames", daily: true, groups: [
-  { title: "Hemograma", rows: [
-   [F("ec_data","Data da coleta","date")],
-   [F("hb","Hb","num"), F("ht","Ht","num"), F("vcm","VCM","num"), F("hcm","HCM","num"), F("rdw","RDW","num"), F("retic","Reticulócitos","num")],
-   [F("leuco","Leucócitos","num",{w:"s"}), F("neut","Neutrófilos","num",{w:"s"}), F("linf","Linfócitos","num",{w:"s"}), F("plaq","Plaquetas","num",{w:"s"})]
-  ]},
-  { title: "Esfregaço de sangue periférico", rows: [
-   [F("esfregaco","Esfregaço de sangue periférico","area",{tl:"",rows:2})]
-  ]},
-  { title: "Hemólise", rows: [
-   [F("ldh","LDH","num"), F("bt","BT","num"), F("bi","BI","num"), F("hapto","Haptoglobina","num"), F("coombs","Coombs direto","text",{w:"s"})]
-  ]},
-  { title: "Ferro e vitaminas", rows: [
-   [F("ferro","Ferro sérico","num"), F("ferritina","Ferritina","num"), F("ist","IST","num",{u:"%"}), F("b12","B12","num"), F("folato","Folato","num")]
-  ]},
-  { title: "Coagulação", rows: [
-   [F("inr","TP/INR","num"), F("ttpa","TTPa (relação)","num"), F("fibrin","Fibrinogênio","num"), F("ddimero","D-dímero","num")]
-  ]},
-  { title: "Outros", rows: [
-   [F("ec","Outros exames (função renal/hepática, sorologias, imagem, mielograma, imunofenotipagem)","area",{tl:"",rows:3})]
-  ]}
- ]},
- { id: "AV", letter: "AV", title: "AVALIAÇÃO / IMPRESSÃO", nav: "Avaliação", daily: true, groups: [ { rows: [
-   [F("impressao","Impressão diagnóstica / raciocínio","area",{tl:"",rows:4})]
- ]}]},
- { id: "RE", letter: "RE", title: "RECOMENDAÇÕES", nav: "Recomendações", daily: true, groups: [ { rows: [
-   [F("rec","Recomendações","list",{n:8,tl:""})]
- ], hint: "Recomendações numeradas, uma por linha. Só os itens preenchidos entram no texto." }]},
- { id: "SG", letter: "SG", title: "SEGUIMENTO", nav: "Seguimento", groups: [ { rows: [
-   [F("seg","Conduta da interconsulta","radio",{tl:"",opts:["Acompanharemos o caso","Alta da interconsulta","Reavaliar se necessário"]})],
-   [F("reav","Reavaliação prevista / critérios para novo contato","text",{w:"full"})],
-   [F("discutido","Discutido com (preceptor / equipe assistente)","text",{w:"full"})]
- ]}]}
+ { id: "MO", letter: "IC", title: "MOMENTO DA INTERCONSULTA", nav: "Momento", noText: true, groups: [ { rows: [
+   [F("ic_mom","Momento da interconsulta","radio",{opts:IC_MOM,def:IC_MOM[0]})]
+ ], hint: "O formulário muda conforme o momento escolhido. Campos em comum entre os modelos são aproveitados." }]}
 ];
+const IC_DXSEL = { title: "Diagnóstico", rows: [
+   [F("ic_dx","Se diagnóstico de hematologia benigna","radio",{opts:IC_DX_BEN})],
+   [F("ic_dx","Se diagnóstico oncohematológico","radio",{opts:IC_DX_ONC})]
+ ], hint: "Escolha o diagnóstico para completar os dados específicos." };
+
+/* blocos reaproveitados */
+const IC_TRANSF = G("Transfusão", { h: "TRANSFUSÃO", m: "in" }, [
+   [F("tx_hc","Tipo de hemocomponente indicado","text",{w:"l"}), F("tx_prep","Preparo? Qual?","text",{w:"m",tl:"Preparo"})]
+ ]);
+const IC_PROF = G("Profilaxias", { h: "PROFILAXIAS", m: "in" }, [
+   [F("prof_at","Antitrombótica","text"), F("prof_av","Antiviral","text")],
+   [F("prof_ab","Antibacteriana","text"), F("prof_ah","Anti-helmínticos","text")]
+ ]);
+const icInterc = (h, atbLabel, outrasBlk) => G(h.charAt(0) + h.slice(1).toLowerCase(), { h, m: "bl" }, [
+   [F("int_foco","Foco infeccioso / qual episódio febril (1º? 2º?)","text",{w:"full",blk:"1) INFECCIOSA"})],
+   [F("int_atb",atbLabel,"area",{rows:2})],
+   [F("int_cult","Resultados de culturas positivas e culturas pendentes","area",{rows:2})],
+   [F("int_img","Exames de imagem realizados","area",{rows:2,ph:"Anotar as alterações objetivamente → em exames de reavaliação, anotar a melhora ou piora dos exames"})],
+   [F("int_outras","Outras intercorrências","area",{rows:2,tl:"",blk:outrasBlk,ph:"Anotar exames que comprovem resumidamente e conduta adotada"})]
+ ]);
+const IC_TRAT_BEN = G("Estratégia de tratamento", { h: "ESTRATÉGIA DE TRATAMENTO", m: "in" }, [
+   [F("trat","Tratamento instituído","area",{rows:2,ph:"Anotar tratamento instituído (data de início / dose)"})]
+ ]);
+const IC_TRAT_ONC = G("Estratégia de tratamento", { h: "ESTRATÉGIA DE TRATAMENTO", m: "bl" }, [
+   [F("qt","Qual a QT","text",{w:"l"}), F("qt_ini","Data de início","date"), F("qt_d","Hoje D","num",{tl:"Hoje D"})],
+   [F("qt_esq","Esquema e doses (se recebendo QT)","area",{rows:2,tl:"Esquema e doses"})]
+ ]);
+const IC_ANTROP = G("", { m: "lf" }, [
+   [F("peso","Peso","num",{w:"s",u:"kg"}), F("altura","Altura","num",{w:"s",u:"cm"}), F("sc","Superfície corpórea","calc",{w:"s",u:"m²",fn:"sc"})]
+ ], { hint: "Altura em cm. Superfície corpórea calculada pela fórmula de Mosteller: √(peso × altura / 3600)." });
+const IC_HLA = [F("hla","Possui pesquisa HLA?","radio",{opts:SN,tl:"Possui pesquisa HLA"}), F("irmaos","Número de irmãos","num"), F("hla_irm","Pesquisa realizada nos irmãos?","radio",{opts:SN,tl:"Pesquisa realizada nos irmãos"})];
+
+const IC_DX_BLOCKS = {
+ "Aplasia de medula óssea": [ G("Se aplasia de medula óssea", { h: "APLASIA DE MEDULA ÓSSEA", m: "bl" }, [
+   [F("dxe","Diagnóstico","text",{w:"full",ph:"data do mielograma"})],
+   [F("imunof","Imunofenotipagem","text",{w:"full"})],
+   [F("cariot","Cariótipo","text",{w:"full"})],
+   [F("bmo","Biópsia de medula óssea","text",{w:"full",ph:"anotar % de celularidade"})],
+   [F("hb","Hb","num"), F("leuco","Leuc totais","num",{w:"s"}), F("neut","Neutrófilos","num",{u:"%"}), F("plaq","Plaq","num",{w:"s"}), F("retic","Reticulócitos","num")],
+   [F("sorol","Sorologias","text"), F("bhcg","Beta HCG","text",{w:"s"}), F("reumato","Prova reumatológica","text"), F("carencial","Pesquisa carencial","text"), F("hemolise","Pesquisa de hemólise","text")],
+   [F("hpn","Pesquisa de clone de HPN","text",{w:"full"})],
+   [F("eco","ECO","text",{w:"full"})],
+   IC_HLA
+  ]), IC_TRAT_BEN, IC_ANTROP ],
+ "Púrpura trombocitopênica idiopática (PTI)": [ G("Se púrpura trombocitopênica idiopática (PTI)", { h: "PÚRPURA TROMBOCITOPÊNICA IDIOPÁTICA (PTI)", m: "bl" }, [
+   [F("dxe","Diagnóstico","text",{w:"full",ph:"data"})],
+   [F("hb","Hb","num"), F("leuco_dif","Leuc totais e diferencial","text"), F("plaq","Plaq","num",{w:"s"}), F("lamina","Lâmina de sangue periférico","text",{w:"l"})],
+   [F("sorol","Sorologias","text"), F("bhcg","Beta HCG","text",{w:"s"}), F("reumato","Prova reumatológica","text"), F("carencial","Pesquisa carencial","text"),
+    F("ldh","LDH","num"), F("vhs","VHS","num"), F("b2m","B2 microglobulina","num",{w:"s"}), F("aaf","Antifosfolípides","text")],
+   [F("prop_med","Propedêutica medular (se realizada)","area",{rows:2,tl:"Propedêutica medular"})]
+  ]), IC_TRAT_BEN, IC_ANTROP ],
+ "Trombose": [ G("Se interconsulta por trombose", { h: "TROMBOSE", m: "bl" }, [
+   [F("dxe","Diagnóstico","text",{w:"full",ph:"data, local e exame comprovatório"})],
+   [F("tromb_tipo","Trombose provocada ou idiopática","radio",{opts:["provocada","idiopática"],tl:"Trombose"})],
+   [F("tromb_hp","HP para eventos tromboembólicos","text",{w:"full"})],
+   [F("tromb_hf","História familiar para eventos tromboembólicos","text",{w:"full"})],
+   [F("tromb_fr","Fatores de risco para eventos tromboembólicos","text",{w:"full"})],
+   [F("tromb_prop","Propedêutica realizada","area",{rows:2})]
+  ]) ],
+ "Mieloma múltiplo": [ G("Se mieloma múltiplo", { h: "MIELOMA MÚLTIPLO", m: "bl" }, [
+   [F("dxe","Diagnóstico: data do diagnóstico","text",{tl:"Diagnóstico"}), F("ifx","Resultado da imunofixação","text",{w:"l",tl:"Imunofixação"}), F("ds","Escore prognóstico DS (Durie-Salmon)","text",{w:"s",tl:"DS"}), F("iss","ISS","text",{w:"xs"})],
+   [F("mielo","Mielograma: % de plasmócitos","text",{w:"full",tl:"Mielograma"})],
+   [F("bmo","Biópsia de MO","text",{w:"full"})],
+   [F("bx_out","Biópsia de outras lesões","text",{w:"full"})],
+   [F("crab","CRAB","text",{w:"full"})],
+   [F("efps","EFPs (pico monoclonal)","text",{tl:"EFPs"}), F("efpu","EFPu (pico monoclonal)","text",{tl:"EFPu"}), F("ifxs","IFXs","text",{w:"s"}), F("ifxu","IFXu","text",{w:"s"}), F("cll","Cadeias leves livres","text")],
+   [F("sorol","Sorologias","text",{w:"full"})]
+  ]), IC_TRAT_ONC, IC_ANTROP ],
+ "Linfoma": [ G("Se linfoma", { h: "LINFOMA", m: "bl" }, [
+   [F("dxe","Diagnóstico","area",{rows:2,ph:"local da biópsia e resultado AP e IHQ / data do diagnóstico"})],
+   [F("ann_arbor","Estadiamento Ann Arbor","text"), F("escores","Escores prognósticos conforme o diagnóstico","text",{w:"l"})],
+   [F("sorol","Sorologias","text"), F("ldh","LDH","num"), F("b2m","B2 microglobulina","num",{w:"s"}), F("vhs","VHS","num"), F("bhcg","Beta HCG","text",{w:"s"})],
+   [F("eco","ECO","text",{w:"full"})],
+   [F("img","Exames de imagem: alterações relevantes","area",{rows:2,tl:"Exames de imagem"})]
+  ]), IC_TRAT_ONC, IC_ANTROP ],
+ "Síndrome mielodisplásica": [ G("Se síndrome mielodisplásica", { h: "SÍNDROME MIELODISPLÁSICA", m: "bl" }, [
+   [F("dxe","Diagnóstico","text",{w:"full",ph:"data"})],
+   [F("ripss","Classificação de risco R-IPSS","text",{tl:"R-IPSS"}), F("ipss","IPSS","text",{w:"s"}), F("wpss","WPSS","text",{w:"s"})],
+   [F("mielo","Mielograma (% blastos)","text",{w:"full",tl:"Mielograma"})],
+   [F("imunof","Imunofenotipagem","text",{w:"full",ph:"marcadores que caracterizam a doença"})],
+   [F("cariot","Cariótipo","text",{w:"full"})],
+   [F("bmo","Biópsia de medula óssea","text",{w:"full"})],
+   [F("sorol","Sorologias","text",{w:"l"}), F("ldh","LDH","num")],
+   [F("eco","ECO","text",{w:"full"})]
+  ]), IC_TRAT_ONC, IC_ANTROP ],
+ "Leucemia aguda": [ G("Se leucemia aguda", { h: "LEUCEMIA AGUDA", m: "bl" }, [
+   [F("dxe","Diagnóstico","text",{w:"full",ph:"data do mielograma + % blastos"})],
+   [F("risco","Classificação de risco","text",{w:"full",ph:"favorável, intermediário, desconhecido"})],
+   [F("imunof","Imunofenotipagem","text",{w:"full",ph:"marcadores que caracterizam a leucemia"})],
+   [F("cariot","Cariótipo","text",{w:"full"})],
+   [F("biomol","Biologia molecular","text",{w:"full"})],
+   IC_HLA,
+   [F("sorol","Sorologias","text"), F("ldh","LDH","num"), F("b2m","B2 microglobulina","num",{w:"s"}), F("bhcg","Beta HCG","text",{w:"s"})],
+   [F("eco","ECO","text",{w:"full"})]
+  ]), IC_TRAT_ONC, IC_ANTROP ]
+};
+
+const IC_CD_PH = "- Anotar se suporte invasivo ou não.\n- Anotar condutas de antimicrobianos se febre/instabilidade.\n- Anotar suporte transfusional.\n- Anotar quais exames pendentes a cobrar (que não estão prontos e foram checados pelo colega).";
+
+const IC_FIRST = [
+ { id: "A1", letter: "1ª", title: "1ª AVALIAÇÃO", nav: "1ª avaliação", groups: [
+   G("", { h: "Motivo da interconsulta", m: "in" }, [[F("motivo_ic","Motivo da interconsulta","area",{rows:2})]]),
+   G("", { h: "HMA", m: "in" }, [[F("hma","HMA","area",{rows:5})]]),
+   G("HP", { h: "HP", m: "bl" }, [
+    [F("meds","Uso de medicamentos","area",{rows:2})],
+    [F("toxicos","Contato com substâncias tóxicas","text",{w:"full"})]
+   ]),
+   G("", { h: "Cidade de origem", m: "in" }, [[F("cidade","Cidade de origem","text",{w:"l"})]]),
+   G("", { h: "HSE", m: "in" }, [[F("hse","HSE","area",{rows:2})]]),
+   G("", { h: "HD", m: "in" }, [[F("hd","HD","area",{rows:2})]]),
+   G("", { h: "CD", m: "in" }, [[F("cd","CD","area",{rows:4,daily:true})]])
+ ]}
+];
+
+const IC_NEXT = [
+ { id: "AS", letter: "AS", title: "AVALIAÇÃO SUBSEQUENTE", nav: "Avaliação", groups: [
+   G("", { h: "HD", m: "in" }, [[F("hd_l","HD hematológicas enumeradas e com exames que justifiquem as hipóteses","list",{n:6,tl:""})]]),
+   IC_TRAT_BEN,
+   G("HP", { h: "HP", m: "bl" }, [[F("meds","Uso de medicamentos","area",{rows:2})]]),
+   IC_TRANSF,
+   IC_PROF,
+   icInterc("INTERCORRÊNCIAS ATUAIS", "ATB / datas de início e término", "2) OUTRAS INTERCORRÊNCIAS"),
+   G("", { h: "Intercorrências prévias", m: "in" }, [[F("int_prev","Intercorrências prévias","area",{rows:2})]]),
+   G("", { h: "Ao exame", m: "in" }, [[F("exame","Ao exame","area",{rows:3,daily:true})]]),
+   G("", { h: "CD", m: "in" }, [[F("cd","CD","area",{rows:4,daily:true})]])
+ ]}
+];
+
+function icAfter(dx){
+  return [
+   { id: "DX", letter: "DX", title: "APÓS DIAGNÓSTICO", nav: "Diagnóstico", groups: [
+     G("", { h: "DIAGNÓSTICO HEMATOLÓGICO", m: "in" }, [
+      [F("dx_hem","Diagnóstico hematológico","text",{w:"l",tl:""}), F("dx_data","Data do diagnóstico","date")]
+     ]),
+     IC_DXSEL,
+     ...(IC_DX_BLOCKS[dx] || [])
+   ]},
+   { id: "IN", letter: "IN", title: "INTERNAÇÃO", nav: "Internação", groups: [
+     G("", { h: "OUTRAS COMORBIDADES", m: "in" }, [[F("comorb","Outras comorbidades","area",{rows:2})]]),
+     G("Cateter", { h: "CATETER", m: "in" }, [
+      [F("cat","Possui acesso central?","radio",{opts:["Sim","Não"],tl:"Possui acesso central"}), F("cat_ins","Data da inserção","date"), F("cat_ret","Data da retirada","date")],
+      [F("cat_mot","Motivo da retirada","text",{w:"full"})]
+     ]),
+     IC_TRANSF,
+     IC_PROF,
+     icInterc("INTERCORRÊNCIAS DA INTERNAÇÃO", "ATB / datas de início e tempo de uso", "2) OUTRAS")
+   ]},
+   { id: "EV", letter: "EV", title: "EVOLUÇÃO", nav: "Evolução", groups: [
+     G("", { h: "DE", m: "in" }, [[F("de","DE","area",{rows:2})]]),
+     G("", { h: "EVOLUÇÃO", m: "in" }, [[F("evolucao","Evolução","area",{rows:3,daily:true})]]),
+     G("", { h: "AO EXAME", m: "in" }, [[F("exame","Ao exame","area",{rows:3,daily:true})]]),
+     G("", { h: "CD", m: "in" }, [[F("cd","CD","area",{rows:5,ph:IC_CD_PH,daily:true})]])
+   ]}
+  ];
+}
+
+/* modelo da IC para os dados do paciente */
+function icModel(d){
+  const mom = IC_MOM.includes(d.ic_mom) ? d.ic_mom : IC_MOM[0];
+  if (mom === IC_MOM[0]) return [...IC_HEAD, ...IC_FIRST];
+  if (mom === IC_MOM[1]) return [...IC_HEAD, ...IC_NEXT];
+  return [...IC_HEAD, ...icAfter(d.ic_dx)];
+}
+const icSig = d => (IC_MOM.includes(d.ic_mom) ? d.ic_mom : IC_MOM[0]) + "|" + (d.ic_mom === IC_MOM[2] ? d.ic_dx || "" : "");
+
+/* texto do parecer, no formato da folha de rosto */
+function icText(d){
+  const out = ["# INTERCONSULTA – HEMATOLOGIA #"];
+  const ind = v => v.replace(/\n/g, "\n  ");
+  icModel(d).forEach(sec => {
+    if (sec.noText) return;
+    sec.groups.forEach(g => {
+      const tx = g.tx; if (!tx) return;
+      const lines = [];
+      const lab = f => f.tl != null ? f.tl : f.l;
+      const pair = f => { const v = valueText(f, d); return v ? (lab(f) ? `${lab(f)}: ${v}` : v) : ""; };
+      if (tx.m === "in"){
+        const fs = g.rows.flat();
+        const vals = fs.length === 1 ? [valueText(fs[0], d)].filter(Boolean)
+          : fs.map(f => f.t === "list" ? "" : pair(f)).filter(Boolean);
+        if (fs.length === 1 && fs[0].t === "list"){
+          const items = listKeys(fs[0]).map(k => String(d[k] || "").trim()).filter(Boolean);
+          if (items.length) lines.push(tx.h + ":", ...items.map((x, i) => `${i + 1}. ${ind(x)}`));
+        } else if (vals.length) lines.push(`${tx.h}: ${vals.join(" / ")}`);
+      } else if (tx.m === "bl"){
+        let blk = null;
+        g.rows.forEach(r => {
+          if (r[0].blk) blk = r[0].blk;
+          const v = r.map(pair).filter(Boolean).join(" / ");
+          if (!v) return;
+          if (blk){ lines.push(blk); blk = null; }
+          lines.push("- " + ind(v));
+        });
+        if (lines.length) lines.unshift(tx.h + ":");
+      } else if (tx.m === "lf"){
+        g.rows.flat().forEach(f => { const v = pair(f); if (v) lines.push(v); });
+      }
+      if (lines.length) out.push("", ...lines);
+    });
+  });
+  return out.join("\n");
+}
 
 /* ---------------- REFERÊNCIAS ---------------- */
 const REFS_CTI = [
@@ -743,10 +901,19 @@ const REFS_ENF = [
  "Conselho Federal de Medicina. Resolução CFM nº 1.638/2002. Define prontuário médico e torna obrigatória a criação da Comissão de Revisão de Prontuários nas instituições de saúde."
 ];
 const REFS_IC = [
+ "Modelo de evoluções da Hematologia – folha de rosto da interconsulta (1ª avaliação, avaliações subsequentes e após o diagnóstico). Residência; documento fornecido pelo autor.",
  "Kaushansky K, Prchal JT, Burns LJ, Lichtman MA, Levi M, Linch DC. <i>Williams Hematology</i>. 10ª ed. McGraw Hill; 2021.",
- "Bain BJ. Diagnosis from the blood smear. <i>N Engl J Med</i>. 2005;353(5):498-507.",
+ "Mosteller RD. Simplified calculation of body-surface area. <i>N Engl J Med</i>. 1987;317(17):1098. (Superfície corpórea)",
+ "Durie BGM, Salmon SE. A clinical staging system for multiple myeloma. <i>Cancer</i>. 1975;36(3):842-54. (DS)",
+ "Greipp PR, San Miguel J, Durie BGM, et al. International staging system for multiple myeloma. <i>J Clin Oncol</i>. 2005;23(15):3412-20. (ISS)",
+ "Rajkumar SV, Dimopoulos MA, Palumbo A, et al. International Myeloma Working Group updated criteria for the diagnosis of multiple myeloma. <i>Lancet Oncol</i>. 2014;15(12):e538-48. (CRAB)",
+ "Carbone PP, Kaplan HS, Musshoff K, Smithers DW, Tubiana M. Report of the Committee on Hodgkin's Disease Staging Classification. <i>Cancer Res</i>. 1971;31(11):1860-1. (Ann Arbor)",
+ "Cheson BD, Fisher RI, Barrington SF, et al. Recommendations for initial evaluation, staging, and response assessment of Hodgkin and non-Hodgkin lymphoma: the Lugano classification. <i>J Clin Oncol</i>. 2014;32(27):3059-68.",
+ "Greenberg P, Cox C, LeBeau MM, et al. International scoring system for evaluating prognosis in myelodysplastic syndromes. <i>Blood</i>. 1997;89(6):2079-88. (IPSS)",
+ "Greenberg PL, Tuechler H, Schanz J, et al. Revised international prognostic scoring system for myelodysplastic syndromes. <i>Blood</i>. 2012;120(12):2454-65. (R-IPSS)",
+ "Malcovati L, Germing U, Kuendgen A, et al. Time-dependent prognostic scoring system for predicting survival and leukemia evolution in myelodysplastic syndromes. <i>J Clin Oncol</i>. 2007;25(23):3503-10. (WPSS)",
+ "Döhner H, Wei AH, Appelbaum FR, et al. Diagnosis and management of AML in adults: 2022 recommendations from an international expert panel on behalf of the ELN. <i>Blood</i>. 2022;140(12):1345-77. (Classificação de risco na LMA)",
  "Goldman L, Lee T, Rudd P. Ten commandments for effective consultations. <i>Arch Intern Med</i>. 1983;143(9):1753-5.",
- "Salerno SM, Hurst FP, Halvorson S, Mercado DL. Principles of effective consultation: an update for the 21st-century consultant. <i>Arch Intern Med</i>. 2007;167(3):271-5.",
  "Conselho Federal de Medicina. Resolução CFM nº 1.638/2002. Define prontuário médico e torna obrigatória a criação da Comissão de Revisão de Prontuários nas instituições de saúde."
 ];
 
@@ -754,9 +921,14 @@ const TPL = {
   cti: { tab: "CTI", title: "ISBAR · CTI", textTitle: "ISBAR – CTI", btn: "Gerar texto ISBAR", model: CTI, refs: REFS_CTI, grpWord: "sistemas" },
   enf: { tab: "Enfermaria", title: "Evolução · Clínica Médica", textTitle: "EVOLUÇÃO – CLÍNICA MÉDICA", btn: "Gerar evolução", model: ENF, refs: REFS_ENF,
          newDay: "Nova evolução do dia", newDayMsg: "Os campos de Evolução diária, Dados vitais e Exame físico serão apagados, a data passa para hoje e o DIH aumenta em 1. Problemas, contexto, HPP, MUC, exames e condutas são mantidos." },
-  ic:  { tab: "IC Hemato", title: "Interconsulta · Hematologia", textTitle: "INTERCONSULTA – HEMATOLOGIA", btn: "Gerar parecer", model: IC, refs: REFS_IC,
-         newDay: "Nova avaliação (seguimento)", newDayMsg: "Os campos de evolução desde a última avaliação, exame físico, exames, avaliação e recomendações serão apagados, a data passa para hoje e o tipo muda para Seguimento. Identificação, motivo, resumo, HPP e medicações são mantidos." }
+  ic:  { tab: "IC Hemato", title: "Interconsulta · Hematologia", textTitle: "INTERCONSULTA – HEMATOLOGIA", btn: "Gerar parecer", build: icModel, sig: icSig, text: icText, refs: REFS_IC,
+         newDay: "Nova avaliação", newDayMsg: "Os campos Evolução, Ao exame e CD serão apagados, a data passa para hoje e o “Hoje D” da QT avança pelos dias passados. Se o momento for 1ª avaliação, passa para Avaliações subsequentes. Os demais campos são mantidos." }
 };
+
+/* modelo do formulário (fixo, ou montado a partir dos dados do paciente) */
+const modelOf = (t, d) => t.build ? t.build(d || {}) : t.model;
+const sigOf = (t, d) => t.sig ? t.sig(d || {}) : "";
+const ALL_IC_FIELDS = () => [...IC_HEAD, ...IC_FIRST, ...IC_NEXT, ...icAfter("")].concat(Object.values(IC_DX_BLOCKS).map(gs => ({ groups: gs })));
 
 const DEFAULT_W = { text:"m", num:"xs", area:"full", date:"s", radio:"auto", check:"full", calc:"xs", pair:"s", gcs:"m", list:"full", problems:"full" };
 const PROB_SUBS = [["apr","Apresentação"],["etio","Etiologia"],["prop","Propedêutica"],["plano","Plano de cuidados"]];
@@ -774,7 +946,10 @@ function normalizeStore(st){
   if (!st.currentBy || typeof st.currentBy !== "object") st.currentBy = {};
   if (st.current && !st.currentBy.cti) st.currentBy.cti = st.current;
   delete st.current;
-  for (const p of Object.values(st.patients)) { if (!p.data) p.data = {}; if (!TPL[p.tpl]) p.tpl = "cti"; if (!p.updated) p.updated = 1; }
+  for (const p of Object.values(st.patients)) {
+    if (!p.data) p.data = {}; if (!TPL[p.tpl]) p.tpl = "cti"; if (!p.updated) p.updated = 1;
+    if (p.tpl === "ic" && !p.data.ic_mom && p.data.tipo === "Seguimento") p.data.ic_mom = IC_MOM[1];   // modelo anterior da IC
+  }
   if (!TPL[st.mode]) st.mode = "cti";
   if (!st.settings || typeof st.settings !== "object") st.settings = {};
   return st;
@@ -867,6 +1042,7 @@ const CALC = {
   dp(d){ const pl = num(d.pplato), pe = num(d.peep); return (isFinite(pl) && isFinite(pe)) ? fmt(pl - pe, 0) : ""; },
   cst(d){ const vc = num(d.vc), dp = num(d.pplato) - num(d.peep); return (vc > 0 && dp > 0) ? fmt(vc/dp, 1) : ""; },
   pf(d){ const po = num(d.pao2); let fi = num(d.fio2); if (!(fi > 0)) fi = num(d.cnaf_fio2); if (!(po > 0 && fi > 0)) return ""; if (fi > 1) fi = fi/100; return fi <= 1 ? fmt(po/fi, 0) : ""; },
+  sc(d){ const p = num(d.peso), h = num(d.altura); return (p > 0 && h > 0) ? fmt(Math.sqrt(p * h / 3600), 2) : ""; },   // Mosteller
   dkgh(d){ const u = num(d.diurese), p = num(d.peso); return (u >= 0 && p > 0) ? fmt(u/p/24, 2) : ""; },
   ag(d){ const na = num(d.na), cl = num(d.cl), hc = num(d.hco3); return [na,cl,hc].every(isFinite) ? fmt(na - cl - hc, 1) : ""; },
   gcs(d){
@@ -958,7 +1134,7 @@ function renderField(f){
       const opts = el("div", { class: "opts" });
       f.opts.forEach(o => {
         opts.append(el("label", { class: "opt" },
-          el("input", { type: f.t === "radio" ? "radio" : "checkbox", name: f.k, value: o, "data-k": f.k, "data-multi": f.t === "check" ? "1" : null }),
+          el("input", { type: f.t === "radio" ? "radio" : "checkbox", name: f.k, value: o, "data-k": f.k, "data-multi": f.t === "check" ? "1" : null, "data-def": f.def || null }),
           el("span", { text: o })));
       });
       fs.append(opts);
@@ -967,12 +1143,15 @@ function renderField(f){
   }
 }
 
+let renderedSig = null;
 function renderForm(){
   const t = TPL[store.mode];
   const root = $("#form");
+  const model = modelOf(t, D());
+  renderedSig = store.mode + "|" + sigOf(t, D());
   root.replaceChildren();
   fieldsIndex = [];
-  t.model.forEach(sec => {
+  model.forEach(sec => {
     const body = el("div", { class: "sec-body" });
     const letter = el("span", { class: "letter" + (sec.letter.length > 2 ? " l3" : sec.letter.length > 1 ? " l2" : ""), text: sec.letter });
     const secEl = el("section", { class: "sec", id: "sec-" + sec.id },
@@ -1003,7 +1182,7 @@ function renderForm(){
   // cabeçalho, navegação, rodapé e botões do modelo ativo
   document.title = "Anamnesia · " + t.tab;
   document.querySelectorAll("#modes button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === store.mode)));
-  $("#jump").replaceChildren(...t.model.map(s => el("a", { href: "#sec-" + s.id, text: s.nav })));
+  $("#jump").replaceChildren(...model.map(s => el("a", { href: "#sec-" + s.id, text: s.nav })));
   $("#refList").replaceChildren(...t.refs.map(r => { const li = el("li"); li.innerHTML = r; return li; }));
   $("#btnText").textContent = t.btn;
   $("#dlgTitle").textContent = t.btn.replace(/^Gerar /, "").replace(/^./, c => c.toUpperCase());
@@ -1034,11 +1213,12 @@ function onAddProb(e){
 }
 
 function fillForm(){
+  if (renderedSig !== store.mode + "|" + sigOf(TPL[store.mode], D())){ const y = window.scrollY; renderForm(); window.scrollTo({ top: y }); }
   const d = D();
   document.querySelectorAll("#form [data-k]").forEach(inp => {
     const k = inp.dataset.k, v = d[k];
     if (inp.type === "checkbox") inp.checked = Array.isArray(v) && v.includes(inp.value);
-    else if (inp.type === "radio") { inp.checked = v === inp.value; inp.dataset.was = inp.checked ? "1" : ""; }
+    else if (inp.type === "radio") { inp.checked = (v == null ? inp.dataset.def : v) === inp.value; inp.dataset.was = inp.checked ? "1" : ""; }
     else inp.value = v == null ? "" : v;
   });
   updateProbs();
@@ -1059,6 +1239,7 @@ function onInput(e){
     if (inp.value === "") delete d[k]; else d[k] = inp.value;
   }
   if (JSON.stringify(d[k] == null ? null : d[k]) === before) return;   // nada mudou (ex.: evento "change" ao sair do campo)
+  if (renderedSig !== store.mode + "|" + sigOf(TPL[store.mode], d)) fillForm();
   refreshDerived();
   if (k === "nome" || k === "leito") refreshSelect();
   changed();
@@ -1070,7 +1251,7 @@ function onRadioClick(e){
   if (inp.type !== "radio" || !cur()) return;
   if (inp.dataset.was === "1"){
     inp.checked = false; delete cur().data[inp.dataset.k]; inp.dataset.was = "";
-    refreshDerived(); changed();
+    fillForm(); changed();
     return;
   }
   document.querySelectorAll(`#form input[name="${inp.name}"]`).forEach(x => x.dataset.was = x.checked ? "1" : "");
@@ -1137,13 +1318,14 @@ function valueText(f, d){
 function buildText(){
   const t = TPL[store.mode];
   const d = D();
+  if (t.text) return t.text(d);
   const out = [];
   const head = [t.textTitle];
   if (d.leito) head.push("Leito " + d.leito);
   if (d.data_aval) head.push(brDate(d.data_aval));
   out.push(head.join(" | "));
 
-  t.model.forEach(sec => {
+  modelOf(t, d).forEach(sec => {
     const secLines = [];
     sec.groups.forEach(g => {
       const gLines = [];
@@ -1220,10 +1402,14 @@ function newDay(){
   if (!t.newDay || !p) return;
   if (!confirm(`${t.newDay} para “${ptLabel(p)}”?\n\n${t.newDayMsg}`)) return;
   const d = p.data;
-  eachField(t.model, (f, sec) => { if (sec.daily || f.daily) keysOf(f).forEach(k => delete d[k]); });
+  eachField(store.mode === "ic" ? ALL_IC_FIELDS() : t.model, (f, sec) => { if (sec.daily || f.daily) keysOf(f).forEach(k => delete d[k]); });
   const today = todayISO();
   if (store.mode === "enf" && d.data_aval && d.data_aval !== today){ const n = num(d.dih); if (isFinite(n)) d.dih = String(n + 1); }
-  if (store.mode === "ic") d.tipo = "Seguimento";
+  if (store.mode === "ic"){
+    if (!d.ic_mom || d.ic_mom === IC_MOM[0]) d.ic_mom = IC_MOM[1];
+    const n = num(d.qt_d), dias = d.data_aval ? Math.round((new Date(today + "T12:00") - new Date(d.data_aval + "T12:00")) / 864e5) : 0;
+    if (isFinite(n) && dias > 0) d.qt_d = String(n + dias);
+  }
   d.data_aval = today;
   fillForm(); changed(); saveNow(); toast("Pronto para a evolução de hoje");
 }
@@ -1783,7 +1969,7 @@ function ptSnippet(p){
   const d = p.data || {};
   if (p.tpl === "cti") return d.motivo || d.dx1 || "";
   if (p.tpl === "enf") return d.prob_1 || d.motivo || "";
-  return d.motivo_ic || "";
+  return d.dx_hem || d.motivo_ic || "";
 }
 function rxSuggestions(p){
   const it = p.presc && Array.isArray(p.presc.items) ? p.presc.items : [];
@@ -2107,7 +2293,7 @@ function menuState(){
   const p = cur(), t = p ? TPL[p.tpl] : null;
   const nd = $('[data-act="newday"]');
   nd.hidden = !(view === "chart" && t && t.newDay); if (t && t.newDay) nd.textContent = t.newDay;
-  const hasGroups = !!(t && t.model.some(s => s.groups.some(g => g.title)));
+  const hasGroups = !!(t && modelOf(t, p.data).some(s => s.groups.some(g => g.title)));
   $('[data-act="expand"]').hidden = $('[data-act="collapse"]').hidden = !(view === "chart" && hasGroups);
 }
 
