@@ -45,6 +45,7 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 ## Pendências
 - **Enforce HTTPS no GitHub Pages:** o DNS está correto (4 registros A apontando para o GitHub e CNAME `www` para `geradorevolucao.github.io`), mas o certificado ainda não tinha sido emitido. Sugestão: remover e salvar de novo o domínio em Settings → Pages.
 - **Supabase:** criar o projeto, rodar `supabase-setup.sql`, definir o Site URL como `https://anamnesia.net.br` e desativar novos cadastros depois de criar a conta.
-- **Em aberto com o autor:**
-  - grafia "Anamnesia" ou "Anamnésia";
-  - manter ou não a seção Condutas na enfermaria, que pode ficar repetitiva com o Plano de cuidados.
+
+## Decisões do autor
+- Grafia: **"Anamnesia"**, sem acento.
+- Manter o web app como está, inclusive a seção Condutas da enfermaria, até o autor pedir mudanças.
