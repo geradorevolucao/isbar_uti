@@ -22,6 +22,10 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 ## Modelos de evolução (objeto `TPL`)
 - **`cti`, ISBAR:** I/S/B/A/R, com a avaliação por sistemas e o checklist FAST HUGS BID. Campos calculados: PAM; Glasgow total (V = T no paciente intubado); peso predito (fórmula ARDSNet); VC em mL/kg de peso predito; driving pressure; complacência; P/F; diurese em mL/kg/h; ânion gap.
 - **`enf`, Enfermaria de clínica médica:** Lista de problemas, Contexto, HPP, MUC, Evolução diária, Dados vitais, Exame físico, Exames complementares e Condutas. Cada problema tem 4 subtópicos: Apresentação, Etiologia, Propedêutica e Plano de cuidados (campo do tipo `problems`). "Nova evolução do dia" apaga os campos diários e soma 1 ao DIH.
+  - **Admissão / Evolução** (campo `enf_mom`, modelo dinâmico `enfModel`). Fichas novas nascem em Admissão (`newData`); fichas sem a marca, anteriores a essa mudança, ficam em Evolução.
+  - **Admissão** (modelo do autor, texto por `admText`): Situação (cards com Apresentação, Etiologia, Propedêutica externa, Propedêutica interna e Plano de cuidados; título vazio sai como "Situação a esclarecer"), Contexto, HPP, MUC, Alergias, HF, HSE, Cirurgias prévias, Exames externos (a) Laboratório, b) Imagem) e Condutas em lista com "- ". O texto usa os títulos "| Situação:", "| Contexto:" etc. e não imprime a identificação.
+  - As situações usam a mesma chave da lista de problemas (`prob`). Em "Nova evolução do dia" a ficha passa para Evolução: a propedêutica externa e interna é copiada para "Propedêutica" (se vazia) e título vazio vira "Situação a esclarecer". Contexto, HPP (`comorb`), MUC, alergias e cirurgias também são compartilhados.
+  - O campo `problems` aceita `subs` (subtópicos), `item` (nome do card) e `itemPh` (exemplo do título).
 - **`ic`, Interconsulta de hematologia:** segue a folha de rosto da interconsulta da residência (docx enviado pelo autor). O modelo é dinâmico (`build: icModel`): o campo `ic_mom` escolhe entre 1ª avaliação, Avaliações subsequentes e Após diagnóstico; neste último, `ic_dx` escolhe o bloco da doença (aplasia de medula óssea, PTI, trombose, mieloma múltiplo, linfoma, SMD, leucemia aguda), seguido de Internação (comorbidades, cateter, transfusão, profilaxias, intercorrências) e Evolução (DE, evolução, ao exame, CD).
   - Campos com o mesmo significado usam a mesma chave em todos os modelos, para os dados serem aproveitados na troca.
   - O texto (`icText`) segue o formato da folha: começa com `# INTERCONSULTA – HEMATOLOGIA #`. As seções Identificação e Momento não entram no texto. Os grupos têm `tx: { h, m }` (`in`: uma linha; `bl`: título e linhas "- "; `lf`: um campo por linha) e os campos podem ter `blk` (subtítulo do bloco, como "1) INFECCIOSA").
@@ -55,6 +59,5 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 ## Decisões do autor
 - Fotos do encaminhamento (exames de laboratório e imagem): a extração é feita pelo chat com o Claude, não dentro do site.
 - Posologias pré-definidas da prescrição: colocadas direto no app, com doses usuais de adulto e referências, todas editáveis.
-- Enfermaria: o autor vai enviar a configuração da parte de **admissão** (diferente da evolução, sem lista de problemas consolidada).
 - Grafia: **"Anamnesia"**, sem acento.
 - Manter o web app como está, inclusive a seção Condutas da enfermaria, até o autor pedir mudanças.

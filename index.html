@@ -679,6 +679,69 @@ const ENF = [
  ]}]}
 ];
 
+/* ---------------- ENFERMARIA: ADMISSÃO ----------------
+   Modelo enviado pelo autor. O momento (enf_mom) escolhe entre Admissão e Evolução (modelo ENF acima).
+   Campos com o mesmo significado usam a mesma chave nos dois modelos (prob, contexto, comorb, muc,
+   alergias, cirurgias), para os dados passarem da admissão para a evolução. */
+const ENF_MOM_OPTS = ["Admissão", "Evolução"];
+const ENF_MOM = { id: "MO", letter: "MO", title: "MOMENTO", nav: "Momento", noText: true, groups: [ { rows: [
+   [F("enf_mom","Momento","radio",{opts:ENF_MOM_OPTS,def:"Evolução"})]
+ ], hint: "Na admissão ainda não há lista de problemas consolidada: use Situação. Em “Nova evolução do dia”, a ficha passa para Evolução e as situações viram a lista de problemas." }]};
+const ADM_SUBS = [["apr","Apresentação"],["etio","Etiologia"],["prop_ext","Propedêutica externa"],["prop_int","Propedêutica interna"],["plano","Plano de cuidados"]];
+const ENF_ADM = [
+ { id: "SI", letter: "SI", title: "SITUAÇÃO", nav: "Situação", groups: [ { rows: [
+   [F("prob","Situação","problems",{n:12,subs:ADM_SUBS,item:"Situação",itemPh:"Situação a esclarecer"})]
+ ], hint: "Uma situação por card. Se o título ficar vazio, sai como “Situação a esclarecer”." }]},
+ { id: "CT", letter: "CT", title: "CONTEXTO", nav: "Contexto", groups: [ { rows: [
+   [F("contexto","Contexto","area",{rows:5,ph:"Trata-se de paciente de, X anos, ..."})]
+ ]}]},
+ { id: "HP", letter: "HPP", title: "HISTÓRIA PREGRESSA", nav: "HPP", groups: [ { rows: [
+   [F("comorb","HPP","area",{rows:2,ph:"Doença 1; Doença 2"})],
+   [F("muc","MUC","area",{rows:2,ph:"Medicamento 1 X mg; Medicamento 2 Y mg"})],
+   [F("alergias","Alergias","text",{w:"full"})],
+   [F("hf","HF","text",{w:"full"})],
+   [F("hse","HSE","text",{w:"full"})],
+   [F("cirurgias","Cirurgias prévias","text",{w:"full"})]
+ ]}]},
+ { id: "EX", letter: "EX", title: "EXAMES EXTERNOS", nav: "Exames", groups: [ { rows: [
+   [F("ext_lab","a) Laboratório","area",{rows:4})],
+   [F("ext_img","b) Imagem","area",{rows:3})]
+ ], hint: "Para extrair os exames de fotos do encaminhamento, envie as fotos no chat do Claude e cole aqui o texto devolvido." }]},
+ { id: "CD", letter: "CD", title: "CONDUTAS", nav: "Condutas", groups: [ { rows: [
+   [F("cond","Condutas","list",{n:10})]
+ ]}]}
+];
+// fichas novas nascem em Admissão (newData); fichas sem a marca, criadas antes da admissão existir, ficam em Evolução
+const enfMom = d => ENF_MOM_OPTS.includes(d.enf_mom) ? d.enf_mom : "Evolução";
+const newData = tpl => tpl === "enf" ? { data_aval: todayISO(), enf_mom: "Admissão" } : { data_aval: todayISO() };
+const enfModel = d => enfMom(d) === "Admissão" ? [ENF[0], ENF_MOM, ...ENF_ADM] : [ENF[0], ENF_MOM, ...ENF.slice(1)];
+
+/* texto da admissão, no formato do autor */
+function admText(d){
+  if (enfMom(d) !== "Admissão") return null;
+  const v = k => String(d[k] == null ? "" : d[k]).trim();
+  const blocks = [];
+  const fP = ENF_ADM[0].groups[0].rows[0][0];
+  const sit = [];
+  let n = 0;
+  for (let i = 1; i <= fP.n; i++){
+    if (!probFilled(fP, d, i)) continue;
+    sit.push((sit.length ? "\n" : "") + `${++n}. ${v("prob_" + i) || "Situação a esclarecer"}`);
+    ADM_SUBS.forEach(([sk, sl]) => { const x = v(`prob_${i}_${sk}`); if (x) sit.push(` - ${sl}: ${x.replace(/\n/g, "\n   ")}`); });
+  }
+  if (sit.length) blocks.push("| Situação:\n\n" + sit.join("\n"));
+  if (v("contexto")) blocks.push("| Contexto:\n" + v("contexto"));
+  [["comorb","HPP"],["muc","MUC"],["alergias","Alergias"],["hf","HF"],["hse","HSE"],["cirurgias","Cirurgias prévias"]]
+    .forEach(([k, l]) => { if (v(k)) blocks.push(`| ${l}: ${v(k)}`); });
+  const ex = [];
+  if (v("ext_lab")) ex.push("a) Laboratório:\n" + v("ext_lab"));
+  if (v("ext_img")) ex.push("b) Imagem:\n" + v("ext_img"));
+  if (ex.length) blocks.push("| Exames externos:\n" + ex.join("\n\n"));
+  const cd = Array.from({ length: 10 }, (_, i) => v("cond_" + (i + 1))).filter(Boolean);
+  if (cd.length) blocks.push("| Condutas:\n" + cd.map(x => "- " + x).join("\n"));
+  return blocks.join("\n\n");
+}
+
 /* ---------------- INTERCONSULTA – HEMATOLOGIA ----------------
    Modelos da folha de rosto da interconsulta da Hematologia (residência):
    1ª avaliação, avaliações subsequentes e, após o diagnóstico, um bloco por doença.
@@ -947,8 +1010,8 @@ const REFS_IC = [
 
 const TPL = {
   cti: { tab: "CTI", title: "ISBAR · CTI", textTitle: "ISBAR – CTI", btn: "Gerar texto ISBAR", model: CTI, refs: REFS_CTI, grpWord: "sistemas" },
-  enf: { tab: "Enfermaria", title: "Evolução · Clínica Médica", textTitle: "EVOLUÇÃO – CLÍNICA MÉDICA", btn: "Gerar evolução", model: ENF, refs: REFS_ENF,
-         newDay: "Nova evolução do dia", newDayMsg: "Os campos de Evolução diária, Dados vitais e Exame físico serão apagados, a data passa para hoje e o DIH aumenta em 1. Problemas, contexto, HPP, MUC, exames e condutas são mantidos." },
+  enf: { tab: "Enfermaria", title: "Clínica Médica", textTitle: "EVOLUÇÃO – CLÍNICA MÉDICA", btn: "Gerar texto", model: ENF, build: enfModel, sig: enfMom, text: admText, refs: REFS_ENF,
+         newDay: "Nova evolução do dia", newDayMsg: "Os campos de Evolução diária, Dados vitais e Exame físico serão apagados, a data passa para hoje e o DIH aumenta em 1. Se a ficha estiver em Admissão, passa para Evolução e as situações viram a lista de problemas. Problemas, contexto, HPP, MUC, exames e condutas são mantidos." },
   ic:  { tab: "IC Hemato", title: "Interconsulta · Hematologia", textTitle: "INTERCONSULTA – HEMATOLOGIA", btn: "Gerar parecer", build: icModel, sig: icSig, text: icText, refs: REFS_IC,
          newDay: "Nova avaliação", newDayMsg: "Os campos Evolução, Ao exame e CD serão apagados, a data passa para hoje e o “Hoje D” da QT avança pelos dias passados. Se o momento for 1ª avaliação, passa para Avaliações subsequentes. Os demais campos são mantidos." }
 };
@@ -1012,7 +1075,7 @@ const cur = () => store.patients[store.currentBy[store.mode]];
 const idsOf = tpl => Object.keys(store.patients).filter(id => store.patients[id].tpl === tpl);
 function newPatient(tpl = store.mode){
   const id = uid();
-  store.patients[id] = { tpl, updated: Date.now(), data: { data_aval: todayISO() } };
+  store.patients[id] = { tpl, updated: Date.now(), data: newData(tpl) };
   store.currentBy[tpl] = id;
   return id;
 }
@@ -1046,7 +1109,8 @@ function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add
 function setStatus(msg){ $("#status").textContent = msg; }
 const D = () => (cur() ? cur().data : {});
 const listKeys = f => Array.from({ length: f.n }, (_, i) => f.k + "_" + (i + 1));
-const probKeysOne = (f, i) => [f.k + "_" + i, ...PROB_SUBS.map(([s]) => f.k + "_" + i + "_" + s)];
+const subsOf = f => f.subs || PROB_SUBS;
+const probKeysOne = (f, i) => [f.k + "_" + i, ...subsOf(f).map(([s]) => f.k + "_" + i + "_" + s)];
 const probKeys = f => Array.from({ length: f.n }, (_, i) => probKeysOne(f, i + 1)).flat();
 const probFilled = (f, d, i) => probKeysOne(f, i).some(k => d[k] != null && String(d[k]).trim() !== "");
 function keysOf(f){
@@ -1134,9 +1198,9 @@ function renderField(f){
         const card = el("div", { class: "prob", "data-i": String(i) },
           el("div", { class: "prob-h" },
             el("span", { class: "n", text: i + "." }),
-            el("div", { class: "inp" }, inputFor(f.k + "_" + i, { autocapitalize: "sentences", placeholder: "Problema " + i, "aria-label": "Problema " + i }))));
+            el("div", { class: "inp" }, inputFor(f.k + "_" + i, { autocapitalize: "sentences", placeholder: f.itemPh || (f.item || "Problema") + " " + i, "aria-label": (f.item || "Problema") + " " + i }))));
         const grid = el("div", { class: "prob-subs" });
-        PROB_SUBS.forEach(([sk, sl]) => {
+        subsOf(f).forEach(([sk, sl]) => {
           const k = f.k + "_" + i + "_" + sk;
           grid.append(el("div", { class: "fld" },
             el("label", { for: "f_" + k, text: sl }),
@@ -1145,7 +1209,7 @@ function renderField(f){
         card.append(grid);
         box.append(card);
       }
-      box.append(el("button", { class: "btn add-prob", type: "button", "data-add-prob": f.k, text: "+ Adicionar problema" }));
+      box.append(el("button", { class: "btn add-prob", type: "button", "data-add-prob": f.k, text: "+ Adicionar " + (f.item || "problema").toLowerCase() }));
       return box;
     }
     case "list": {
@@ -1224,7 +1288,8 @@ function updateProbs(){
   const d = D();
   document.querySelectorAll("#form [data-probs]").forEach(box => {
     const k = box.dataset.probs, max = Number(box.dataset.max);
-    const f = { k, n: max };
+    const fi = fieldsIndex.find(x => x.f.k === k && x.f.t === "problems");
+    const f = fi ? fi.f : { k, n: max };
     let last = 0; for (let i = 1; i <= max; i++) if (probFilled(f, d, i)) last = i;
     const shown = Math.min(max, Math.max(1, last, Number(d[k + "_n"]) || 0));
     box.querySelectorAll(".prob").forEach(c => c.hidden = Number(c.dataset.i) > shown);
@@ -1346,7 +1411,7 @@ function valueText(f, d){
 function buildText(){
   const t = TPL[store.mode];
   const d = D();
-  if (t.text) return t.text(d);
+  if (t.text){ const r = t.text(d); if (r != null) return r; }
   const out = [];
   const head = [t.textTitle];
   if (d.leito) head.push("Leito " + d.leito);
@@ -1354,6 +1419,7 @@ function buildText(){
   out.push(head.join(" | "));
 
   modelOf(t, d).forEach(sec => {
+    if (sec.noText) return;
     const secLines = [];
     sec.groups.forEach(g => {
       const gLines = [];
@@ -1369,7 +1435,7 @@ function buildText(){
               idx++;
               const title = String(d[f.k + "_" + i] || "").trim();
               gLines.push(`${idx}. ${title || "(problema sem título)"}`);
-              PROB_SUBS.forEach(([sk, sl]) => {
+              subsOf(f).forEach(([sk, sl]) => {
                 const v = String(d[f.k + "_" + i + "_" + sk] || "").trim();
                 if (v) gLines.push(`   - ${sl}: ${v.replace(/\n/g, "\n     ")}`);
               });
@@ -1433,6 +1499,17 @@ function newDay(){
   eachField(store.mode === "ic" ? ALL_IC_FIELDS() : t.model, (f, sec) => { if (sec.daily || f.daily) keysOf(f).forEach(k => delete d[k]); });
   const today = todayISO();
   if (store.mode === "enf" && d.data_aval && d.data_aval !== today){ const n = num(d.dih); if (isFinite(n)) d.dih = String(n + 1); }
+  if (store.mode === "enf"){
+    if (enfMom(d) === "Admissão"){
+      // a propedêutica externa e interna da admissão vai para "Propedêutica" da lista de problemas
+      for (let i = 1; i <= 12; i++){
+        const ex = String(d[`prob_${i}_prop_ext`] || "").trim(), it = String(d[`prob_${i}_prop_int`] || "").trim();
+        if (!d[`prob_${i}_prop`] && (ex || it)) d[`prob_${i}_prop`] = [ex && "Externa: " + ex, it && "Interna: " + it].filter(Boolean).join("\n");
+        if (!String(d["prob_" + i] || "").trim() && probFilled({ k: "prob", subs: ADM_SUBS }, d, i)) d["prob_" + i] = "Situação a esclarecer";
+      }
+    }
+    d.enf_mom = "Evolução";
+  }
   if (store.mode === "ic"){
     if (!d.ic_mom || d.ic_mom === IC_MOM[0]) d.ic_mom = IC_MOM[1];
     const n = num(d.qt_d), dias = d.data_aval ? Math.round((new Date(today + "T12:00") - new Date(d.data_aval + "T12:00")) / 864e5) : 0;
@@ -1496,7 +1573,7 @@ function onMenu(act){
     case "import": $("#importFile").click(); break;
     case "clear":
       if (p && confirm(`Limpar todos os campos de “${ptLabel(p)}”?`)){
-        const keep = {}; ["nome","leito","idade","sexo"].forEach(k => { if (p.data[k]) keep[k] = p.data[k]; });
+        const keep = {}; ["nome","leito","idade","sexo","enf_mom","ic_mom"].forEach(k => { if (p.data[k]) keep[k] = p.data[k]; });
         p.data = { ...keep, data_aval: todayISO() }; fillForm(); refreshSelect(); changed(); saveNow(); toast("Campos limpos");
       }
       break;
@@ -1954,7 +2031,7 @@ const TPL_LABEL = { cti: "CTI", enf: "Enfermaria", ic: "IC Hemato" };
 
 function isBlankPatient(p){
   const d = p.data || {};
-  const hasData = Object.keys(d).some(k => k !== "data_aval" && d[k] !== "" && d[k] != null && !(Array.isArray(d[k]) && !d[k].length));
+  const hasData = Object.keys(d).some(k => k !== "data_aval" && k !== "enf_mom" && d[k] !== "" && d[k] != null && !(Array.isArray(d[k]) && !d[k].length));
   const hasRx = p.presc && Array.isArray(p.presc.items) && p.presc.items.length;
   return !hasData && !hasRx;
 }
@@ -2066,7 +2143,7 @@ function savePtDialog(){
   const tpl = (f.querySelector("input[name=tpl]:checked") || {}).value || "cti";
   if (!nome && !leito){ $("#ptMsg").textContent = "Informe ao menos o nome ou o leito."; return; }
   let id = editingId;
-  if (!id){ id = uid(); store.patients[id] = { tpl, updated: Date.now(), data: { data_aval: todayISO() } }; }
+  if (!id){ id = uid(); store.patients[id] = { tpl, updated: Date.now(), data: newData(tpl) }; }
   const p = store.patients[id];
   const set = (k, v) => { if (v) p.data[k] = v; else delete p.data[k]; };
   set("nome", nome); set("leito", leito); set("idade", idade); set("sexo", sexo);
