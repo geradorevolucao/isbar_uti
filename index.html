@@ -302,7 +302,16 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   body[data-view="rx"] #rxPrint{display:block}
   #rxPrint *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .add-prob,.prob[hidden]{display:none}
-  .prob{border:0;padding:0;background:none}
+  .prob{border:0;padding:0;background:none;margin-bottom:8px}
+  /* situação / problema no mesmo formato do texto gerado: "1. Título" e uma linha "- Subtópico:" para cada item */
+  .prob-h{margin-bottom:2px}
+  .prob-subs{display:block;padding-left:2.4rem}
+  .prob-subs .fld{display:flex;flex-direction:row;align-items:flex-end;justify-content:flex-start;gap:6px;width:auto;margin:0 0 3px;break-inside:avoid}
+  .prob-subs .fld>label{flex:none;font-size:11px;font-weight:600;color:#000;padding-bottom:3px}
+  .prob-subs .fld>label::before{content:"- "}
+  .prob-subs .fld>label::after{content:":"}
+  .prob-subs .inp{flex:1;min-width:0}
+  .prob-subs .inp textarea{min-height:30px;overflow:hidden}
   .inp input::placeholder,.inp textarea::placeholder{color:transparent}
   .sec-h .letter.l3,.sec-h .letter.l2{font-size:.7rem}
 }
@@ -1518,6 +1527,16 @@ function newDay(){
   d.data_aval = today;
   fillForm(); changed(); saveNow(); toast("Pronto para a evolução de hoje");
 }
+
+/* na impressão, os subtópicos das situações/problemas crescem até mostrar todo o texto */
+function fitProbAreas(on){
+  document.querySelectorAll("#form .prob-subs textarea").forEach(t => {
+    t.style.height = "";
+    if (on && t.value) t.style.height = (t.scrollHeight + 2) + "px";
+  });
+}
+addEventListener("beforeprint", () => fitProbAreas(true));
+addEventListener("afterprint", () => fitProbAreas(false));
 
 function doPrint(){
   if (view === "rx"){ buildRxPrint(); window.print(); return; }
