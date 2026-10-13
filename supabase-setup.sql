@@ -78,3 +78,62 @@ drop trigger if exists records_guard on public.records;
 create trigger records_guard
   before insert or update on public.records
   for each row execute function public.records_guard();
+
+-- ---------- textos compartilhados por código (abrir em outro computador) ----------
+-- O app cifra o texto com uma chave derivada do código (que nunca é enviado);
+-- o servidor guarda só o hash do código e o texto cifrado, e cada código expira em até 24 h.
+create table if not exists public.shares (
+  id         text primary key,                -- SHA-256 do código
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  iv         text not null,
+  data       text not null,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null
+);
+alter table public.shares enable row level security;
+
+drop policy if exists shares_select on public.shares;
+drop policy if exists shares_insert on public.shares;
+drop policy if exists shares_delete on public.shares;
+create policy shares_select on public.shares for select to authenticated
+  using (user_id = (select auth.uid()));
+create policy shares_insert on public.shares for insert to authenticated
+  with check (user_id = (select auth.uid())
+              and expires_at <= now() + interval '24 hours 5 minutes'
+              and length(data) < 300000);
+create policy shares_delete on public.shares for delete to authenticated
+  using (user_id = (select auth.uid()));
+
+revoke all on public.shares from anon;
+grant select, insert, delete on public.shares to authenticated;
+
+-- leitura sem login, só com o hash exato do código e só antes de expirar
+create or replace function public.get_share(p_id text)
+returns table (iv text, data text, expires_at timestamptz)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select s.iv, s.data, s.expires_at from public.shares s
+  where s.id = p_id and s.expires_at > now();
+$$;
+revoke all on function public.get_share(text) from public;
+grant execute on function public.get_share(text) to anon, authenticated;
+
+-- a cada novo código, apaga os vencidos
+create or replace function public.shares_cleanup()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  delete from public.shares where expires_at < now();
+  return null;
+end;
+$$;
+drop trigger if exists shares_cleanup on public.shares;
+create trigger shares_cleanup
+  after insert on public.shares
+  for each statement execute function public.shares_cleanup();

@@ -125,6 +125,18 @@ body[data-view="list"] header.top,body[data-view="rx"] header.top{padding-bottom
 .rx-h2{padding:12px 14px}
 .rx-sec .sec-h .badge{margin-right:0}
 .rx-adds{display:flex;gap:8px;flex-wrap:wrap}
+.share{border-top:1px solid var(--line);padding:0 14px}
+.share>summary{cursor:pointer;padding:10px 0;font-weight:600;color:var(--accent)}
+.share-in{padding:0 0 10px}
+.share-h{margin:6px 0 6px;font-size:.85rem;font-weight:600}
+.share-row{display:flex;gap:8px;flex-wrap:wrap}
+.share-row input,.share-row select{flex:1 1 14rem;min-width:0;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--field);color:var(--ink);padding:0 10px;font:inherit}
+.share-row .btn{flex:1 1 auto}
+.share-note{margin:6px 0 10px;font-size:.78rem;color:var(--muted)}
+.code-box{margin:8px 0;padding:10px 12px;border:1px dashed var(--accent);border-radius:10px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.code-big{font:700 1.5rem/1.2 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.06em;color:var(--accent)}
+.code-exp{font-size:.82rem;color:var(--muted);flex:1 1 10rem}
+.h-code{display:block;margin:14px auto 0;color:var(--muted)}
 .rxp .hint{margin-top:0}
 .rxp-cat h4{margin:14px 0 6px;font-size:.85rem;color:var(--accent);text-transform:uppercase;letter-spacing:.03em}
 .rxp-item{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:9px 12px;margin:0 0 6px;cursor:pointer;font:inherit}
@@ -273,7 +285,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .dlg{display:flex;flex-direction:column;max-height:calc(100vh - 40px)}
 .dlg header{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
 .dlg header h3{margin:0;flex:1;font-size:1rem;color:var(--accent)}
-.dlg textarea{flex:1;min-height:50vh;border:0;padding:14px;background:var(--field);font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:none;outline:none}
+.dlg textarea{flex:1;min-height:40vh;border:0;padding:14px;background:var(--field);font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:none;outline:none}
 .dlg .acts{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line);flex-wrap:wrap}
 .dlg .acts .btn{flex:1}
 
@@ -328,6 +340,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <h1 class="h-title"><span class="fx d1">Bem-vindo(a) ao</span><span class="brandname fx d2">Anamnesia</span></h1>
     <p class="h-sub fx d3">o prontuário eletrônico que te lembra do que não esquecer</p>
     <button class="btn primary h-go fx d4" type="button" id="homeGo">Começar</button>
+    <button class="linkbtn h-code fx d4" type="button" id="homeCode">Abrir texto por código</button>
   </div>
 </section>
 
@@ -351,6 +364,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <summary class="btn" role="button" aria-label="Mais opções">⋯</summary>
       <div class="menu-list">
         <button type="button" data-act="account" data-views="list chart rx">Conta e sincronização</button>
+        <button type="button" data-act="opencode" data-views="list">Abrir texto por código</button>
         <button type="button" data-act="edit" data-views="chart rx">Editar dados do paciente</button>
         <button type="button" data-act="newday" hidden></button>
         <button type="button" data-act="rx-newday" data-views="rx">Nova proposta do dia</button>
@@ -410,6 +424,25 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <button class="btn" type="button" id="dlgClose" aria-label="Fechar">✕</button>
     </header>
     <textarea id="out" readonly aria-label="Texto gerado"></textarea>
+    <details class="share" id="shareBox">
+      <summary>Enviar para outro computador</summary>
+      <div class="share-in">
+        <p class="share-h">Por e-mail</p>
+        <div class="share-row">
+          <input id="mailTo" type="email" inputmode="email" autocomplete="email" placeholder="email@exemplo.com" aria-label="E-mail do destinatário">
+          <button class="btn" type="button" id="btnMail">Abrir no app de e-mail</button>
+          <button class="btn" type="button" id="btnGmail">Abrir no Gmail (web)</button>
+        </div>
+        <p class="share-note">O e-mail abre pronto, com o texto no corpo; falta só tocar em Enviar. O texto também é copiado, caso o app de e-mail corte uma parte.</p>
+        <p class="share-h">Por código (abrir em qualquer computador)</p>
+        <div class="share-row">
+          <select id="codeTtl" aria-label="Validade do código"><option value="2">Válido por 2 h</option><option value="12" selected>Válido por 12 h</option><option value="24">Válido por 24 h</option></select>
+          <button class="btn" type="button" id="btnCode">Gerar código</button>
+        </div>
+        <div id="codeOut" hidden></div>
+        <p class="share-note">No outro computador, abra anamnesia.net.br e toque em “Abrir texto por código”. O texto fica cifrado e se apaga quando o código vence.</p>
+      </div>
+    </details>
     <div class="acts">
       <button class="btn" type="button" id="btnTxt">Baixar .txt</button>
       <button class="btn primary" type="button" id="btnCopy">Copiar texto</button>
@@ -473,6 +506,24 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   </div>
 </dialog>
 
+<dialog id="codeDlg" aria-labelledby="codeDlgTitle">
+  <div class="dlg">
+    <header>
+      <h3 id="codeDlgTitle">Abrir texto por código</h3>
+      <button class="btn" type="button" id="codeClose" aria-label="Fechar">✕</button>
+    </header>
+    <div class="acct-body acct">
+      <div class="fld w-full"><label for="codeIn">Código</label><div class="inp"><input id="codeIn" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX"></div></div>
+      <p class="msg" id="codeMsg" role="status"></p>
+      <div class="acts"><button class="btn primary" type="button" id="codeGo">Abrir</button></div>
+    </div>
+    <textarea id="codeText" readonly aria-label="Texto recebido" hidden></textarea>
+    <div class="acts" id="codeActs" hidden>
+      <button class="btn primary" type="button" id="codeCopy">Copiar texto</button>
+    </div>
+  </div>
+</dialog>
+
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -486,8 +537,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
    por natureza; a proteção vem do login + Row Level Security + criptografia.
    Se deixar em branco, o app pede esses dados em "Conta e sincronização".
    ===================================================================== */
-const SYNC_URL = "";        // ex.: "https://abcdefghijk.supabase.co"
-const SYNC_ANON_KEY = "";   // ex.: "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+const SYNC_URL = "https://cspsiakuwuqegugfxepb.supabase.co";
+const SYNC_ANON_KEY = "sb_publishable_MIL9UamOgxgWXLh9EecOiA_wyluNgzS";   // chave publishable (pública por natureza)
 
 /* =====================================================================
    MODELO (esquema dos campos)
@@ -1579,6 +1630,7 @@ function onMenu(act){
   const p = cur();
   switch (act){
     case "account": openAccountEntry(); break;
+    case "opencode": openCodeDlg(); break;
     case "edit": if (p) openPtDialog(store.currentBy[store.mode]); break;
     case "rx-newday": rxNewDay(); break;
     case "rx-clear": rxClear(); break;
@@ -2588,6 +2640,92 @@ function menuState(){
 }
 
 /* =====================================================================
+   ENVIAR O TEXTO PARA OUTRO COMPUTADOR
+   - E-mail: abre o app de e-mail (mailto:) ou o Gmail na web, já com o texto.
+   - Código: o texto é cifrado aqui (AES-GCM, chave derivada do código por PBKDF2);
+     o servidor recebe só o hash do código e o texto cifrado, que vence em até 24 h.
+     Qualquer computador abre o texto digitando o código, sem login.
+   ===================================================================== */
+const MAIL_KEY = "isbar-mailto";
+const CODE_ABC = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";   // sem 0/O e 1/I
+const fmtCode = c => c.match(/.{1,4}/g).join("-");
+const cleanCode = s => String(s || "").toUpperCase().replace(/[^0-9A-Z]/g, "");
+async function codeId(code){ return [...new Uint8Array(await crypto.subtle.digest("SHA-256", te.encode("anamnesia-share-id:" + code)))].map(b => b.toString(16).padStart(2, "0")).join(""); }
+const codeKey = code => deriveKey(code, b64(te.encode("anamnesia-share-key")), 100000);
+
+function shareSubject(){
+  const p = cur(), d = p ? p.data : {};
+  const what = store.mode === "enf" ? enfMom(d) + " – Clínica Médica" : TPL[store.mode].title;
+  return [what, d.leito ? "Leito " + d.leito : "", brDate(d.data_aval || todayISO())].filter(Boolean).join(" – ");
+}
+async function sendMail(web){
+  const to = $("#mailTo").value.trim(), txt = $("#out").value;
+  if (to && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)){ toast("Confira o e-mail"); $("#mailTo").focus(); return; }
+  if (to) ls.set(MAIL_KEY, to);
+  await copyText(txt);
+  const url = mailUrl(web, to, shareSubject(), txt);
+  if (web) window.open(url, "_blank", "noopener"); else location.href = url;
+  toast("E-mail aberto · texto também copiado");
+}
+function mailUrl(web, to, subject, txt){
+  const su = encodeURIComponent(subject), body = encodeURIComponent(txt.replace(/\r?\n/g, "\r\n"));
+  return web ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${su}&body=${body}`
+             : `mailto:${encodeURIComponent(to)}?subject=${su}&body=${body}`;
+}
+
+let lastCode = null;
+async function makeCode(){
+  const out = $("#codeOut");
+  if (!session){ out.hidden = false; out.replaceChildren(el("p", { class: "share-note", text: "Para gerar código, entre na sua conta neste aparelho (⋯ → Conta e sincronização)." })); return; }
+  if (!crypto.subtle){ toast("Abra o site por https://"); return; }
+  const b = $("#btnCode"); b.disabled = true; b.textContent = "Gerando…";
+  try {
+    const rnd = crypto.getRandomValues(new Uint8Array(12));
+    const code = [...rnd].map(x => CODE_ABC[x % 32]).join("");
+    const hours = Number($("#codeTtl").value) || 12;
+    const exp = new Date(Date.now() + hours * 3600e3);
+    const blob = await enc({ v: 1, title: shareSubject(), text: $("#out").value }, await codeKey(code));
+    const id = await codeId(code);
+    await api("/rest/v1/shares", { method: "POST", headers: { Prefer: "return=minimal" }, body: { id, iv: blob.iv, data: blob.data, expires_at: exp.toISOString() } });
+    lastCode = { code, id };
+    const del = el("button", { class: "btn", type: "button", text: "Apagar agora" });
+    del.onclick = async () => {
+      try { await api("/rest/v1/shares?id=eq." + id, { method: "DELETE", headers: { Prefer: "return=minimal" } }); out.hidden = true; toast("Código apagado"); }
+      catch(e){ toast(e.message); }
+    };
+    out.hidden = false;
+    out.replaceChildren(el("div", { class: "code-box" },
+      el("span", { class: "code-big", text: fmtCode(code) }),
+      el("span", { class: "code-exp", text: "Vale até " + exp.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "." }),
+      del));
+  } catch(e){
+    out.hidden = false;
+    out.replaceChildren(el("p", { class: "share-note", text: "Não foi possível gerar o código: " + e.message + (e.status === 404 ? " (rode de novo o supabase-setup.sql no Supabase)" : "") }));
+  } finally { b.disabled = false; b.textContent = "Gerar código"; }
+}
+
+function openCodeDlg(){
+  $("#codeIn").value = ""; $("#codeMsg").textContent = ""; $("#codeMsg").classList.remove("err");
+  $("#codeText").hidden = true; $("#codeActs").hidden = true; $("#codeText").value = "";
+  $("#codeDlg").showModal(); $("#codeIn").focus();
+}
+async function openByCode(){
+  const code = cleanCode($("#codeIn").value), msg = $("#codeMsg");
+  const say = (t, err) => { msg.textContent = t; msg.classList.toggle("err", !!err); };
+  if (code.length !== 12 || [...code].some(ch => !CODE_ABC.includes(ch))) return say("O código tem 12 letras e números (sem 0, O, 1 e I). Confira.", true);
+  if (!crypto.subtle) return say("Abra o site por https:// para ler o código.", true);
+  say("Abrindo…");
+  try {
+    const rows = await api("/rest/v1/rpc/get_share", { method: "POST", auth: false, body: { p_id: await codeId(code) } });
+    const r = rows && rows[0];
+    if (!r) return say("Código não encontrado ou vencido.", true);
+    const o = await dec(r.iv, r.data, await codeKey(code));
+    $("#codeText").value = o.text || ""; $("#codeText").hidden = false; $("#codeActs").hidden = false;
+    say((o.title ? o.title + " · " : "") + "vale até " + new Date(r.expires_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + ".");
+  } catch(e){ say(e.status === 0 ? "Sem conexão com o servidor." : "Não foi possível abrir: " + e.message, true); }
+}
+
+/* =====================================================================
    INICIALIZAÇÃO
    ===================================================================== */
 const dlg = $("#dlg");
@@ -2623,12 +2761,20 @@ $("#importFile").addEventListener("change", e => { const f = e.target.files[0]; 
 $("#btnPrint").addEventListener("click", doPrint);
 $("#syncStatus").addEventListener("click", openAccountEntry);
 
-$("#btnText").addEventListener("click", () => { $("#out").value = buildText(); $("#dlgTitle").textContent = TPL[store.mode].btn.replace(/^Gerar /, "").replace(/^./, c => c.toUpperCase()); dlg.showModal(); });
+$("#btnText").addEventListener("click", () => { $("#out").value = buildText(); $("#codeOut").hidden = true; $("#mailTo").value = $("#mailTo").value || ls.get(MAIL_KEY) || ""; $("#dlgTitle").textContent = TPL[store.mode].btn.replace(/^Gerar /, "").replace(/^./, c => c.toUpperCase()); dlg.showModal(); });
 $("#dlgClose").addEventListener("click", () => dlg.close());
 $("#rxPickClose").addEventListener("click", () => $("#rxPick").close());
 $("#rxPick").addEventListener("click", onRxPick);
 $("#rxPickQ").addEventListener("input", e => { pickQ = e.target.value; renderRxPick(); });
 dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
+$("#btnMail").addEventListener("click", () => sendMail(false));
+$("#btnGmail").addEventListener("click", () => sendMail(true));
+$("#btnCode").addEventListener("click", makeCode);
+$("#codeClose").addEventListener("click", () => $("#codeDlg").close());
+$("#codeGo").addEventListener("click", openByCode);
+$("#codeIn").addEventListener("keydown", e => { if (e.key === "Enter") openByCode(); });
+$("#codeCopy").addEventListener("click", async () => { toast(await copyText($("#codeText").value) ? "Texto copiado" : "Não foi possível copiar"); });
+$("#homeCode").addEventListener("click", openCodeDlg);
 $("#btnCopy").addEventListener("click", async () => { toast(await copyText($("#out").value) ? "Texto copiado" : "Não foi possível copiar"); });
 $("#btnTxt").addEventListener("click", () => {
   const d = D();
