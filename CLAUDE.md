@@ -6,7 +6,7 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 - Responder em português do Brasil.
 - Seguir exatamente o que for pedido, sem extrapolar conteúdo clínico não solicitado.
 - Em qualquer conteúdo médico (campos, fórmulas, condutas), citar a bibliografia usada.
-- Não pré-preencher doses ou condutas: o app é um formulário; o conteúdo clínico é do autor.
+- Não pré-preencher doses ou condutas: o app é um formulário; o conteúdo clínico é do autor. Exceção pedida pelo autor: o catálogo de opções da prescrição (`RX_CAT`), que só entra quando o autor escolhe uma opção, fica sempre editável e tem as referências em `RX_CAT_REFS`.
 
 ## Arquitetura
 - **Um único arquivo `index.html`** (HTML + CSS + JS inline, sem dependências externas nem CDN). Precisa continuar funcionando offline e aberto direto do disco (`file://`), porque a rede do hospital bloqueia alguns sites.
@@ -17,11 +17,15 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 1. **Tela inicial** (`#home`): saudação animada com traçado de ECG. Respeita `prefers-reduced-motion`. O botão "Começar" leva à lista.
 2. **Meus pacientes** (`list`): adicionar, editar, mudar de módulo e excluir pacientes; filtro por módulo e busca por nome ou leito.
 3. **Prontuário** (`chart`): formulário gerado a partir de um esquema declarativo (`CTI`, `ENF`, `IC`). "Gerar texto" monta o texto para colar no prontuário oficial.
-4. **Prescrição** (`rx`): proposta com itens nas situações Manter, Nova, Alterar ou Suspender, e aprazamento automático a partir da frequência e do 1º horário. A impressão leva a marca-d'água "SIMULAÇÃO – NÃO VÁLIDA" e o aviso de que não serve para dispensação. **Manter essa identificação**: a folha não pode ser confundida com uma prescrição real, e não deve usar logotipo do hospital ou do MV.
+4. **Prescrição** (`rx`): proposta com itens nas situações Manter, Nova, Alterar ou Suspender, e aprazamento automático a partir da frequência e do 1º horário. Os botões "+ Escolher dieta" e "+ Escolher da lista" abrem o catálogo `RX_CAT` (dieta, sintomáticos, anticoagulação, correção de glicose, antibioticoterapia, anti-hipertensivos, betabloqueadores, estatinas, protetores gástricos, laxativos, diuréticos e antiagregantes), com busca pelo começo das palavras e filtro por categoria; a opção escolhida entra como "Nova", com descrição, dose, via, frequência e observação preenchidas. A impressão leva a marca-d'água "SIMULAÇÃO – NÃO VÁLIDA" e o aviso de que não serve para dispensação. **Manter essa identificação**: a folha não pode ser confundida com uma prescrição real, e não deve usar logotipo do hospital ou do MV.
 
 ## Modelos de evolução (objeto `TPL`)
 - **`cti`, ISBAR:** I/S/B/A/R, com a avaliação por sistemas e o checklist FAST HUGS BID. Campos calculados: PAM; Glasgow total (V = T no paciente intubado); peso predito (fórmula ARDSNet); VC em mL/kg de peso predito; driving pressure; complacência; P/F; diurese em mL/kg/h; ânion gap.
 - **`enf`, Enfermaria de clínica médica:** Lista de problemas, Contexto, HPP, MUC, Evolução diária, Dados vitais, Exame físico, Exames complementares e Condutas. Cada problema tem 4 subtópicos: Apresentação, Etiologia, Propedêutica e Plano de cuidados (campo do tipo `problems`). "Nova evolução do dia" apaga os campos diários e soma 1 ao DIH.
+  - **Admissão / Evolução** (campo `enf_mom`, modelo dinâmico `enfModel`). Fichas novas nascem em Admissão (`newData`); fichas sem a marca, anteriores a essa mudança, ficam em Evolução.
+  - **Admissão** (modelo do autor, texto por `admText`): Situação (cards com Apresentação, Etiologia, Propedêutica externa, Propedêutica interna e Plano de cuidados; título vazio sai como "Situação a esclarecer"), Contexto, HPP, MUC, Alergias, HF, HSE, Cirurgias prévias, Exames externos (a) Laboratório, b) Imagem) e Condutas em lista com "- ". O texto usa os títulos "| Situação:", "| Contexto:" etc. e não imprime a identificação.
+  - As situações usam a mesma chave da lista de problemas (`prob`). Em "Nova evolução do dia" a ficha passa para Evolução: a propedêutica externa e interna é copiada para "Propedêutica" (se vazia) e título vazio vira "Situação a esclarecer". Contexto, HPP (`comorb`), MUC, alergias e cirurgias também são compartilhados.
+  - O campo `problems` aceita `subs` (subtópicos), `item` (nome do card) e `itemPh` (exemplo do título).
 - **`ic`, Interconsulta de hematologia:** segue a folha de rosto da interconsulta da residência (docx enviado pelo autor). O modelo é dinâmico (`build: icModel`): o campo `ic_mom` escolhe entre 1ª avaliação, Avaliações subsequentes e Após diagnóstico; neste último, `ic_dx` escolhe o bloco da doença (aplasia de medula óssea, PTI, trombose, mieloma múltiplo, linfoma, SMD, leucemia aguda), seguido de Internação (comorbidades, cateter, transfusão, profilaxias, intercorrências) e Evolução (DE, evolução, ao exame, CD).
   - Campos com o mesmo significado usam a mesma chave em todos os modelos, para os dados serem aproveitados na troca.
   - O texto (`icText`) segue o formato da folha: começa com `# INTERCONSULTA – HEMATOLOGIA #`. As seções Identificação e Momento não entram no texto. Os grupos têm `tx: { h, m }` (`in`: uma linha; `bl`: título e linhas "- "; `lf`: um campo por linha) e os campos podem ter `blk` (subtítulo do bloco, como "1) INFECCIOSA").
@@ -47,10 +51,13 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 - **Nos testes, clicar em `#homeGo` antes de interagir**, porque a tela inicial cobre o app.
 - **`supabase-setup.sql`:** testado em PostgreSQL 16 local com um esquema `auth` simulado (`auth.users`, `auth.uid()`, papéis `anon`/`authenticated`): RLS entre dois usuários, upsert mais antigo ignorado, *tombstone* aceito e reexecução do script.
 
-## Pendências
-- **Enforce HTTPS no GitHub Pages:** o DNS está correto (4 registros A apontando para o GitHub e CNAME `www` para `geradorevolucao.github.io`), mas o certificado ainda não tinha sido emitido. Sugestão: remover e salvar de novo o domínio em Settings → Pages.
-- **Supabase:** criar o projeto, rodar `supabase-setup.sql`, definir o Site URL como `https://anamnesia.net.br` e desativar novos cadastros depois de criar a conta.
+## Situação da publicação
+- **HTTPS:** o site abre em `https://anamnesia.net.br`, necessário para a conta funcionar.
+- **Supabase:** projeto criado, `supabase-setup.sql` executado e sincronização testada pelo autor entre celular e PC.
+- **A conferir:** se os novos cadastros foram desativados no Supabase (Authentication → Sign In / Providers → "Allow new users to sign up").
 
 ## Decisões do autor
+- Fotos do encaminhamento (exames de laboratório e imagem): a extração é feita pelo chat com o Claude, não dentro do site.
+- Posologias pré-definidas da prescrição: colocadas direto no app, com doses usuais de adulto e referências, todas editáveis.
 - Grafia: **"Anamnesia"**, sem acento.
 - Manter o web app como está, inclusive a seção Condutas da enfermaria, até o autor pedir mudanças.

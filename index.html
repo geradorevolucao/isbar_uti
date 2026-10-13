@@ -124,6 +124,18 @@ body[data-view="list"] header.top,body[data-view="rx"] header.top{padding-bottom
 .rx-warn{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:8px 10px;font-size:.85rem;margin:6px 0 12px}
 .rx-h2{padding:12px 14px}
 .rx-sec .sec-h .badge{margin-right:0}
+.rx-adds{display:flex;gap:8px;flex-wrap:wrap}
+.rxp .hint{margin-top:0}
+.rxp-cat h4{margin:14px 0 6px;font-size:.85rem;color:var(--accent);text-transform:uppercase;letter-spacing:.03em}
+.rxp-item{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:9px 12px;margin:0 0 6px;cursor:pointer;font:inherit}
+.rxp-item:hover,.rxp-item:focus-visible{border-color:var(--accent)}
+.rxp-item.added{background:var(--band);border-color:var(--accent)}
+.rxp-n{font-weight:600}
+.rxp-p{font-size:.88rem}
+.rxp-o{font-size:.8rem;color:var(--muted)}
+.rxp-refs{margin-top:14px;font-size:.8rem;color:var(--muted)}
+.rxp-refs summary{cursor:pointer;font-weight:600}
+.rxp-refs ol{padding-left:1.2rem}
 .rxi{border:1px solid var(--line);border-left:5px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;background:var(--card)}
 .rxi.st-nova{border-left-color:#2E7D4F}
 .rxi.st-alterar{border-left-color:#C77D00}
@@ -436,6 +448,22 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   </div>
 </dialog>
 
+<dialog id="rxPick" aria-labelledby="rxPickTitle">
+  <div class="dlg">
+    <header>
+      <h3 id="rxPickTitle">Escolher medicação</h3>
+      <button class="btn" type="button" id="rxPickClose" aria-label="Fechar">✕</button>
+    </header>
+    <div class="acct-body rxp">
+      <p class="hint">Toque numa opção para adicioná-la à proposta como “Nova”. Doses usuais para adulto com função renal e hepática normais: confira e edite antes de prescrever.</p>
+      <div class="search" id="rxPickSearch"><input id="rxPickQ" type="search" placeholder="Buscar medicação" aria-label="Buscar medicação" autocomplete="off"></div>
+      <div class="filters" id="rxPickCats"></div>
+      <div id="rxPickList"></div>
+      <details class="rxp-refs" id="rxPickRefsBox"><summary>Referências</summary><ol id="rxPickRefs"></ol></details>
+    </div>
+  </div>
+</dialog>
+
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -650,6 +678,69 @@ const ENF = [
    [F("condutas","Condutas","area",{tl:"",rows:5})]
  ]}]}
 ];
+
+/* ---------------- ENFERMARIA: ADMISSÃO ----------------
+   Modelo enviado pelo autor. O momento (enf_mom) escolhe entre Admissão e Evolução (modelo ENF acima).
+   Campos com o mesmo significado usam a mesma chave nos dois modelos (prob, contexto, comorb, muc,
+   alergias, cirurgias), para os dados passarem da admissão para a evolução. */
+const ENF_MOM_OPTS = ["Admissão", "Evolução"];
+const ENF_MOM = { id: "MO", letter: "MO", title: "MOMENTO", nav: "Momento", noText: true, groups: [ { rows: [
+   [F("enf_mom","Momento","radio",{opts:ENF_MOM_OPTS,def:"Evolução"})]
+ ], hint: "Na admissão ainda não há lista de problemas consolidada: use Situação. Em “Nova evolução do dia”, a ficha passa para Evolução e as situações viram a lista de problemas." }]};
+const ADM_SUBS = [["apr","Apresentação"],["etio","Etiologia"],["prop_ext","Propedêutica externa"],["prop_int","Propedêutica interna"],["plano","Plano de cuidados"]];
+const ENF_ADM = [
+ { id: "SI", letter: "SI", title: "SITUAÇÃO", nav: "Situação", groups: [ { rows: [
+   [F("prob","Situação","problems",{n:12,subs:ADM_SUBS,item:"Situação",itemPh:"Situação a esclarecer"})]
+ ], hint: "Uma situação por card. Se o título ficar vazio, sai como “Situação a esclarecer”." }]},
+ { id: "CT", letter: "CT", title: "CONTEXTO", nav: "Contexto", groups: [ { rows: [
+   [F("contexto","Contexto","area",{rows:5,ph:"Trata-se de paciente de, X anos, ..."})]
+ ]}]},
+ { id: "HP", letter: "HPP", title: "HISTÓRIA PREGRESSA", nav: "HPP", groups: [ { rows: [
+   [F("comorb","HPP","area",{rows:2,ph:"Doença 1; Doença 2"})],
+   [F("muc","MUC","area",{rows:2,ph:"Medicamento 1 X mg; Medicamento 2 Y mg"})],
+   [F("alergias","Alergias","text",{w:"full"})],
+   [F("hf","HF","text",{w:"full"})],
+   [F("hse","HSE","text",{w:"full"})],
+   [F("cirurgias","Cirurgias prévias","text",{w:"full"})]
+ ]}]},
+ { id: "EX", letter: "EX", title: "EXAMES EXTERNOS", nav: "Exames", groups: [ { rows: [
+   [F("ext_lab","a) Laboratório","area",{rows:4})],
+   [F("ext_img","b) Imagem","area",{rows:3})]
+ ], hint: "Para extrair os exames de fotos do encaminhamento, envie as fotos no chat do Claude e cole aqui o texto devolvido." }]},
+ { id: "CD", letter: "CD", title: "CONDUTAS", nav: "Condutas", groups: [ { rows: [
+   [F("cond","Condutas","list",{n:10})]
+ ]}]}
+];
+// fichas novas nascem em Admissão (newData); fichas sem a marca, criadas antes da admissão existir, ficam em Evolução
+const enfMom = d => ENF_MOM_OPTS.includes(d.enf_mom) ? d.enf_mom : "Evolução";
+const newData = tpl => tpl === "enf" ? { data_aval: todayISO(), enf_mom: "Admissão" } : { data_aval: todayISO() };
+const enfModel = d => enfMom(d) === "Admissão" ? [ENF[0], ENF_MOM, ...ENF_ADM] : [ENF[0], ENF_MOM, ...ENF.slice(1)];
+
+/* texto da admissão, no formato do autor */
+function admText(d){
+  if (enfMom(d) !== "Admissão") return null;
+  const v = k => String(d[k] == null ? "" : d[k]).trim();
+  const blocks = [];
+  const fP = ENF_ADM[0].groups[0].rows[0][0];
+  const sit = [];
+  let n = 0;
+  for (let i = 1; i <= fP.n; i++){
+    if (!probFilled(fP, d, i)) continue;
+    sit.push((sit.length ? "\n" : "") + `${++n}. ${v("prob_" + i) || "Situação a esclarecer"}`);
+    ADM_SUBS.forEach(([sk, sl]) => { const x = v(`prob_${i}_${sk}`); if (x) sit.push(` - ${sl}: ${x.replace(/\n/g, "\n   ")}`); });
+  }
+  if (sit.length) blocks.push("| Situação:\n\n" + sit.join("\n"));
+  if (v("contexto")) blocks.push("| Contexto:\n" + v("contexto"));
+  [["comorb","HPP"],["muc","MUC"],["alergias","Alergias"],["hf","HF"],["hse","HSE"],["cirurgias","Cirurgias prévias"]]
+    .forEach(([k, l]) => { if (v(k)) blocks.push(`| ${l}: ${v(k)}`); });
+  const ex = [];
+  if (v("ext_lab")) ex.push("a) Laboratório:\n" + v("ext_lab"));
+  if (v("ext_img")) ex.push("b) Imagem:\n" + v("ext_img"));
+  if (ex.length) blocks.push("| Exames externos:\n" + ex.join("\n\n"));
+  const cd = Array.from({ length: 10 }, (_, i) => v("cond_" + (i + 1))).filter(Boolean);
+  if (cd.length) blocks.push("| Condutas:\n" + cd.map(x => "- " + x).join("\n"));
+  return blocks.join("\n\n");
+}
 
 /* ---------------- INTERCONSULTA – HEMATOLOGIA ----------------
    Modelos da folha de rosto da interconsulta da Hematologia (residência):
@@ -919,8 +1010,8 @@ const REFS_IC = [
 
 const TPL = {
   cti: { tab: "CTI", title: "ISBAR · CTI", textTitle: "ISBAR – CTI", btn: "Gerar texto ISBAR", model: CTI, refs: REFS_CTI, grpWord: "sistemas" },
-  enf: { tab: "Enfermaria", title: "Evolução · Clínica Médica", textTitle: "EVOLUÇÃO – CLÍNICA MÉDICA", btn: "Gerar evolução", model: ENF, refs: REFS_ENF,
-         newDay: "Nova evolução do dia", newDayMsg: "Os campos de Evolução diária, Dados vitais e Exame físico serão apagados, a data passa para hoje e o DIH aumenta em 1. Problemas, contexto, HPP, MUC, exames e condutas são mantidos." },
+  enf: { tab: "Enfermaria", title: "Clínica Médica", textTitle: "EVOLUÇÃO – CLÍNICA MÉDICA", btn: "Gerar texto", model: ENF, build: enfModel, sig: enfMom, text: admText, refs: REFS_ENF,
+         newDay: "Nova evolução do dia", newDayMsg: "Os campos de Evolução diária, Dados vitais e Exame físico serão apagados, a data passa para hoje e o DIH aumenta em 1. Se a ficha estiver em Admissão, passa para Evolução e as situações viram a lista de problemas. Problemas, contexto, HPP, MUC, exames e condutas são mantidos." },
   ic:  { tab: "IC Hemato", title: "Interconsulta · Hematologia", textTitle: "INTERCONSULTA – HEMATOLOGIA", btn: "Gerar parecer", build: icModel, sig: icSig, text: icText, refs: REFS_IC,
          newDay: "Nova avaliação", newDayMsg: "Os campos Evolução, Ao exame e CD serão apagados, a data passa para hoje e o “Hoje D” da QT avança pelos dias passados. Se o momento for 1ª avaliação, passa para Avaliações subsequentes. Os demais campos são mantidos." }
 };
@@ -984,7 +1075,7 @@ const cur = () => store.patients[store.currentBy[store.mode]];
 const idsOf = tpl => Object.keys(store.patients).filter(id => store.patients[id].tpl === tpl);
 function newPatient(tpl = store.mode){
   const id = uid();
-  store.patients[id] = { tpl, updated: Date.now(), data: { data_aval: todayISO() } };
+  store.patients[id] = { tpl, updated: Date.now(), data: newData(tpl) };
   store.currentBy[tpl] = id;
   return id;
 }
@@ -1018,7 +1109,8 @@ function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add
 function setStatus(msg){ $("#status").textContent = msg; }
 const D = () => (cur() ? cur().data : {});
 const listKeys = f => Array.from({ length: f.n }, (_, i) => f.k + "_" + (i + 1));
-const probKeysOne = (f, i) => [f.k + "_" + i, ...PROB_SUBS.map(([s]) => f.k + "_" + i + "_" + s)];
+const subsOf = f => f.subs || PROB_SUBS;
+const probKeysOne = (f, i) => [f.k + "_" + i, ...subsOf(f).map(([s]) => f.k + "_" + i + "_" + s)];
 const probKeys = f => Array.from({ length: f.n }, (_, i) => probKeysOne(f, i + 1)).flat();
 const probFilled = (f, d, i) => probKeysOne(f, i).some(k => d[k] != null && String(d[k]).trim() !== "");
 function keysOf(f){
@@ -1106,9 +1198,9 @@ function renderField(f){
         const card = el("div", { class: "prob", "data-i": String(i) },
           el("div", { class: "prob-h" },
             el("span", { class: "n", text: i + "." }),
-            el("div", { class: "inp" }, inputFor(f.k + "_" + i, { autocapitalize: "sentences", placeholder: "Problema " + i, "aria-label": "Problema " + i }))));
+            el("div", { class: "inp" }, inputFor(f.k + "_" + i, { autocapitalize: "sentences", placeholder: f.itemPh || (f.item || "Problema") + " " + i, "aria-label": (f.item || "Problema") + " " + i }))));
         const grid = el("div", { class: "prob-subs" });
-        PROB_SUBS.forEach(([sk, sl]) => {
+        subsOf(f).forEach(([sk, sl]) => {
           const k = f.k + "_" + i + "_" + sk;
           grid.append(el("div", { class: "fld" },
             el("label", { for: "f_" + k, text: sl }),
@@ -1117,7 +1209,7 @@ function renderField(f){
         card.append(grid);
         box.append(card);
       }
-      box.append(el("button", { class: "btn add-prob", type: "button", "data-add-prob": f.k, text: "+ Adicionar problema" }));
+      box.append(el("button", { class: "btn add-prob", type: "button", "data-add-prob": f.k, text: "+ Adicionar " + (f.item || "problema").toLowerCase() }));
       return box;
     }
     case "list": {
@@ -1196,7 +1288,8 @@ function updateProbs(){
   const d = D();
   document.querySelectorAll("#form [data-probs]").forEach(box => {
     const k = box.dataset.probs, max = Number(box.dataset.max);
-    const f = { k, n: max };
+    const fi = fieldsIndex.find(x => x.f.k === k && x.f.t === "problems");
+    const f = fi ? fi.f : { k, n: max };
     let last = 0; for (let i = 1; i <= max; i++) if (probFilled(f, d, i)) last = i;
     const shown = Math.min(max, Math.max(1, last, Number(d[k + "_n"]) || 0));
     box.querySelectorAll(".prob").forEach(c => c.hidden = Number(c.dataset.i) > shown);
@@ -1318,7 +1411,7 @@ function valueText(f, d){
 function buildText(){
   const t = TPL[store.mode];
   const d = D();
-  if (t.text) return t.text(d);
+  if (t.text){ const r = t.text(d); if (r != null) return r; }
   const out = [];
   const head = [t.textTitle];
   if (d.leito) head.push("Leito " + d.leito);
@@ -1326,6 +1419,7 @@ function buildText(){
   out.push(head.join(" | "));
 
   modelOf(t, d).forEach(sec => {
+    if (sec.noText) return;
     const secLines = [];
     sec.groups.forEach(g => {
       const gLines = [];
@@ -1341,7 +1435,7 @@ function buildText(){
               idx++;
               const title = String(d[f.k + "_" + i] || "").trim();
               gLines.push(`${idx}. ${title || "(problema sem título)"}`);
-              PROB_SUBS.forEach(([sk, sl]) => {
+              subsOf(f).forEach(([sk, sl]) => {
                 const v = String(d[f.k + "_" + i + "_" + sk] || "").trim();
                 if (v) gLines.push(`   - ${sl}: ${v.replace(/\n/g, "\n     ")}`);
               });
@@ -1405,6 +1499,17 @@ function newDay(){
   eachField(store.mode === "ic" ? ALL_IC_FIELDS() : t.model, (f, sec) => { if (sec.daily || f.daily) keysOf(f).forEach(k => delete d[k]); });
   const today = todayISO();
   if (store.mode === "enf" && d.data_aval && d.data_aval !== today){ const n = num(d.dih); if (isFinite(n)) d.dih = String(n + 1); }
+  if (store.mode === "enf"){
+    if (enfMom(d) === "Admissão"){
+      // a propedêutica externa e interna da admissão vai para "Propedêutica" da lista de problemas
+      for (let i = 1; i <= 12; i++){
+        const ex = String(d[`prob_${i}_prop_ext`] || "").trim(), it = String(d[`prob_${i}_prop_int`] || "").trim();
+        if (!d[`prob_${i}_prop`] && (ex || it)) d[`prob_${i}_prop`] = [ex && "Externa: " + ex, it && "Interna: " + it].filter(Boolean).join("\n");
+        if (!String(d["prob_" + i] || "").trim() && probFilled({ k: "prob", subs: ADM_SUBS }, d, i)) d["prob_" + i] = "Situação a esclarecer";
+      }
+    }
+    d.enf_mom = "Evolução";
+  }
   if (store.mode === "ic"){
     if (!d.ic_mom || d.ic_mom === IC_MOM[0]) d.ic_mom = IC_MOM[1];
     const n = num(d.qt_d), dias = d.data_aval ? Math.round((new Date(today + "T12:00") - new Date(d.data_aval + "T12:00")) / 864e5) : 0;
@@ -1468,7 +1573,7 @@ function onMenu(act){
     case "import": $("#importFile").click(); break;
     case "clear":
       if (p && confirm(`Limpar todos os campos de “${ptLabel(p)}”?`)){
-        const keep = {}; ["nome","leito","idade","sexo"].forEach(k => { if (p.data[k]) keep[k] = p.data[k]; });
+        const keep = {}; ["nome","leito","idade","sexo","enf_mom","ic_mom"].forEach(k => { if (p.data[k]) keep[k] = p.data[k]; });
         p.data = { ...keep, data_aval: todayISO() }; fillForm(); refreshSelect(); changed(); saveNow(); toast("Campos limpos");
       }
       break;
@@ -1926,7 +2031,7 @@ const TPL_LABEL = { cti: "CTI", enf: "Enfermaria", ic: "IC Hemato" };
 
 function isBlankPatient(p){
   const d = p.data || {};
-  const hasData = Object.keys(d).some(k => k !== "data_aval" && d[k] !== "" && d[k] != null && !(Array.isArray(d[k]) && !d[k].length));
+  const hasData = Object.keys(d).some(k => k !== "data_aval" && k !== "enf_mom" && d[k] !== "" && d[k] != null && !(Array.isArray(d[k]) && !d[k].length));
   const hasRx = p.presc && Array.isArray(p.presc.items) && p.presc.items.length;
   return !hasData && !hasRx;
 }
@@ -2038,7 +2143,7 @@ function savePtDialog(){
   const tpl = (f.querySelector("input[name=tpl]:checked") || {}).value || "cti";
   if (!nome && !leito){ $("#ptMsg").textContent = "Informe ao menos o nome ou o leito."; return; }
   let id = editingId;
-  if (!id){ id = uid(); store.patients[id] = { tpl, updated: Date.now(), data: { data_aval: todayISO() } }; }
+  if (!id){ id = uid(); store.patients[id] = { tpl, updated: Date.now(), data: newData(tpl) }; }
   const p = store.patients[id];
   const set = (k, v) => { if (v) p.data[k] = v; else delete p.data[k]; };
   set("nome", nome); set("leito", leito); set("idade", idade); set("sexo", sexo);
@@ -2064,6 +2169,169 @@ const RX_SECS = [["dieta","Dieta"],["med","Medicamentos"],["sol","Soluções / h
 const RX_ST = [["manter","Manter"],["nova","Nova"],["alterar","Alterar"],["suspender","Suspender"]];
 const RX_VIAS = ["", "EV", "VO", "SC", "IM", "SNE/SNG", "Inalatória", "SL", "Retal", "Tópica", "Ocular", "Nasal", "Outra"];
 const RX_FREQ = ["Dose única", "1x/dia", "12/12h", "8/8h", "6/6h", "4/4h", "2/2h", "Contínuo", "ACM", "Se necessário"];
+
+/* ---------------- opções pré-definidas da prescrição ----------------
+   Cada medicação: [descrição, [[dose, via, frequência, observação], ...]] (uma linha por posologia).
+   Doses usuais de adulto com função renal e hepática normais; tudo é editável depois de escolher.
+   Fontes em RX_CAT_REFS. */
+const SN_ = ", se necessário";
+const RX_CAT = [
+ { c: "Dieta", sec: "dieta", it: [
+   ["Dieta livre", [["", "VO", "", ""]]],
+   ["Dieta para diabetes", [["", "VO", "", ""]]],
+   ["Dieta para imunossuprimido", [["", "VO", "", ""]]],
+   ["Dieta hipossódica", [["", "VO", "", ""]]],
+   ["Dieta pastosa", [["", "VO", "", ""]]],
+   ["Dieta suspensa (dieta zero)", [["", "", "", "Motivo / previsão de reintrodução:"]]]
+ ]},
+ { c: "Sintomáticos", sec: "med", it: [
+   ["Dipirona 500 mg/mL (ampola 2 mL)", [["1 g", "EV", "6/6h" + SN_, "Se dor ou febre. Máx. 4 g/dia."]]],
+   ["Dipirona 500 mg (comprimido)", [["500 mg a 1 g", "VO", "6/6h" + SN_, "Se dor ou febre. Máx. 4 g/dia."]]],
+   ["Paracetamol 750 mg (comprimido)", [["750 mg", "VO", "6/6h" + SN_, "Se dor ou febre. Máx. 4 g/dia; reduzir em hepatopatia ou etilismo."]]],
+   ["Tramadol 50 mg/mL (ampola 2 mL)", [["50 a 100 mg", "EV", "6/6h" + SN_, "Diluir em 100 mL de SF 0,9% e infundir em 30 min. Máx. 400 mg/dia."]]],
+   ["Tramadol 50 mg (cápsula)", [["50 a 100 mg", "VO", "6/6h" + SN_, "Máx. 400 mg/dia."]]],
+   ["Morfina 10 mg/mL (ampola 1 mL)", [["2 a 4 mg", "EV", "Até 4/4h" + SN_, "Diluir 1 ampola em 9 mL de AD (1 mg/mL). Se dor intensa."]]],
+   ["Morfina 10 mg (comprimido)", [["5 a 10 mg", "VO", "4/4h" + SN_, "Dose inicial em paciente virgem de opioide."]]],
+   ["Ondansetrona 2 mg/mL (ampola 4 mL)", [["4 a 8 mg", "EV", "8/8h" + SN_, "Se náuseas ou vômitos."]]],
+   ["Ondansetrona 8 mg (comprimido)", [["8 mg", "VO", "8/8h" + SN_, "Se náuseas ou vômitos."]]],
+   ["Metoclopramida 5 mg/mL (ampola 2 mL)", [["10 mg", "EV", "8/8h" + SN_, "Se náuseas ou vômitos. Máx. 30 mg/dia, por até 5 dias."]]],
+   ["Metoclopramida 10 mg (comprimido)", [["10 mg", "VO", "8/8h" + SN_, "Máx. 30 mg/dia, por até 5 dias."]]],
+   ["Bromoprida 5 mg/mL (ampola 2 mL)", [["10 mg", "EV", "8/8h" + SN_, "Se náuseas ou vômitos."]]],
+   ["Bromoprida 10 mg (cápsula)", [["10 mg", "VO", "8/8h" + SN_, ""]]],
+   ["Simeticona 40 mg (comprimido)", [["40 mg", "VO", "8/8h" + SN_, "Se distensão abdominal / flatulência."]]]
+ ]},
+ { c: "Anticoagulação", sec: "med", it: [
+   ["Enoxaparina (profilaxia de TEV)", [["40 mg", "SC", "1x/dia", "Se ClCr < 30 mL/min: 20 mg SC 1x/dia."]]],
+   ["Enoxaparina (dose plena)", [["1 mg/kg", "SC", "12/12h", "Se ClCr < 30 mL/min: 1 mg/kg SC 1x/dia."]]],
+   ["Heparina não fracionada 5.000 UI/0,25 mL (profilaxia de TEV)", [["5.000 UI", "SC", "8/8h", ""], ["5.000 UI", "SC", "12/12h", ""]]],
+   ["Heparina não fracionada 5.000 UI/mL (dose plena)", [["Bolus 80 UI/kg + 18 UI/kg/h", "EV", "Contínuo", "Ajustar pelo TTPa conforme nomograma."]]]
+ ]},
+ { c: "Correção de glicose", sec: "med", it: [
+   ["Insulina regular humana 100 UI/mL – esquema de correção", [
+     ["Conforme glicemia capilar", "SC", "Antes das refeições", "Sensibilidade usual — 141–180: 4 UI; 181–220: 6 UI; 221–260: 8 UI; 261–300: 10 UI; 301–350: 12 UI; 351–400: 14 UI; > 400: 16 UI. Adequar ao protocolo da instituição."],
+     ["Conforme glicemia capilar", "SC", "Antes das refeições", "Sensível à insulina (idoso, DRC, magro) — 141–180: 2 UI; 181–220: 4 UI; 221–260: 6 UI; 261–300: 8 UI; 301–350: 10 UI; 351–400: 12 UI; > 400: 14 UI. Adequar ao protocolo da instituição."],
+     ["Conforme glicemia capilar", "SC", "Antes das refeições", "Resistente à insulina — 141–180: 6 UI; 181–220: 8 UI; 221–260: 10 UI; 261–300: 12 UI; 301–350: 14 UI; 351–400: 16 UI; > 400: 18 UI. Adequar ao protocolo da instituição."]]],
+   ["Glicose 50% (SG 50%, ampola 10 mL)", [["30 a 40 mL (15 a 20 g)", "EV", "Se glicemia < 70 mg/dL", "Repetir glicemia capilar em 15 min e repetir a dose se continuar < 70 mg/dL."]]],
+   ["Insulina regular humana 100 UI/mL (prandial)", [["__ UI", "SC", "Antes do café, almoço e jantar", "Basal-bolus: dose total 0,3–0,5 UI/kg/dia, cerca de metade como prandial."]]],
+   ["Insulina NPH 100 UI/mL (basal)", [["__ UI", "SC", "12/12h", "Basal-bolus: dose total 0,3–0,5 UI/kg/dia, cerca de metade como basal."]]]
+ ]},
+ { c: "Antibioticoterapia", sec: "med", it: [
+   ["Piperacilina + tazobactam (Tazocin) 4,5 g", [["4,5 g", "EV", "6/6h", "Infundir em 30 min. Ajustar ao ClCr."], ["4,5 g", "EV", "8/8h", "Infusão estendida em 4 h. Ajustar ao ClCr."]]],
+   ["Amoxicilina + clavulanato (Clavulin)", [["875/125 mg", "VO", "12/12h", ""], ["500/125 mg", "VO", "8/8h", ""], ["1 g/200 mg", "EV", "8/8h", "Ajustar ao ClCr."]]],
+   ["Azitromicina 500 mg", [["500 mg", "VO", "1x/dia", ""], ["500 mg", "EV", "1x/dia", "Diluir e infundir em pelo menos 60 min."]]],
+   ["Ceftriaxona 1 g", [["1 g", "EV", "1x/dia", ""], ["2 g", "EV", "1x/dia", ""], ["1 g", "EV", "12/12h", ""], ["2 g", "EV", "12/12h", "Dose para infecção do SNC."]]],
+   ["Metronidazol", [["500 mg", "EV", "8/8h", ""], ["400 mg", "VO", "8/8h", ""]]],
+   ["Clindamicina", [["600 mg", "EV", "6/6h", ""], ["600 mg", "EV", "8/8h", ""], ["300 mg", "VO", "6/6h", ""]]],
+   ["Meropenem 1 g", [["1 g", "EV", "8/8h", "Ajustar ao ClCr."], ["2 g", "EV", "8/8h", "Dose para SNC ou germe pouco sensível. Ajustar ao ClCr."]]],
+   ["Vancomicina 500 mg", [["Ataque 25–30 mg/kg", "EV", "Dose única", "Em infecção grave. Infundir em pelo menos 1 h por grama (máx. 1 g/h)."], ["15–20 mg/kg", "EV", "12/12h", "Manutenção. Ajustar por AUC/vale sérico e ClCr."], ["15–20 mg/kg", "EV", "8/8h", "Manutenção. Ajustar por AUC/vale sérico e ClCr."]]],
+   ["Cefepima 1 g", [["2 g", "EV", "8/8h", "Ajustar ao ClCr."]]],
+   ["Cefazolina 1 g", [["1 a 2 g", "EV", "8/8h", "Ajustar ao ClCr."]]],
+   ["Oxacilina 500 mg", [["2 g", "EV", "4/4h", ""]]],
+   ["Ampicilina + sulbactam 3 g", [["3 g", "EV", "6/6h", "Ajustar ao ClCr."]]],
+   ["Amoxicilina 500 mg", [["500 mg", "VO", "8/8h", "Ajustar ao ClCr."]]],
+   ["Ciprofloxacino", [["400 mg", "EV", "12/12h", "Ajustar ao ClCr."], ["500 mg", "VO", "12/12h", "Ajustar ao ClCr."]]],
+   ["Levofloxacino 750 mg", [["750 mg", "EV", "1x/dia", "Ajustar ao ClCr."], ["750 mg", "VO", "1x/dia", "Ajustar ao ClCr."]]],
+   ["Sulfametoxazol + trimetoprima 800/160 mg", [["800/160 mg", "VO", "12/12h", "Ajustar ao ClCr."]]]
+ ]},
+ { c: "Anti-hipertensivos", sec: "med", it: [
+   ["Losartana 50 mg", [["50 mg", "VO", "1x/dia", "Faixa usual: 25–100 mg/dia, em 1 ou 2 tomadas."], ["50 mg", "VO", "12/12h", ""]]],
+   ["Hidroclorotiazida 25 mg", [["25 mg", "VO", "1x/dia", "Faixa usual: 12,5–25 mg/dia."]]],
+   ["Enalapril 10 mg", [["10 mg", "VO", "12/12h", "Faixa usual: 5–40 mg/dia, em 1 ou 2 tomadas."], ["5 mg", "VO", "12/12h", ""]]],
+   ["Anlodipino 5 mg", [["5 mg", "VO", "1x/dia", "Faixa usual: 2,5–10 mg/dia."], ["10 mg", "VO", "1x/dia", ""]]]
+ ]},
+ { c: "Betabloqueadores", sec: "med", it: [
+   ["Metoprolol (succinato) 50 mg", [["50 mg", "VO", "1x/dia", "Faixa usual: 25–200 mg/dia."]]],
+   ["Metoprolol (tartarato) 50 mg", [["50 mg", "VO", "12/12h", "Faixa usual: 100–200 mg/dia, em 2 tomadas."]]],
+   ["Bisoprolol 5 mg", [["5 mg", "VO", "1x/dia", "Faixa usual: 1,25–10 mg/dia (na IC, iniciar com 1,25 mg e titular)."]]],
+   ["Atenolol 50 mg", [["50 mg", "VO", "1x/dia", "Faixa usual: 25–100 mg/dia."]]]
+ ]},
+ { c: "Estatinas", sec: "med", it: [
+   ["Atorvastatina", [["40 mg", "VO", "1x/dia", "Alta intensidade (40–80 mg)."], ["80 mg", "VO", "1x/dia", "Alta intensidade."], ["20 mg", "VO", "1x/dia", "Moderada intensidade (10–20 mg)."]]],
+   ["Sinvastatina", [["40 mg", "VO", "1x/dia", "À noite. Moderada intensidade (20–40 mg)."], ["20 mg", "VO", "1x/dia", "À noite."]]],
+   ["Rosuvastatina", [["20 mg", "VO", "1x/dia", "Alta intensidade (20–40 mg)."], ["10 mg", "VO", "1x/dia", "Moderada intensidade (5–10 mg)."]]]
+ ]},
+ { c: "Protetores gástricos", sec: "med", it: [
+   ["Omeprazol", [["20 mg", "VO", "1x/dia", "Em jejum."], ["40 mg", "VO", "1x/dia", "Em jejum."], ["40 mg", "EV", "1x/dia", ""]]],
+   ["Pantoprazol 40 mg", [["40 mg", "EV", "1x/dia", ""], ["40 mg", "VO", "1x/dia", "Em jejum."]]]
+ ]},
+ { c: "Laxativos", sec: "med", it: [
+   ["Lactulose 667 mg/mL", [["15 a 30 mL", "VO", "1x/dia", "Constipação."], ["20 a 30 mL", "VO", "8/8h", "Encefalopatia hepática: ajustar para 2 a 3 evacuações pastosas/dia."]]],
+   ["Bisacodil 5 mg", [["5 a 10 mg", "VO", "1x/dia", "À noite."]]]
+ ]},
+ { c: "Diuréticos", sec: "med", it: [
+   ["Furosemida 10 mg/mL (ampola 2 mL)", [["20 a 40 mg", "EV", "12/12h", "Ajustar conforme resposta diurética."]]],
+   ["Furosemida 40 mg", [["40 mg", "VO", "1x/dia", ""]]],
+   ["Espironolactona 25 mg", [["25 mg", "VO", "1x/dia", "Monitorar potássio e função renal."]]]
+ ]},
+ { c: "Antiagregantes", sec: "med", it: [
+   ["Ácido acetilsalicílico 100 mg", [["100 mg", "VO", "1x/dia", "Após o almoço."]]],
+   ["Clopidogrel 75 mg", [["75 mg", "VO", "1x/dia", ""]]]
+ ]}
+];
+const RX_CAT_REFS = [
+ "Agência Nacional de Vigilância Sanitária (Anvisa). Bulário Eletrônico: bulas para o profissional de saúde dos medicamentos listados. Disponível em: consultas.anvisa.gov.br.",
+ "Gilbert DN, Chambers HF, Saag MS, et al. <i>The Sanford Guide to Antimicrobial Therapy 2024</i>. 54ª ed. Antimicrobial Therapy; 2024. (Antimicrobianos)",
+ "Rybak MJ, Le J, Lodise TP, et al. Therapeutic monitoring of vancomycin for serious methicillin-resistant <i>Staphylococcus aureus</i> infections: a revised consensus guideline and review by ASHP, IDSA, PIDS and SIDP. <i>Am J Health Syst Pharm</i>. 2020;77(11):835-64. (Vancomicina)",
+ "Kahn SR, Lim W, Dunn AS, et al. Prevention of VTE in nonsurgical patients: Antithrombotic Therapy and Prevention of Thrombosis, 9th ed: ACCP Evidence-Based Clinical Practice Guidelines. <i>Chest</i>. 2012;141(2 Suppl):e195S-e226S. (Profilaxia de TEV)",
+ "Raschke RA, Reilly BM, Guidry JR, Fontana JR, Srinivas S. The weight-based heparin dosing nomogram compared with a \"standard care\" nomogram. <i>Ann Intern Med</i>. 1993;119(9):874-81. (HNF em dose plena)",
+ "Umpierrez GE, Smiley D, Zisman A, et al. Randomized study of basal-bolus insulin therapy in the inpatient management of patients with type 2 diabetes (RABBIT 2 trial). <i>Diabetes Care</i>. 2007;30(9):2181-6. (Esquema de correção e basal-bolus)",
+ "American Diabetes Association Professional Practice Committee. 16. Diabetes Care in the Hospital: Standards of Care in Diabetes—2025. <i>Diabetes Care</i>. 2025;48(Suppl 1). (Hipoglicemia e insulinoterapia hospitalar)",
+ "World Health Organization. <i>WHO guidelines for the pharmacological and radiotherapeutic management of cancer pain in adults and adolescents</i>. Geneva: WHO; 2018. (Opioides)",
+ "Barroso WKS, Rodrigues CIS, Bortolotto LA, et al. Diretrizes Brasileiras de Hipertensão Arterial – 2020. <i>Arq Bras Cardiol</i>. 2021;116(3):516-658. (Anti-hipertensivos e betabloqueadores)",
+ "Rohde LEP, Montera MW, Bocchi EA, et al. Diretriz Brasileira de Insuficiência Cardíaca Crônica e Aguda. <i>Arq Bras Cardiol</i>. 2018;111(3):436-539. (Betabloqueadores, diuréticos e espironolactona)",
+ "Grundy SM, Stone NJ, Bailey AL, et al. 2018 AHA/ACC/AACVPR/AAPA/ABC/ACPM/ADA/AGS/APhA/ASPC/NLA/PCNA Guideline on the Management of Blood Cholesterol. <i>Circulation</i>. 2019;139(25):e1082-e1143. (Intensidade das estatinas)",
+ "Vilstrup H, Amodio P, Bajaj J, et al. Hepatic encephalopathy in chronic liver disease: 2014 Practice Guideline by AASLD and EASL. <i>Hepatology</i>. 2014;60(2):715-35. (Lactulose na encefalopatia hepática)"
+];
+const normTxt = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+let pickSec = "med", pickCat = "", pickQ = "";
+
+function openRxPick(sec){
+  pickSec = sec; pickCat = ""; pickQ = "";
+  $("#rxPickQ").value = "";
+  $("#rxPickTitle").textContent = sec === "dieta" ? "Escolher dieta" : "Escolher medicação";
+  $("#rxPickRefs").replaceChildren(...RX_CAT_REFS.map(r => { const li = el("li"); li.innerHTML = r; return li; }));
+  $("#rxPickRefsBox").hidden = sec === "dieta";
+  renderRxPick();
+  $("#rxPick").showModal();
+  if (sec !== "dieta" && matchMedia("(pointer:fine)").matches) $("#rxPickQ").focus();
+}
+function renderRxPick(){
+  const cats = RX_CAT.filter(c => c.sec === pickSec);
+  $("#rxPickSearch").hidden = cats.length < 2;
+  $("#rxPickCats").hidden = cats.length < 2;
+  $("#rxPickCats").replaceChildren(...[["", "Todas"], ...cats.map(c => [c.c, c.c])].map(([k, l]) =>
+    el("button", { type: "button", "data-pcat": k, "aria-pressed": String(pickCat === k), text: l })));
+  const qt = normTxt(pickQ).split(/[^a-z0-9]+/).filter(Boolean);
+  const hit = txt => { const ws = normTxt(txt).split(/[^a-z0-9]+/); return qt.every(t => ws.some(w => w.startsWith(t))); };
+  const out = [];
+  cats.filter(c => !pickCat || c.c === pickCat).forEach((c, ci) => {
+    const rows = [];
+    c.it.forEach(([desc, vars], ii) => {
+      if (qt.length && !hit(desc + " " + c.c)) return;
+      vars.forEach(([dose, via, freq, obs], vi) => {
+        const pos = [dose, via, freq].filter(Boolean).join(" · ");
+        rows.push(el("button", { type: "button", class: "rxp-item", "data-pick": RX_CAT.indexOf(c) + "." + ii + "." + vi },
+          el("span", { class: "rxp-n", text: desc }),
+          pos ? el("span", { class: "rxp-p", text: pos }) : null,
+          obs ? el("span", { class: "rxp-o", text: obs }) : null));
+      });
+    });
+    if (rows.length) out.push(el("div", { class: "rxp-cat" }, cats.length > 1 ? el("h4", { text: c.c }) : null, ...rows));
+  });
+  $("#rxPickList").replaceChildren(...(out.length ? out : [el("p", { class: "hint", text: "Nada encontrado. Use “+ Adicionar item” para digitar." })]));
+}
+function onRxPick(e){
+  const cb = e.target.closest("[data-pcat]");
+  if (cb){ pickCat = cb.dataset.pcat; renderRxPick(); return; }
+  const b = e.target.closest("[data-pick]"); if (!b) return;
+  const p = cur(); if (!p) return;
+  const [ci, ii, vi] = b.dataset.pick.split(".").map(Number);
+  const c = RX_CAT[ci], [desc, vars] = c.it[ii], [dose, via, freq, obs] = vars[vi];
+  presc(p).items.push({ id: uid(), sec: c.sec, st: "nova", desc, dose, via, freq, ini: "", hor: "", obs });
+  changed(); renderRx();
+  b.classList.add("added"); setTimeout(() => b.classList.remove("added"), 900);
+  toast("Adicionado: " + desc);
+}
 
 function presc(p = cur()){
   if (!p.presc || typeof p.presc !== "object") p.presc = {};
@@ -2127,7 +2395,9 @@ function renderRx(){
     return el("section", { class: "sec rx-sec", "data-sec": k },
       el("div", { class: "sec-h" }, el("h2", { class: "rx-h2", text: label }), el("span", { class: "badge", text: String(items.filter(x => (x.desc || "").trim()).length) })),
       el("div", { class: "sec-body" }, ...items.map(rxItemEl),
-        el("button", { class: "btn add-prob", type: "button", "data-rx": "add", "data-sec": k, text: "+ Adicionar item" })));
+        el("div", { class: "rx-adds" },
+          RX_CAT.some(c => c.sec === k) ? el("button", { class: "btn add-prob primary", type: "button", "data-rx": "pick", "data-sec": k, text: k === "dieta" ? "+ Escolher dieta" : "+ Escolher da lista" }) : null,
+          el("button", { class: "btn add-prob", type: "button", "data-rx": "add", "data-sec": k, text: "+ Adicionar item" }))));
   });
   const notes = el("section", { class: "sec" }, el("div", { class: "sec-h" }, el("h2", { class: "rx-h2", text: "Observações gerais" })),
     el("div", { class: "sec-body" }, el("div", { class: "inp" }, el("textarea", { "data-head": "obs", rows: "3", "aria-label": "Observações gerais" }))));
@@ -2175,6 +2445,7 @@ function onRxClick(e){
   const b = e.target.closest("[data-rx]"); if (!b) return;
   const p = cur(); if (!p) return;
   const r = presc(p), act = b.dataset.rx;
+  if (act === "pick"){ openRxPick(b.dataset.sec); return; }
   if (act === "add"){
     const it = { id: uid(), sec: b.dataset.sec, st: "nova", desc: "", dose: "", via: "", freq: "", ini: "", hor: "", obs: "" };
     r.items.push(it); changed(); renderRx();
@@ -2335,6 +2606,9 @@ $("#syncStatus").addEventListener("click", openAccountEntry);
 
 $("#btnText").addEventListener("click", () => { $("#out").value = buildText(); $("#dlgTitle").textContent = TPL[store.mode].btn.replace(/^Gerar /, "").replace(/^./, c => c.toUpperCase()); dlg.showModal(); });
 $("#dlgClose").addEventListener("click", () => dlg.close());
+$("#rxPickClose").addEventListener("click", () => $("#rxPick").close());
+$("#rxPick").addEventListener("click", onRxPick);
+$("#rxPickQ").addEventListener("input", e => { pickQ = e.target.value; renderRxPick(); });
 dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
 $("#btnCopy").addEventListener("click", async () => { toast(await copyText($("#out").value) ? "Texto copiado" : "Não foi possível copiar"); });
 $("#btnTxt").addEventListener("click", () => {
