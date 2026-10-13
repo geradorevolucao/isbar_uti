@@ -6,7 +6,7 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 - Responder em português do Brasil.
 - Seguir exatamente o que for pedido, sem extrapolar conteúdo clínico não solicitado.
 - Em qualquer conteúdo médico (campos, fórmulas, condutas), citar a bibliografia usada.
-- Não pré-preencher doses ou condutas: o app é um formulário; o conteúdo clínico é do autor.
+- Não pré-preencher doses ou condutas: o app é um formulário; o conteúdo clínico é do autor. Exceção pedida pelo autor: o catálogo de opções da prescrição (`RX_CAT`), que só entra quando o autor escolhe uma opção, fica sempre editável e tem as referências em `RX_CAT_REFS`.
 
 ## Arquitetura
 - **Um único arquivo `index.html`** (HTML + CSS + JS inline, sem dependências externas nem CDN). Precisa continuar funcionando offline e aberto direto do disco (`file://`), porque a rede do hospital bloqueia alguns sites.
@@ -17,7 +17,7 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 1. **Tela inicial** (`#home`): saudação animada com traçado de ECG. Respeita `prefers-reduced-motion`. O botão "Começar" leva à lista.
 2. **Meus pacientes** (`list`): adicionar, editar, mudar de módulo e excluir pacientes; filtro por módulo e busca por nome ou leito.
 3. **Prontuário** (`chart`): formulário gerado a partir de um esquema declarativo (`CTI`, `ENF`, `IC`). "Gerar texto" monta o texto para colar no prontuário oficial.
-4. **Prescrição** (`rx`): proposta com itens nas situações Manter, Nova, Alterar ou Suspender, e aprazamento automático a partir da frequência e do 1º horário. A impressão leva a marca-d'água "SIMULAÇÃO – NÃO VÁLIDA" e o aviso de que não serve para dispensação. **Manter essa identificação**: a folha não pode ser confundida com uma prescrição real, e não deve usar logotipo do hospital ou do MV.
+4. **Prescrição** (`rx`): proposta com itens nas situações Manter, Nova, Alterar ou Suspender, e aprazamento automático a partir da frequência e do 1º horário. Os botões "+ Escolher dieta" e "+ Escolher da lista" abrem o catálogo `RX_CAT` (dieta, sintomáticos, anticoagulação, correção de glicose, antibioticoterapia, anti-hipertensivos, betabloqueadores, estatinas, protetores gástricos, laxativos, diuréticos e antiagregantes), com busca pelo começo das palavras e filtro por categoria; a opção escolhida entra como "Nova", com descrição, dose, via, frequência e observação preenchidas. A impressão leva a marca-d'água "SIMULAÇÃO – NÃO VÁLIDA" e o aviso de que não serve para dispensação. **Manter essa identificação**: a folha não pode ser confundida com uma prescrição real, e não deve usar logotipo do hospital ou do MV.
 
 ## Modelos de evolução (objeto `TPL`)
 - **`cti`, ISBAR:** I/S/B/A/R, com a avaliação por sistemas e o checklist FAST HUGS BID. Campos calculados: PAM; Glasgow total (V = T no paciente intubado); peso predito (fórmula ARDSNet); VC em mL/kg de peso predito; driving pressure; complacência; P/F; diurese em mL/kg/h; ânion gap.
@@ -53,5 +53,8 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 - **A conferir:** se os novos cadastros foram desativados no Supabase (Authentication → Sign In / Providers → "Allow new users to sign up").
 
 ## Decisões do autor
+- Fotos do encaminhamento (exames de laboratório e imagem): a extração é feita pelo chat com o Claude, não dentro do site.
+- Posologias pré-definidas da prescrição: colocadas direto no app, com doses usuais de adulto e referências, todas editáveis.
+- Enfermaria: o autor vai enviar a configuração da parte de **admissão** (diferente da evolução, sem lista de problemas consolidada).
 - Grafia: **"Anamnesia"**, sem acento.
 - Manter o web app como está, inclusive a seção Condutas da enfermaria, até o autor pedir mudanças.
