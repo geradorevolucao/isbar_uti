@@ -59,5 +59,9 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 ## Decisões do autor
 - Fotos do encaminhamento (exames de laboratório e imagem): a extração é feita pelo chat com o Claude, não dentro do site.
 - Posologias pré-definidas da prescrição: colocadas direto no app, com doses usuais de adulto e referências, todas editáveis.
+  - Bromoprida EV: 8 mg 8/8h (definido pelo autor).
+  - Esquema de correção de insulina: faixas do RABBIT 2 (confirmado pelo autor).
+- Enfermaria: as condutas da admissão ficam só na admissão (não passam para a evolução).
+- IC Hemato: manter como está (Mosteller, classificação de risco da leucemia aguda e rótulo "DE"); o autor vai pedir outras mudanças depois.
 - Grafia: **"Anamnesia"**, sem acento.
 - Manter o web app como está, inclusive a seção Condutas da enfermaria, até o autor pedir mudanças.
