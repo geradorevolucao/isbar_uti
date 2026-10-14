@@ -43,7 +43,7 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
   - Criptografia de ponta a ponta: AES-GCM 256 com chave derivada por PBKDF2-SHA-256 (600 mil iterações) a partir da senha de criptografia, que nunca sai do aparelho.
   - A chave pode ficar lembrada no IndexedDB, como chave não exportável.
   - Conflitos: vale a última versão de cada paciente; exclusões são enviadas como marcação (*tombstone*).
-- **Configuração da sincronização:** as constantes `SYNC_URL` e `SYNC_ANON_KEY` no topo do script já estão preenchidas com a URL do projeto e a chave *publishable* (pública por natureza), então nenhum aparelho precisa digitar o servidor.
+- **Configuração da sincronização:** o projeto Supabase do autor é `https://lykqudxhjnvsiprrkinh.supabase.co` (o arquivo `supabase init` do repositório é de **outro** projeto, `cspsiakuwuqegugfxepb`; não usar). O servidor digitado no aparelho ("Conta e sincronização" → Configurar servidor, guardado em `isbar-sync-cfg`) tem prioridade; as constantes `SYNC_URL` e `SYNC_ANON_KEY` servem para aparelhos sem configuração (ex.: abrir código num PC do hospital). "Alterar servidor" aparece sempre.
 - **HTTPS obrigatório:** `crypto.subtle` só existe em contexto seguro, então a conta não funciona via `http://`.
 
 ## Enviar o texto para outro computador (janela do texto gerado → "Enviar para outro computador")
