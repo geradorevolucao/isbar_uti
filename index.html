@@ -537,8 +537,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
    por natureza; a proteção vem do login + Row Level Security + criptografia.
    Se deixar em branco, o app pede esses dados em "Conta e sincronização".
    ===================================================================== */
-const SYNC_URL = "https://cspsiakuwuqegugfxepb.supabase.co";
-const SYNC_ANON_KEY = "sb_publishable_MIL9UamOgxgWXLh9EecOiA_wyluNgzS";   // chave publishable (pública por natureza)
+const SYNC_URL = "https://lykqudxhjnvsiprrkinh.supabase.co";
+const SYNC_ANON_KEY = "";   // chave publishable do projeto (pública por natureza); vazia: o app usa a que foi digitada no aparelho
 
 /* =====================================================================
    MODELO (esquema dos campos)
@@ -1673,9 +1673,10 @@ const ls = {
 };
 const locked = () => !!session && !cryptoKey;
 
+// o servidor digitado neste aparelho tem prioridade; as constantes servem para aparelhos que ainda não têm nenhum
 function syncCfg(){
-  if (SYNC_URL && SYNC_ANON_KEY) return { url: SYNC_URL.replace(/\/+$/, ""), key: SYNC_ANON_KEY, fixed: true };
   try { const c = JSON.parse(ls.get(CFG_KEY) || "null"); if (c && c.url && c.key) return { url: c.url.replace(/\/+$/, ""), key: c.key, fixed: false }; } catch(e){}
+  if (SYNC_URL && SYNC_ANON_KEY) return { url: SYNC_URL.replace(/\/+$/, ""), key: SYNC_ANON_KEY, fixed: true };
   return null;
 }
 
@@ -1937,7 +1938,7 @@ function acctView(kind){
 
   if (kind === "config"){
     h("Configurar servidor", "Cole os dados do seu projeto Supabase (Project Settings → API): a URL do projeto e a chave pública “anon”.");
-    const u = field("URL do projeto", { type: "url", placeholder: "https://xxxx.supabase.co", value: c ? c.url : "" });
+    const u = field("URL do projeto", { type: "url", placeholder: "https://xxxx.supabase.co", value: c ? c.url : SYNC_URL });
     const k = field("Chave pública (anon)", { type: "text", autocomplete: "off", value: c ? c.key : "" });
     const b = el("button", { class: "btn primary", type: "button", text: "Salvar" });
     b.onclick = () => {
@@ -1979,7 +1980,7 @@ function acctView(kind){
       catch(err){ busy(root, false); showMsg(root, err.message, true); }
     };
     root.append(em, pw, msg, el("div", { class: "acts" }, bUp, bIn), bFg);
-    if (c && !c.fixed){ const bc = el("button", { class: "linkbtn", type: "button", text: "Alterar servidor" }); bc.onclick = () => openAcct("config"); root.append(bc); }
+    if (c){ const bc = el("button", { class: "linkbtn", type: "button", text: "Alterar servidor" }); bc.onclick = () => openAcct("config"); root.append(bc); }
   }
 
   if (kind === "newpass"){
