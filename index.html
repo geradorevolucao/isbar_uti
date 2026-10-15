@@ -125,6 +125,8 @@ body[data-view="list"] header.top,body[data-view="rx"] header.top{padding-bottom
 .rx-h2{padding:12px 14px}
 .rx-sec .sec-h .badge{margin-right:0}
 .rx-adds{display:flex;gap:8px;flex-wrap:wrap}
+.biomega{margin-top:14px;border-top:1px solid var(--line);padding-top:8px}
+.biomega>summary{cursor:pointer;font-weight:600;color:var(--accent);padding:6px 0}
 .share{border-top:1px solid var(--line);padding:0 14px}
 .share>summary{cursor:pointer;padding:10px 0;font-weight:600;color:var(--accent)}
 .share-in{padding:0 0 10px}
@@ -1921,6 +1923,32 @@ async function lockNow(){
   location.reload();
 }
 
+/* ---------- teste do login no Biomega (função biomega-login no Supabase) ----------
+   Primeiro passo da integração: só confere se o portal aceita login vindo do servidor.
+   Usuário e senha do portal vão só nesta requisição; não ficam salvos no aparelho nem no servidor. */
+function biomegaTestBox(){
+  const u = field("Usuário do portal", { type: "text", autocomplete: "off", autocapitalize: "none", spellcheck: "false" });
+  const p = field("Senha do portal", { type: "password", autocomplete: "off" });
+  const out = el("p", { class: "sub", role: "status" });
+  const b = el("button", { class: "btn", type: "button", text: "Testar login no Biomega" });
+  b.onclick = async () => {
+    const usuario = u.querySelector("input").value.trim(), senha = p.querySelector("input").value;
+    if (!usuario || !senha){ out.textContent = "Informe usuário e senha do portal."; return; }
+    b.disabled = true; out.textContent = "Testando… (pode levar até 30 s)";
+    try {
+      const r = await api("/functions/v1/biomega-login", { method: "POST", body: { usuario, senha } });
+      out.textContent = r && r.ok
+        ? `Funcionou: o portal aceitou o login pelo servidor e a página de consultas abriu (${r.unidades} unidade(s), ${r.ms} ms).`
+        : `Não funcionou${r && r.etapa ? " (etapa: " + r.etapa + ")" : ""}: ${(r && r.erro) || "resposta inesperada"}${r && r.codigo ? " [" + r.codigo + "]" : ""}${r && r.detalhe ? " · " + r.detalhe : ""}${r && r.amostra ? " · resposta: " + r.amostra : ""}`;
+    } catch(e){
+      out.textContent = e.status === 404 ? "A função biomega-login ainda não foi publicada no Supabase." : "Erro: " + e.message;
+    } finally { b.disabled = false; p.querySelector("input").value = ""; }
+  };
+  return el("details", { class: "biomega" }, el("summary", { text: "Teste: login no Biomega" }),
+    el("p", { class: "sub", text: "Confere se o portal aceita login vindo do servidor do Anamnesia. Usuário e senha não são salvos." }),
+    u, p, el("div", { class: "acts" }, b), out);
+}
+
 /* ---------- telas de conta ---------- */
 function field(label, attrs){ const id = "a_" + Math.random().toString(36).slice(2,8); return el("div", { class: "fld w-full" }, el("label", { for: id, text: label }), el("div", { class: "inp" }, el("input", { id, ...attrs }))); }
 function checkbox(label, checked){ const i = el("input", { type: "checkbox", checked: checked || null }); return { box: el("label", { class: "chk" }, i, el("span", { text: label })), input: i }; }
@@ -2035,7 +2063,7 @@ function acctView(kind){
     const bO = el("button", { class: "btn danger", type: "button", text: "Sair da conta" });
     bS.onclick = async () => { busy(root, true, "Sincronizando…"); await syncNow(true); openAcct("account"); };
     bL.onclick = lockNow; bO.onclick = logout;
-    root.append(msg, el("div", { class: "acts" }, bL, bS), bO);
+    root.append(msg, el("div", { class: "acts" }, bL, bS), bO, biomegaTestBox());
   }
 
   if (kind === "reset"){
