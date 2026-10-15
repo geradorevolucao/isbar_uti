@@ -125,6 +125,21 @@ body[data-view="list"] header.top,body[data-view="rx"] header.top{padding-bottom
 .rx-h2{padding:12px 14px}
 .rx-sec .sec-h .badge{margin-right:0}
 .rx-adds{display:flex;gap:8px;flex-wrap:wrap}
+.bio .inp select{width:100%;height:40px;border:0;background:transparent;color:var(--ink);font:inherit;padding:0 8px}
+.bio textarea{width:100%;min-height:9rem;font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.bio-opts{align-items:flex-end}
+.bio-av{margin:8px 0;font-size:.85rem}
+.bio-av>summary{cursor:pointer;font-weight:600;color:var(--accent);padding:4px 0}
+.bio-av ul{margin:4px 0;padding-left:1.2rem;color:var(--muted)}
+.bio-serie{padding:8px 0;border-top:1px solid var(--line)}
+.bio-serie-h{display:flex;align-items:baseline;gap:8px}
+.bio-serie-h .u{color:var(--muted);font-size:.78rem}
+.bio-ult{margin-left:auto;font-variant-numeric:tabular-nums}
+.bio-spark{width:100%;max-width:320px;height:40px;display:block;margin:4px 0;overflow:visible}
+.bio-spark .ln{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.bio-spark .pt{fill:var(--accent);stroke:var(--card);stroke-width:2;vector-effect:non-scaling-stroke}
+.bio-spark .hit{fill:transparent}
+.bio-vals{margin:0;font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
 .biomega{margin-top:14px;border-top:1px solid var(--line);padding-top:8px}
 .biomega>summary{cursor:pointer;font-weight:600;color:var(--accent);padding:6px 0}
 .share{border-top:1px solid var(--line);padding:0 14px}
@@ -370,6 +385,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
         <button type="button" data-act="edit" data-views="chart rx">Editar dados do paciente</button>
         <button type="button" data-act="newday" hidden></button>
         <button type="button" data-act="rx-newday" data-views="rx">Nova proposta do dia</button>
+        <button type="button" data-act="biomega" data-views="chart">Exames do Biomega</button>
         <button type="button" data-act="print" data-views="chart rx">Imprimir / salvar PDF</button>
         <button type="button" data-act="expand">Expandir todos os grupos</button>
         <button type="button" data-act="collapse">Recolher todos os grupos</button>
@@ -522,6 +538,50 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <textarea id="codeText" readonly aria-label="Texto recebido" hidden></textarea>
     <div class="acts" id="codeActs" hidden>
       <button class="btn primary" type="button" id="codeCopy">Copiar texto</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="bioDlg" aria-labelledby="bioDlgTitle">
+  <div class="dlg">
+    <header>
+      <h3 id="bioDlgTitle">Exames do Biomega</h3>
+      <button class="btn" type="button" id="bioClose" aria-label="Fechar">✕</button>
+    </header>
+    <div class="acct-body acct bio">
+      <div class="row">
+        <div class="fld w-s"><label for="bioPront">Prontuário</label><div class="inp"><input id="bioPront" inputmode="numeric" autocomplete="off"></div></div>
+        <div class="fld w-s"><label for="bioDias">Período</label><div class="inp"><select id="bioDias">
+          <option value="7">7 dias</option><option value="15">15 dias</option><option value="30" selected>30 dias</option><option value="60">60 dias</option>
+          <option value="90">90 dias</option><option value="180">180 dias</option><option value="365">365 dias</option></select></div></div>
+        <div class="fld w-m"><label for="bioUnid">Unidade</label><div class="inp"><select id="bioUnid"></select></div></div>
+      </div>
+      <p class="sub" id="bioCredSaved" hidden>Portal: usuário <strong id="bioCredUser"></strong> lembrado neste aparelho. Para trocar: ⋯ → Conta e sincronização → Biomega.</p>
+      <div id="bioCredForm" hidden>
+        <div class="row">
+          <div class="fld w-m"><label for="bioUser">Usuário do portal</label><div class="inp"><input id="bioUser" autocomplete="off" autocapitalize="none" spellcheck="false"></div></div>
+          <div class="fld w-m"><label for="bioPass">Senha do portal</label><div class="inp"><input id="bioPass" type="password" autocomplete="off"></div></div>
+        </div>
+        <label class="chk"><input type="checkbox" id="bioRem"><span>Lembrar usuário e senha neste aparelho (cifrados com os prontuários)</span></label>
+      </div>
+      <div class="acts"><button class="btn primary" type="button" id="bioGo">Buscar exames</button></div>
+      <p class="msg" id="bioMsg" role="status"></p>
+      <div id="bioOut" hidden>
+        <div class="row bio-opts">
+          <div class="fld w-m"><label for="bioFmt">Formato</label><div class="inp"><select id="bioFmt"><option value="fp">Formato prontuário</option><option value="doc">Documento completo</option></select></div></div>
+          <label class="chk"><input type="checkbox" id="bioMarcar"><span>Marcar alterados (*)</span></label>
+        </div>
+        <div class="inp"><textarea id="bioTxt" rows="8" readonly aria-label="Exames formatados"></textarea></div>
+        <details class="bio-av" id="bioAvisosBox"><summary>Avisos</summary><ul id="bioAvisos"></ul></details>
+        <details class="bio-av" id="bioSeriesBox"><summary id="bioSeriesSum">Evolução</summary><div id="bioSeries"></div></details>
+        <div class="row bio-ins">
+          <div class="fld w-l"><label for="bioAlvo">Inserir em</label><div class="inp"><select id="bioAlvo"></select></div></div>
+        </div>
+        <div class="acts">
+          <button class="btn" type="button" id="bioCopy">Copiar</button>
+          <button class="btn primary" type="button" id="bioIns">Inserir no prontuário</button>
+        </div>
+      </div>
     </div>
   </div>
 </dialog>
@@ -1637,6 +1697,7 @@ function onMenu(act){
   switch (act){
     case "account": openAccountEntry(); break;
     case "opencode": openCodeDlg(); break;
+    case "biomega": openBioDlg(); break;
     case "edit": if (p) openPtDialog(store.currentBy[store.mode]); break;
     case "rx-newday": rxNewDay(); break;
     case "rx-clear": rxClear(); break;
@@ -1957,17 +2018,17 @@ function biomegaTestBox(){
     if (!usuario || !senha){ out.textContent = "Informe usuário e senha do portal."; return; }
     b.disabled = true; out.textContent = "Testando… (pode levar até 30 s)";
     try {
-      const r = await api("/functions/v1/biomega-login", { method: "POST", body: { usuario, senha } });
+      const r = await api("/functions/v1/biomega", { method: "POST", body: { acao: "login", usuario, senha } });
       if (r && r.ok){
         if (rem.input.checked) setBioCred(usuario, senha); else if (bioCred()) setBioCred(null);
         forget.hidden = !bioCred();
       }
       out.textContent = (r && r.ok
-        ? `Funcionou: o portal aceitou o login pelo servidor e a página de consultas abriu (${r.unidades} unidade(s), ${r.ms} ms).`
+        ? `Funcionou: o portal aceitou o login pelo servidor e a página de consultas abriu (${(r.unidades || []).length} unidade(s), ${r.ms} ms).`
         : `Não funcionou${r && r.etapa ? " (etapa: " + r.etapa + ")" : ""}: ${(r && r.erro) || "resposta inesperada"}${r && r.codigo ? " [" + r.codigo + "]" : ""}${r && r.detalhe ? " · " + r.detalhe : ""}${r && r.amostra ? " · resposta: " + r.amostra : ""}`)
         + (r && r.ok && bioCred() ? " Usuário e senha lembrados neste aparelho." : "");
     } catch(e){
-      out.textContent = e.status === 404 ? "A função biomega-login ainda não foi publicada no Supabase." : "Erro: " + e.message;
+      out.textContent = e.status === 404 ? "A função biomega ainda não foi publicada no Supabase." : "Erro: " + e.message;
     } finally {
       b.disabled = false;
       if (!bioCred()) pi.value = "";
@@ -2786,6 +2847,437 @@ async function openByCode(){
 }
 
 /* =====================================================================
+   EXAMES DO BIOMEGA
+   Porte das regras do app Flask do autor (clinica.py, formato_prontuario.py, series.py).
+   A função biomega (Supabase) só conversa com o portal; aqui ficam as regras clínicas e a
+   formatação. Resultados ficam só na memória desta janela.
+   ===================================================================== */
+const BIO = (() => {
+  const IGNORAR = "__ignorar__";
+  const asciiLower = t => String(t || "").normalize("NFKD").replace(/[^\x00-\x7f]/g, "").toLowerCase();
+  const isUpper = s => s !== s.toLowerCase() && s === s.toUpperCase();
+  const isLower = s => s !== s.toUpperCase() && s === s.toLowerCase();
+  const capitalize = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
+  const pyTitle = s => s.replace(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+  const stripChars = (s, chars) => { let a = 0, b = s.length; while (a < b && chars.includes(s[a])) a++; while (b > a && chars.includes(s[b - 1])) b--; return s.slice(a, b); };
+  const rstripChars = (s, chars) => { let b = s.length; while (b > 0 && chars.includes(s[b - 1])) b--; return s.slice(0, b); };
+
+  /* ---------------- clinica.py ---------------- */
+  const HIERARQUIA = [
+    [["hba1c", "glicada"], 3],
+    [["hemograma", "eritrograma", "leucograma", "plaquetograma", "hemacias", "hemoglobina", "hematocrito", "vcm", "hcm", "chcm", "rdw",
+      "leucocitos", "neutrofilos", "bastonetes", "segmentados", "eosinofilos", "basofilos", "linfocitos", "monocitos", "plaquetas"], 1],
+    [["glicose", "glicemia"], 2], [["ureia"], 4], [["creatinina"], 5], [["sodio"], 6], [["potassio"], 7],
+    [["colesterol", "hdl", "ldl", "vldl"], 8], [["triglicer"], 9], [["tsh"], 10], [["t4 livre"], 11],
+  ];
+  const PESO_PADRAO = 999;
+  const RUIDO = /^(linha\d+|assinatura automatica|flag ok|calculo do hemograma|metodo|material|observac|obs\b|responsavel tecnico|liberado por)/;
+  const CABECALHO = /^[A-Z0-9ÇÁÉÍÓÚÀÂÊÔÃÕ]{2,6}\s*-\s*(.+)$/;
+  const VALOR_NUMERICO = /^[<>=~]?\s*-?\d/;
+  const STATUS_LAUDO = /\s*(\((assinado|impresso|em andamento|parcial)[^)]*\)|\bPA\d+\b)\s*/gi;
+  const normalizar = t => asciiLower(t).replace(/\s+/g, " ").trim();
+  function pesoClinico(nome){ const n = normalizar(nome); for (const [chaves, peso] of HIERARQUIA) if (chaves.some(c => n.includes(c))) return peso; return PESO_PADRAO; }
+  function parseData(texto){
+    const m = /(\d{2})\/(\d{2})\/(\d{4}|\d{2})\b/.exec(texto || ""); if (!m) return null;
+    let [d, mo, a] = [Number(m[1]), Number(m[2]), Number(m[3])]; if (a < 100) a += 2000;
+    const t = new Date(Date.UTC(a, mo - 1, d));
+    return t.getUTCDate() === d && t.getUTCMonth() === mo - 1 ? { ord: t.getTime() / 864e5, br: `${m[1]}/${m[2]}/${a}` } : null;
+  }
+  // pedidos: na ordem da função; linhasDe(pedido) devolve as linhas já lidas (ou {erro})
+  function processar(prontuario, pedidos, linhasDe, dias){
+    prontuario = String(prontuario).replace(/\D/g, "");
+    const resultados = [], avisos = [], vistos = new Set();
+    pedidos.forEach((pedido, ordemPedido) => {
+      const solicitacao = pedido.solicitacao || "?";
+      if (pedido._pulado){ avisos.push(pedido._pulado); return; }
+      const lido = linhasDe(pedido), data = pedido._data;
+      if (lido && lido.erro){ avisos.push(`Pedido ${solicitacao} (${data.br}): ${lido.erro}`); return; }
+      const linhas = lido && lido.linhas || [];
+      if (!linhas.length){ avisos.push(`Pedido ${solicitacao} (${data.br}): nenhum resultado liberado.`); return; }
+      let grupo = "";
+      linhas.forEach((linha, ordemLinha) => {
+        let parametro = linha.Parametro || "";
+        const valor = linha.Result || "", calculado = linha.Calcu || "", unidadeMed = linha.Unidmed || "";
+        if (!parametro || RUIDO.test(normalizar(parametro))) return;
+        const titulo = CABECALHO.exec(parametro);
+        if (titulo && !VALOR_NUMERICO.test(valor)){
+          grupo = stripChars(titulo[1].replace(STATUS_LAUDO, "").trim(), " -");
+          if (/em andamento/i.test(titulo[1])) resultados.push({ data: data.br, solicitacao, grupo, exame: grupo, resultado: "pendente", calculado: "", unidade: "",
+            alterado: false, flag: "", pendente: true, peso: PESO_PADRAO, _ord: [-data.ord, PESO_PADRAO, ordemPedido, ordemLinha] });
+          return;
+        }
+        if (/^resultados?$/.test(stripChars(normalizar(parametro), " :.")) && grupo) parametro = grupo;
+        if (!valor && !calculado && !unidadeMed){ grupo = parametro; return; }
+        if (!valor && !calculado) return;
+        const chave = JSON.stringify([data.br, parametro, valor, calculado, unidadeMed]);
+        if (vistos.has(chave)) return;
+        vistos.add(chave);
+        let peso = pesoClinico(parametro); if (peso === PESO_PADRAO) peso = pesoClinico(grupo);
+        resultados.push({ data: data.br, solicitacao, grupo, exame: parametro, resultado: valor || calculado, calculado: valor ? calculado : "",
+          unidade: unidadeMed, alterado: !!linha.Flegui, flag: linha.Flegui || "", pendente: false, peso, _ord: [-data.ord, peso, ordemPedido, ordemLinha] });
+      });
+    });
+    if (!pedidos.length) avisos.push(`Nenhum pedido encontrado para este prontuário nos últimos ${dias} dias.`);
+    resultados.sort((a, b) => { for (let i = 0; i < 4; i++) if (a._ord[i] !== b._ord[i]) return a._ord[i] - b._ord[i]; return 0; });
+    resultados.forEach(r => delete r._ord);
+    return { resultados, avisos, pedidos: pedidos.length };   // o sexo vem de prepararPedidos
+  }
+  // checagens feitas antes de buscar os resultados (prontuário diferente, data ilegível) e o sexo
+  function prepararPedidos(prontuario, pedidos){
+    prontuario = String(prontuario).replace(/\D/g, "");
+    let sexo = "";
+    for (const p of pedidos){
+      const sol = p.solicitacao || "?";
+      const pp = String(p.prontuario || "").replace(/\D/g, "");
+      if (pp && pp.replace(/^0+/, "") !== prontuario.replace(/^0+/, "")){ p._pulado = `Pedido ${sol}: prontuário diferente do buscado; ignorado por segurança.`; continue; }
+      if (!sexo){ const t = normalizar(p.sexoDesc || p.sexo); sexo = t.startsWith("f") ? "F" : t.startsWith("m") ? "M" : ""; }
+      p._data = parseData(p.entrada);
+      if (!p._data) p._pulado = `Pedido ${sol}: data de entrada ilegível; ignorado.`;
+    }
+    return sexo;
+  }
+  const tituloGrupo = t => t.length <= 4 ? t : t.slice(0, 1).toUpperCase() + t.slice(1).toLowerCase();
+  function formatarDocumento(resultados, marcar = true){
+    const paragrafos = []; let dataAtual = null, blocos = [];
+    const fecha = () => { if (dataAtual !== null) paragrafos.push(`${dataAtual}: ` + blocos.map(([g, itens]) => (g ? `${tituloGrupo(g)}: ` : "") + itens.join("; ")).join(" | ")); };
+    for (const r of resultados){
+      if (r.data !== dataAtual){ fecha(); dataAtual = r.data; blocos = []; }
+      let item = `${r.exame} ${r.resultado}`;
+      if (r.unidade) item += ` ${r.unidade}`;
+      if (r.calculado) item += ` (${r.calculado})`;
+      if (marcar && r.alterado) item += "*";
+      if (blocos.length && blocos[blocos.length - 1][0] === r.grupo) blocos[blocos.length - 1][1].push(item); else blocos.push([r.grupo, [item]]);
+    }
+    fecha();
+    let texto = paragrafos.join("\n\n");
+    if (marcar && resultados.some(r => r.alterado)) texto += "\n\n* resultado sinalizado pelo laboratório";
+    return texto;
+  }
+
+  /* ---------------- formato_prontuario.py ---------------- */
+  const ORDEM = ["Hb", "Ht", "GL", "Plt", "Ur", "Cr", "Na", "K", "Cl", "Mg", "Ca", "Cai", "P", "pH", "pCO2", "pO2", "SatO2", "HCO3", "BE", "Lac", "PCR"];
+  const ORDEM_OUTROS = ["TGO", "TGP", "GGT", "FA", "BT", "BD", "BI", "Alb", "RNI", "TTpA"];
+  const GASO = new Set(["pH", "pCO2", "pO2", "SatO2", "HCO3", "BE", "Lac"]);
+  const UNIDADE_MANTIDA = new Set(["Ht"]);
+  const CONDICIONAIS = { Hb: ["VCM", "HCM", "RDW"], GL: ["Neut", "Bast", "Eos", "Baso", "Linf", "Mono", "Meta", "Mielo", "Promielo", "Blastos"] };
+  const ANEMIA = { F: 12.0, M: 13.0 }, ANEMIA_SEXO_DESCONHECIDO = 12.0, LEUCOPENIA = 4000, LEUCOCITOSE = 11000;
+  const LAUDO_LONGO = /imunofenotipagem|mielograma|antibiograma|eletroforese|fator antinuclear|cariotipo|anatomo ?patologico|biopsia|imuno ?histoquimica|painel proliferativo|anticorpos (nucleares|nucleolares|citoplasmaticos)/;
+  const TAMANHO_LAUDO = 150;
+  const TEXTO_CURTO = [
+    [/^nao reagente$/, "NR"], [/^reagente$/, "R"], [/^indeterminado$/, "indet"], [/^negativo apos .*incuba.*$/, "neg (5 dias)"],
+    [/^negativo$|^nao detectado$/, "neg"], [/^positivo$|^detectado$/, "pos"], [/^parcial negativo$/, "parcial neg"],
+    [/^inferior a (.+)$/, "<$1"], [/^superior a (.+)$/, ">$1"],
+  ];
+  const DIFERENCIAL = new Set(["Neut", "Bast", "Eos", "Baso", "Linf", "Mono", "Meta", "Mielo", "Promielo", "Blastos"]);
+  const FLUIDO_NAO_SANGUE = /\b(urina|urinari[oa]s?|eas|sumario|liquor|lcr|liquido|pleural|ascitico|sinovial|fezes|24 ?h|24 horas|clearance|depuracao|amostra isolada)\b/;
+  const GRUPO_GASO = /\bgaso/;
+  const NOME_GENERICO = /^(total|direta|indireta|fracao|relacao|ratio|tempo|valor|atividade|resultado|dosagem|concentracao)\b/;
+  const R = (p, s) => [new RegExp(p), s];
+  const REGRAS_GASO = [
+    R("calcio ioni|^cai\\b|calcio ionizado", "Cai"), R("^(glicose|glicemia)\\b", null),
+    R("^ph\\b", "pH"), R("\\bp ?co2\\b", "pCO2"), R("\\bp ?o2\\b", "pO2"), R("\\bsat|\\bso2\\b", "SatO2"),
+    R("hco3|bicarbonato", "HCO3"), R("excesso de base|base excess|\\bbe\\b|\\bbeb\\b|\\bbeecf\\b", "BE"), R("lactato|\\blac\\b", "Lac"),
+  ];
+  const REGRAS = [
+    R("taxa de filtracao glomerular|\\btfg\\b|\\begfr\\b|ritmo de filtracao", IGNORAR),
+    R("^(leitura|kit|lote|validade|flag|flagok|imagem|local de coleta|tempo de positividade|controle (minimo|maximo)|ig#|gci|conclusao)\\b", IGNORAR),
+    R("glicada|a1c", null), R("^chcm\\b|concentracao de hemoglobina", IGNORAR), R("^hcm\\b|hemoglobina corpuscular media", "HCM"),
+    R("^vcm\\b|volume corpuscular", "VCM"), R("^rdw\\b", "RDW"), R("^(hematocrito|ht|hct)\\b", "Ht"), R("^(hemoglobina|hb|hgb)\\b", "Hb"),
+    R("^(hemacias|eritrocitos|vpm|mpv|pdw|plaquetocrito|eritroblastos)\\b", IGNORAR), R("^(leucocitos|leucograma|wbc|global de leucocitos)\\b", "GL"),
+    R("^neutrofilos\\b|^segmentados\\b", "Neut"), R("^(bastonetes|bastoes)\\b", "Bast"), R("^eosinofilos\\b", "Eos"), R("^basofilos\\b", "Baso"),
+    R("^linfocitos atipicos\\b", IGNORAR), R("^linfocitos\\b", "Linf"), R("^monocitos\\b", "Mono"), R("^metamielocitos\\b", "Meta"),
+    R("^mielocitos\\b", "Mielo"), R("^promielocitos\\b", "Promielo"), R("^blastos\\b", "Blastos"),
+    R("^(plaquetas|plaq|plt|contagem de plaquetas)\\b", "Plt"),
+    R("^creatinina\\b", "Cr"), R("^ureia\\b", "Ur"), R("^sodio\\b", "Na"), R("^potassio\\b", "K"), R("^(cloro|cloreto)\\b", "Cl"),
+    R("^magnesio\\b", "Mg"), R("^calcio ioni|^cai\\b|calcio ionizado", "Cai"), R("^calcio\\b", "Ca"), R("^fosforo\\b", "P"),
+    R("\\btgo\\b|\\bast\\b|aspartato|oxalacetica", "TGO"), R("\\btgp\\b|\\balt\\b|alanina amino|piruvica", "TGP"), R("\\bggt\\b|gama ?g|gamma ?g", "GGT"),
+    R("fosfatase alcalina|^fa\\b", "FA"), R("bilirrubinas? .*indireta|^indireta$", "BI"), R("bilirrubinas? .*\\bdireta|^direta$", "BD"),
+    R("bilirrubinas? .*total|^bilirrubinas?$", "BT"), R("^albumina\\b", "Alb"),
+    R("\\b(rni|inr)\\b", "RNI"),
+    R("^relacao paciente|(ttpa|kptt|aptt|tromboplastina parcial).*\\b(relacao|ratio|r)\\b|^(relacao|ratio)\\b.*(ttpa|kptt|aptt)", "TTpA"),
+    R("ttpa|kptt|aptt|tromboplastina parcial|protrombina|\\btap?\\b|^tempo\\b|^atividade\\b", IGNORAR),
+    R("proteina c reativa|\\bpcr\\b", "PCR"), R("^lactato\\b", "Lac"),
+  ];
+  const ABREVIACOES_DEMAIS = [
+    R("reticulocitos absoluto", "Retic"), R("reticulocitos %", "Retic%"), R("^eritrocitos\\b", IGNORAR), R("coombs direto", "Coombs D"),
+    R("coombs indireto", "Coombs I"), R("pesquisa de esquizocitos|esquizocitos", "Esquizócitos"), R("haptoglobina", "Hapto"),
+    R("capacidade total de fixacao do ferro|\\bctff\\b", "CTFF"), R("capacidade latente", "CLF"),
+    R("paratormonio|\\bpth\\b", "PTH"), R("complemento c3|^c3\\b", "C3"), R("complemento c4|^c4\\b", "C4"), R("imunoglobulina a|\\biga\\b(?!.*anticardio)", "IgA"),
+    R("antigeno carcinoembrionico|\\bcea\\b", "CEA"), R("ca ?19 ?-? ?9", "CA19-9"), R("aldolase", "Aldolase"),
+    R("fator antinuclear|anticorpos nucleares", "FAN"), R("anti-?dna", "Anti-DNA"), R("anti-?sm\\b", "Anti-Sm"), R("anti ?ssa|anti-?ro\\b", "Anti-SSA"),
+    R("anti-?ssb|anti-?la\\b", "Anti-SSB"), R("anticardiolipina", "Anticardiolipina"), R("beta 2 glicoprote", "Anti-β2GP"), R("anticoagulante lupico", "AL"),
+    R("anti-?mitocondria", "AMA"), R("anti-?citoplasma de neutrofilos|\\banca\\b", "ANCA"), R("fator reumatoide", "FR"), R("anti ?ccp|citrulina", "Anti-CCP"),
+    R("\\bhiv\\b", "HIV"), R("hbsag", "HBsAg"), R("anti-?hbs", "Anti-HBs"), R("anti hva igm|anti-?hav igm", "Anti-HAV IgM"), R("anti hav igg|anti-?hav igg", "Anti-HAV IgG"),
+    R("anti-?hcv|hepatite c", "Anti-HCV"), R("\\bvdrl\\b", "VDRL"), R("treponema", "Sífilis (treponêmico)"),
+    R("citomegalovirus igg|\\bcmv igg\\b", "CMV IgG"), R("citomegalovirus igm|\\bcmv igm\\b", "CMV IgM"),
+    R("epstein barr igg|\\bebv igg\\b", "EBV IgG"), R("epstein barr igm|\\bebv igm\\b", "EBV IgM"), R("htlv", "HTLV"),
+    R("hemocultura", "Hemocultura"), R("urocultura", "Urocultura"), R("fungos, ?cultura|cultura para fungos|fungos filamentosos", "Cultura fungos"),
+    R("b\\.?a\\.?a\\.?r", "BAAR"), R("bacterioscopico", "Bacterioscopia"), R("antibiograma", "Antibiograma"),
+    R("^ph$", "pH"), R("^cor$", "Cor"), R("^aspecto$", "Aspecto"), R("proteinuria", "Proteinúria"), R("creatinina urinaria", "Cr urin"), R("^relacao$", "Rel prot/Cr"),
+    R("glicada|a1c", "HbA1c"), R("^(glicose|glicemia)\\b", "Glic"), R("colesterol total", "CT"), R("\\bvldl\\b", "VLDL"), R("\\bhdl\\b", "HDL"), R("\\bldl\\b", "LDL"),
+    R("triglicer", "TG"), R("acido urico", "AU"), R("\\btsh\\b", "TSH"), R("t4 livre", "T4L"), R("^t3\\b", "T3"), R("amilase", "Amil"), R("lipase", "Lip"),
+    R("ck ?mb", "CKMB"), R("\\bcpk\\b|creatinofosfoquinase|creatin[oa] ?quinase|^ck\\b", "CPK"), R("troponina", "Trop"), R("\\b(dhl|ldh)\\b|desidrogenase latica", "DHL"),
+    R("ferritina", "Ferritina"), R("saturacao da transferrina|indice de saturacao", "IST"), R("^ferro\\b", "Fe"), R("vitamina b12|cobalamina", "B12"),
+    R("vitamina d|25 ?oh", "VitD"), R("acido folico|folato", "Folato"), R("procalcitonina", "PCT"), R("d ?dimero", "DD"), R("fibrinogenio", "Fibrinog"),
+    R("\\bnt ?pro ?bnp\\b", "NT-proBNP"), R("\\bbnp\\b", "BNP"), R("\\bvhs\\b|hemossedimentacao", "VHS"), R("amonia", "NH3"), R("proteinas totais", "PT"),
+    R("globulina", "Glob"), R("\\bpsa\\b", "PSA"), R("beta ?hcg", "bHCG"), R("^bicarbonato\\b", "HCO3"),
+  ];
+  const norm = t => asciiLower(t).replace(/[^a-z0-9%]+/g, " ").replace(/\s+/g, " ").trim();
+  function procura(regras, ...textos){ for (const t of textos){ if (!t) continue; for (const [re, sigla] of regras) if (re.test(t)) return { achou: true, sigla }; } return { achou: false, sigla: null }; }
+  function classificar(grupo, exame){
+    const g = norm(grupo), e = norm(exame), combinado = `${g} ${e}`.trim();
+    if (FLUIDO_NAO_SANGUE.test(combinado)) return null;
+    if (GRUPO_GASO.test(g) || /\bp ?c?o2\b/.test(e)){ const r = procura(REGRAS_GASO, e); return r.achou ? r.sigla : IGNORAR; }
+    let r = procura(REGRAS, e); if (r.achou) return r.sigla;
+    if (NOME_GENERICO.test(e)){ r = procura(REGRAS, combinado); if (r.achou) return r.sigla; }
+    return null;
+  }
+  function abreviarDemais(exame){
+    const r = procura(ABREVIACOES_DEMAIS, norm(exame)); if (r.achou) return r.sigla;
+    const nome = rstripChars(String(exame).replace(/\s+/g, " ").trim(), ":");
+    return isUpper(nome) && nome.length > 4 ? capitalize(nome) : nome;
+  }
+  function numero(texto){
+    const m = /-?\d+(?:\.\d{3})*(?:,\d+)?|-?\d+(?:\.\d+)?/.exec(texto || ""); if (!m) return null;
+    let b = m[0];
+    if (b.includes(",") || /^-?\d{1,3}(\.\d{3})+$/.test(b)) b = b.replace(/\./g, "").replace(",", ".");
+    const n = Number(b); return Number.isFinite(n) ? n : null;
+  }
+  const ESCALA_MILHARES = new Set(["GL", "Plt"]);
+  function encurtarTexto(valor){
+    const n = rstripChars(norm(valor), " .");
+    for (const [re, curto] of TEXTO_CURTO) if (re.test(n)) return n.replace(re, curto);
+    return isLower(valor) ? valor : capitalize(valor);
+  }
+  function formatarValor(texto, sigla){
+    const valor = String(texto || "").replace(/\s+/g, " ").trim();
+    if (ESCALA_MILHARES.has(sigla) && /^\d{1,3}(,\d+)?$/.test(valor)){
+      const n = numero(valor);
+      if (n !== null && n < 1000) return Math.round(n * 1000).toLocaleString("en-US").replace(/,/g, ".");
+    }
+    return valor;
+  }
+  function valorDoResultado(r, sigla){
+    const valor = r.resultado || "", calculado = r.calculado || "";
+    if (DIFERENCIAL.has(sigla) && calculado){ const n = numero(valor); if ((r.unidade || "").includes("%") || (n !== null && n <= 100)) return calculado; }
+    return valor;
+  }
+  function rotuloGaso(grupo){ const g = norm(grupo); return g.includes("venos") ? "GasoV" : g.includes("arteri") ? "GasoA" : GRUPO_GASO.test(g) ? "Gaso" : ""; }
+  function mostraDiferencial(gatilho, brutos, sexo){
+    const ns = (brutos.get(gatilho) || []).filter(n => n !== null); if (!ns.length) return false;
+    if (gatilho === "Hb") return Math.min(...ns) < (ANEMIA[sexo] ?? ANEMIA_SEXO_DESCONHECIDO);
+    return ns.some(n => n < LEUCOPENIA || n > LEUCOCITOSE);
+  }
+  const dataOrd = br => { const [d, m, a] = br.split("/").map(Number); return Date.UTC(a, m - 1, d); };
+  function formatar(resultados, marcar = false, sexo = ""){
+    const porData = new Map();
+    resultados.forEach(r => { if (!porData.has(r.data)) porData.set(r.data, []); porData.get(r.data).push(r); });
+    const linhas = [], laudos = new Map();
+    for (const data of [...porData.keys()].sort((a, b) => dataOrd(a) - dataOrd(b))){
+      const valores = new Map(), outros = [], brutos = new Map(); let rg = "";
+      for (const r of porData.get(data)){
+        const nomeLaudo = r.grupo || r.exame, bruto = (r.resultado || "").trim();
+        if (r.pendente || LAUDO_LONGO.test(norm(nomeLaudo)) || bruto.length > TAMANHO_LAUDO){
+          const nome = isUpper(nomeLaudo) ? pyTitle(nomeLaudo) : nomeLaudo, chave = JSON.stringify([data, nome]);
+          const item = norm(r.exame) === norm(nomeLaudo) ? bruto : `${capitalize(r.exame)} ${encurtarTexto(bruto)}`;
+          if (!laudos.has(chave)) laudos.set(chave, { data, nome, itens: [] });
+          const L = laudos.get(chave).itens; if (item && !L.includes(item)) L.push(item);
+          continue;
+        }
+        const sigla = classificar(r.grupo || "", r.exame);
+        if (sigla === IGNORAR) continue;
+        let texto = formatarValor(valorDoResultado(r, sigla), sigla);
+        if (!VALOR_NUMERICO.test(texto)) texto = encurtarTexto(texto);
+        const unidade = (r.unidade || "").trim();
+        if (UNIDADE_MANTIDA.has(sigla) && unidade && !texto.includes(unidade)) texto += unidade === "%" ? unidade : ` ${unidade}`;
+        if (marcar && r.alterado) texto += "*";
+        if (sigla === null){ const ab = abreviarDemais(r.exame); if (ab !== IGNORAR) outros.push([r.grupo || "", ab, texto]); continue; }
+        if (GASO.has(sigla)) rg = rg || rotuloGaso(r.grupo || "");
+        const prioridade = /\bquant/.test(norm(r.exame)) ? 0 : (!(r.unidade || "").includes("%") || UNIDADE_MANTIDA.has(sigla)) ? 1 : 2;
+        if (!valores.has(sigla)) valores.set(sigla, new Map());
+        const porSol = valores.get(sigla), atual = porSol.get(r.solicitacao);
+        if (atual === undefined || prioridade < atual[1]){
+          porSol.set(r.solicitacao, [texto, prioridade]);
+          if (CONDICIONAIS[sigla]){ if (!brutos.has(sigla)) brutos.set(sigla, []); brutos.get(sigla).push(numero(texto)); }
+        }
+      }
+      const val = s => valores.has(s) ? [...valores.get(s).values()].map(v => v[0]).join("/") : null;
+      const itens = [];
+      for (const s of [...ORDEM, ...ORDEM_OUTROS.filter(x => valores.has(x))]){
+        const v = val(s); if (v === null) continue;
+        let item = `${s === "pH" && rg ? rg + " " : ""}${s}: ${v}`;
+        if (CONDICIONAIS[s] && mostraDiferencial(s, brutos, sexo)){
+          const det = CONDICIONAIS[s].filter(x => val(x) !== null).map(x => `${x} ${val(x)}`);
+          if (det.length) item += ` (${det.join("; ")})`;
+        }
+        itens.push(item);
+      }
+      const contagem = new Map(); outros.forEach(([g]) => contagem.set(g, (contagem.get(g) || 0) + 1));
+      const agrupados = new Set();
+      for (const [g, s, t] of outros){
+        if (g && contagem.get(g) > 1){
+          if (agrupados.has(g)) continue; agrupados.add(g);
+          itens.push(`${isUpper(g) ? pyTitle(g) : g}: ` + outros.filter(o => o[0] === g).map(o => `${o[1]} ${o[2]}`).join("; "));
+        } else itens.push(`${s}: ${t}`);
+      }
+      if (itens.length) linhas.push(`(${data.slice(0, 5)}) - ` + itens.join(" | "));
+    }
+    if (laudos.size){
+      linhas.push("");
+      [...laudos.values()].sort((a, b) => dataOrd(a.data) - dataOrd(b.data)).forEach(l => linhas.push(`(${l.data.slice(0, 5)}) - ${l.nome}: ` + l.itens.join("; ")));
+    }
+    let texto = linhas.join("\n");
+    if (marcar && resultados.some(r => r.alterado)) texto += "\n* resultado sinalizado pelo laboratório";
+    return texto;
+  }
+
+  /* ---------------- series.py ---------------- */
+  function series(resultados){
+    const m = new Map();
+    for (const r of resultados){
+      if (r.pendente) continue;
+      let sigla = classificar(r.grupo || "", r.exame);
+      if (sigla === IGNORAR) continue;
+      if (sigla === null){ sigla = abreviarDemais(r.exame); if (sigla === IGNORAR) continue; }
+      const texto = formatarValor(valorDoResultado(r, sigla), sigla), valor = numero(texto);
+      if (valor === null) continue;
+      const d = parseData(r.data); if (!d) continue;
+      let unidade = (r.unidade || "").trim(); if (unidade === "%" && !UNIDADE_MANTIDA.has(sigla)) unidade = "";
+      if (!m.has(sigla)) m.set(sigla, { sigla, nome: capitalize(r.exame), unidade, pontos: new Map() });
+      const s = m.get(sigla); if (!s.unidade && unidade) s.unidade = unidade;
+      s.pontos.delete(d.ord); s.pontos.set(d.ord, { data: r.data, valor, texto, ord: d.ord });   // mesma data: fica a última lida
+    }
+    return [...m.values()].map(s => ({ ...s, pontos: [...s.pontos.values()].sort((a, b) => a.ord - b.ord) }))
+      .filter(s => s.pontos.length >= 2)
+      .sort((a, b) => b.pontos.length - a.pontos.length || (a.sigla < b.sigla ? -1 : a.sigla > b.sigla ? 1 : 0));
+  }
+
+  return { prepararPedidos, processar, formatar, formatarDocumento, series, classificar, abreviarDemais, numero, formatarValor, encurtarTexto };
+})();
+
+/* ---------- janela "Exames do Biomega" ---------- */
+const BIO_LOTE = 8;
+let bioUnidades = null, bioUltimo = null;
+function bioAlvos(){
+  const p = cur(); if (!p) return [];
+  const out = [];
+  eachField(modelOf(TPL[store.mode], p.data), (f, sec, g) => { if (f.t === "area") out.push({ k: f.k, l: `${sec.title} › ${f.tl || f.l || g.title || f.k}` }); });
+  const pref = ["ext_lab", "ec_lab", "de", "evolucao"];
+  out.sort((a, b) => (pref.indexOf(a.k) + 1 || 99) - (pref.indexOf(b.k) + 1 || 99));
+  return out;
+}
+function openBioDlg(){
+  const p = cur(); if (!p) return;
+  $("#bioPront").value = p.data.bio_pront || "";
+  const c = bioCred();
+  $("#bioCredSaved").hidden = !c; $("#bioCredForm").hidden = !!c;
+  if (c) $("#bioCredUser").textContent = c.usuario;
+  $("#bioRem").disabled = !canRemember(); $("#bioRem").checked = canRemember();
+  $("#bioMsg").textContent = session ? "" : "Para buscar exames, entre na sua conta (⋯ → Conta e sincronização).";
+  $("#bioGo").disabled = !session;
+  bioPreencheUnidades();
+  $("#bioAlvo").replaceChildren(...bioAlvos().map(a => el("option", { value: a.k, text: a.l })));
+  if (bioUltimo && bioUltimo.pid === store.currentBy[store.mode]) bioMostra(); else { bioUltimo = null; $("#bioOut").hidden = true; }
+  $("#bioDlg").showModal();
+}
+function bioPreencheUnidades(sel){
+  const s = $("#bioUnid"), atual = sel != null ? sel : s.value;
+  s.replaceChildren(el("option", { value: "", text: "Padrão do portal" }), ...(bioUnidades || []).map(u => el("option", { value: u.valor, text: u.nome || u.valor })));
+  s.value = [...s.options].some(o => o.value === atual) ? atual : "";
+}
+async function bioChamar(corpo){
+  const c = bioCred() || { usuario: $("#bioUser").value.trim(), senha: $("#bioPass").value };
+  if (!c.usuario || !c.senha) throw new Error("Informe usuário e senha do portal.");
+  return api("/functions/v1/biomega", { method: "POST", body: { ...corpo, usuario: c.usuario, senha: c.senha } });
+}
+const bioErro = r => `${(r && r.erro) || "Resposta inesperada do portal."}${r && r.codigo && r.codigo !== "PORTAL" ? " [" + r.codigo + "]" : ""}${r && r.detalhe ? " · " + r.detalhe : ""}`;
+async function bioBuscar(){
+  const p = cur(); if (!p) return;
+  const msg = $("#bioMsg"), go = $("#bioGo");
+  const pront = $("#bioPront").value.replace(/\D/g, "");
+  if (!pront){ msg.textContent = "Informe o prontuário (só números)."; return; }
+  if (p.data.bio_pront !== pront){ p.data.bio_pront = pront; changed(); }
+  const dias = Number($("#bioDias").value) || 30, unidade = $("#bioUnid").value;
+  go.disabled = true; $("#bioOut").hidden = true;
+  try {
+    msg.textContent = "Entrando no portal e buscando pedidos…";
+    const r1 = await bioChamar({ acao: "pedidos", prontuario: pront, dias, fim: todayISO(), unidade });
+    if (!r1 || !r1.ok){ msg.textContent = "Não foi possível buscar: " + bioErro(r1); return; }
+    if (!bioCred() && $("#bioRem").checked) setBioCred($("#bioUser").value.trim(), $("#bioPass").value);
+    if (Array.isArray(r1.unidades) && r1.unidades.length){ bioUnidades = r1.unidades; bioPreencheUnidades(unidade); }
+    const pedidos = r1.pedidos || [];
+    const sexo = BIO.prepararPedidos(pront, pedidos);
+    const validos = pedidos.filter(x => !x._pulado), lidos = new Map();
+    for (let i = 0; i < validos.length; i += BIO_LOTE){
+      const lote = validos.slice(i, i + BIO_LOTE);
+      msg.textContent = `Lendo resultados: pedidos ${i + 1}–${i + lote.length} de ${validos.length}…`;
+      let r2;
+      try { r2 = await bioChamar({ acao: "resultados", unidade: r1.unidade || unidade, pedidos: lote.map(x => ({ infopac: x.infopac })) }); }
+      catch(e){ r2 = { ok: false, erro: e.message }; }
+      if (r2 && r2.ok) (r2.resultados || []).forEach(x => lidos.set(x.infopac, x));
+      else lote.forEach(x => lidos.set(x.infopac, { erro: bioErro(r2) }));
+    }
+    const e = BIO.processar(pront, pedidos, x => lidos.get(x.infopac) || { erro: "sem resposta do portal." }, dias);
+    bioUltimo = { ...e, pid: store.currentBy[store.mode], pront, dias, sexo, series: BIO.series(e.resultados) };
+    msg.textContent = `${e.pedidos} pedido(s) em ${dias} dias · ${e.resultados.length} resultado(s).`;
+    bioMostra();
+  } catch(err){
+    msg.textContent = err.status === 404 ? "A função biomega ainda não foi publicada no Supabase." : "Erro: " + err.message;
+  } finally { go.disabled = !session; }
+}
+function bioTexto(){
+  if (!bioUltimo) return "";
+  const marcar = $("#bioMarcar").checked;
+  return $("#bioFmt").value === "doc" ? BIO.formatarDocumento(bioUltimo.resultados, marcar) : BIO.formatar(bioUltimo.resultados, marcar, bioUltimo.sexo);
+}
+function bioSpark(pontos){
+  const W = 150, H = 36, P = 5, NS = "http://www.w3.org/2000/svg";
+  const vs = pontos.map(p => p.valor), lo = Math.min(...vs), hi = Math.max(...vs);
+  const x = i => P + (pontos.length === 1 ? (W - 2 * P) / 2 : i * (W - 2 * P) / (pontos.length - 1));
+  const y = v => hi === lo ? H / 2 : H - P - (v - lo) * (H - 2 * P) / (hi - lo);
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("class", "bio-spark"); svg.setAttribute("aria-hidden", "true");
+  const pl = document.createElementNS(NS, "polyline");
+  pl.setAttribute("points", pontos.map((p, i) => `${x(i)},${y(p.valor)}`).join(" ")); pl.setAttribute("class", "ln");
+  svg.append(pl);
+  pontos.forEach((p, i) => {
+    const g = document.createElementNS(NS, "g"), t = document.createElementNS(NS, "title");
+    t.textContent = `${p.data.slice(0, 5)}: ${p.texto}`;
+    const hit = document.createElementNS(NS, "circle"); hit.setAttribute("cx", x(i)); hit.setAttribute("cy", y(p.valor)); hit.setAttribute("r", 9); hit.setAttribute("class", "hit");
+    const dot = document.createElementNS(NS, "circle"); dot.setAttribute("cx", x(i)); dot.setAttribute("cy", y(p.valor)); dot.setAttribute("r", i === pontos.length - 1 ? 4 : 3); dot.setAttribute("class", "pt");
+    g.append(t, hit, dot); svg.append(g);
+  });
+  return svg;
+}
+function bioMostra(){
+  const u = bioUltimo; if (!u) return;
+  $("#bioOut").hidden = false;
+  $("#bioTxt").value = bioTexto();
+  $("#bioAvisos").replaceChildren(...u.avisos.map(a => el("li", { text: a })));
+  $("#bioAvisosBox").hidden = !u.avisos.length;
+  $("#bioSeriesBox").hidden = !u.series.length;
+  $("#bioSeriesSum").textContent = `Evolução (${u.series.length} exame${u.series.length === 1 ? "" : "s"} com 2 ou mais datas)`;
+  $("#bioSeries").replaceChildren(...u.series.map(s => {
+    const ult = s.pontos[s.pontos.length - 1];
+    return el("div", { class: "bio-serie" },
+      el("div", { class: "bio-serie-h" }, el("strong", { text: s.sigla }), s.unidade ? el("span", { class: "u", text: s.unidade }) : null,
+        el("span", { class: "bio-ult", text: `${ult.texto} (${ult.data.slice(0, 5)})` })),
+      bioSpark(s.pontos),
+      el("p", { class: "bio-vals", text: s.pontos.map(p => `${p.data.slice(0, 5)} ${p.texto}`).join(" · ") }));
+  }));
+}
+function bioInserir(){
+  const p = cur(), k = $("#bioAlvo").value, txt = $("#bioTxt").value.trim();
+  if (!p || !k || !txt) return;
+  const atual = String(p.data[k] || "").trim();
+  p.data[k] = atual ? atual + "\n" + txt : txt;
+  fillForm(); changed(); saveNow();
+  $("#bioDlg").close();
+  const f = document.getElementById("f_" + k); if (f) f.scrollIntoView({ block: "center" });
+  toast("Exames inseridos no prontuário");
+}
+
+/* =====================================================================
    INICIALIZAÇÃO
    ===================================================================== */
 const dlg = $("#dlg");
@@ -2835,6 +3327,14 @@ $("#codeGo").addEventListener("click", openByCode);
 $("#codeIn").addEventListener("keydown", e => { if (e.key === "Enter") openByCode(); });
 $("#codeCopy").addEventListener("click", async () => { toast(await copyText($("#codeText").value) ? "Texto copiado" : "Não foi possível copiar"); });
 $("#homeCode").addEventListener("click", openCodeDlg);
+$("#bioClose").addEventListener("click", () => $("#bioDlg").close());
+$("#bioGo").addEventListener("click", bioBuscar);
+$("#bioPront").addEventListener("keydown", e => { if (e.key === "Enter") bioBuscar(); });
+$("#bioFmt").addEventListener("change", () => { $("#bioTxt").value = bioTexto(); });
+$("#bioMarcar").addEventListener("change", () => { $("#bioTxt").value = bioTexto(); });
+$("#bioCopy").addEventListener("click", async () => { toast(await copyText($("#bioTxt").value) ? "Exames copiados" : "Não foi possível copiar"); });
+$("#bioIns").addEventListener("click", bioInserir);
+$("#bioDlg").addEventListener("close", () => { $("#bioPass").value = ""; });
 $("#btnCopy").addEventListener("click", async () => { toast(await copyText($("#out").value) ? "Texto copiado" : "Não foi possível copiar"); });
 $("#btnTxt").addEventListener("click", () => {
   const d = D();
