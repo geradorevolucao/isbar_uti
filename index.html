@@ -3206,6 +3206,8 @@ async function bioBuscar(){
     if (!bioCred() && $("#bioRem").checked) setBioCred($("#bioUser").value.trim(), $("#bioPass").value);
     if (Array.isArray(r1.unidades) && r1.unidades.length){ bioUnidades = r1.unidades; bioPreencheUnidades(unidade); }
     const pedidos = r1.pedidos || [];
+    const diag = [];
+    if (pedidos.length && pedidos.every(x => !x.solicitacao && !x.entrada)) diag.push("Diagnóstico técnico (envie ao Claude) – pedidos: " + (r1.forma || "sem forma"));
     const sexo = BIO.prepararPedidos(pront, pedidos);
     const validos = pedidos.filter(x => !x._pulado), lidos = new Map();
     for (let i = 0; i < validos.length; i += BIO_LOTE){
@@ -3214,10 +3216,15 @@ async function bioBuscar(){
       let r2;
       try { r2 = await bioChamar({ acao: "resultados", unidade: r1.unidade || unidade, pedidos: lote.map(x => ({ infopac: x.infopac })) }); }
       catch(e){ r2 = { ok: false, erro: e.message }; }
-      if (r2 && r2.ok) (r2.resultados || []).forEach(x => lidos.set(x.infopac, x));
+      if (r2 && r2.ok){
+        (r2.resultados || []).forEach(x => lidos.set(x.infopac, x));
+        const linhas = (r2.resultados || []).flatMap(x => x.linhas || []);
+        if (linhas.length && linhas.every(l => !l.Parametro) && !diag.some(d => d.includes("resultados"))) diag.push("Diagnóstico técnico (envie ao Claude) – resultados: " + (r2.forma || "sem forma"));
+      }
       else lote.forEach(x => lidos.set(x.infopac, { erro: bioErro(r2) }));
     }
     const e = BIO.processar(pront, pedidos, x => lidos.get(x.infopac) || { erro: "sem resposta do portal." }, dias);
+    e.avisos.push(...diag);
     bioUltimo = { ...e, pid: store.currentBy[store.mode], pront, dias, sexo, series: BIO.series(e.resultados) };
     msg.textContent = `${e.pedidos} pedido(s) em ${dias} dias · ${e.resultados.length} resultado(s).`;
     bioMostra();

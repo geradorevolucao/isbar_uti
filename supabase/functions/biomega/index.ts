@@ -86,21 +86,41 @@ function lista(x: unknown): any[] {
   if (x && typeof x === "object") return Object.values(x as Record<string, unknown>);
   return [];
 }
-/** Estrutura da resposta, sem conteúdo (para diagnóstico; nunca inclui dados de paciente). */
+const nomes = (o: unknown) => (o && typeof o === "object" ? Object.keys(o as object).slice(0, 30).join(",") : "");
+const tipo = (x: unknown) => Array.isArray(x) ? `array(${x.length})` : x && typeof x === "object" ? `objeto(${Object.keys(x as object).length})` : typeof x;
+/** Estrutura da resposta, sem conteúdo: só tipos, tamanhos e nomes de campos (nunca dados de paciente). */
 function forma(j: any): string {
   if (j === null || typeof j !== "object") return typeof j;
-  const rows = j.rows;
-  const r = Array.isArray(rows) ? `array(${rows.length})` : rows && typeof rows === "object" ? `objeto(${Object.keys(rows).length})` : typeof rows;
-  const r0 = lista(rows)[0], c = r0 && typeof r0 === "object" ? r0.cell : undefined;
-  const cel = Array.isArray(c) ? `array(${c.length})` : c && typeof c === "object" ? `objeto(${Object.keys(c).length})` : typeof c;
-  return `chaves=${Object.keys(j).slice(0, 8).join(",")}; rows=${r}; cell=${cel}`;
+  const r0 = lista(j.rows)[0];
+  const c = r0 && typeof r0 === "object" && !Array.isArray(r0) ? r0.cell : undefined;
+  let txt = `chaves=${nomes(j).split(",").slice(0, 8).join(",")}; rows=${tipo(j.rows)}; linha=${tipo(r0)}`;
+  if (r0 && typeof r0 === "object" && !Array.isArray(r0)) txt += ` [${nomes(r0)}]`;
+  txt += `; cell=${tipo(c)}`;
+  if (c && typeof c === "object" && !Array.isArray(c)) txt += ` [${nomes(c)}]`;
+  return txt;
 }
-function celulasParaDict(cell0: unknown, colunas: string[]): Record<string, unknown> {
-  const cell = lista(cell0);
-  const c = cell.length === colunas.length + 1 ? cell.slice(1) : cell; // multiselect inclui a coluna "cb"
-  const d: Record<string, unknown> = {};
-  colunas.forEach((k, i) => { d[k] = c[i]; });
-  return d;
+/** Linha do jqGrid → {coluna: valor}. Aceita os formatos do jqGrid:
+ *  cell como array (o do portal.py), cell como objeto {"0": …}, cell ou a própria linha com os
+ *  nomes das colunas (repeatitems: false), ou a linha sendo o próprio array de células. */
+function linhaParaDict(row: any, colunas: string[]): Record<string, unknown> {
+  const porNome = (o: any) => {
+    if (!o || typeof o !== "object" || Array.isArray(o)) return null;
+    const mapa = new Map(Object.keys(o).map((k) => [k.toLowerCase(), k]));
+    if (!colunas.some((k) => mapa.has(k.toLowerCase()))) return null;
+    const d: Record<string, unknown> = {};
+    colunas.forEach((k) => { const real = mapa.get(k.toLowerCase()); if (real !== undefined) d[k] = o[real]; });
+    return d;
+  };
+  const porPosicao = (cell: unknown[]) => {
+    const c = cell.length === colunas.length + 1 ? cell.slice(1) : cell; // multiselect inclui a coluna "cb"
+    const d: Record<string, unknown> = {};
+    colunas.forEach((k, i) => { d[k] = c[i]; });
+    return d;
+  };
+  if (Array.isArray(row)) return porPosicao(row);
+  const cell = row && typeof row === "object" ? row.cell : undefined;
+  if (cell != null) return porNome(cell) ?? porPosicao(lista(cell));
+  return porNome(row) ?? {};
 }
 /** InfoPac = Base64("idRequisicao||unidade||...") → lista de campos. */
 function decodificarInfopac(valor: unknown): string[] {
@@ -165,6 +185,8 @@ class Sessao {
   info: Info | null = null;
   etapa = "login";
   ultimaForma = "";
+  formaPedidos = "";
+  formaResultados = "";
   constructor(private usuario: string, private senha: string) {}
 
   private guardar(res: Response) {
@@ -268,9 +290,10 @@ class Sessao {
     const pedidos: Record<string, unknown>[] = [], vistos = new Set<string>();
     for (let pagina = 1; pagina <= 100; pagina++) {
       const j = await this.post("R", pagina, PEDIDOS_POR_PAGINA, dados);
+      if (!this.formaPedidos) this.formaPedidos = this.ultimaForma;
       let novos = 0;
       for (const row of lista(j?.rows)) {
-        const p = celulasParaDict(row?.cell ?? [], COLUNAS_PEDIDO);
+        const p = linhaParaDict(row, COLUNAS_PEDIDO);
         const chave = limpar(p.Solicita) || limpar(p.InfoPac);
         if (vistos.has(chave)) continue;
         vistos.add(chave); pedidos.push(p); novos++;
@@ -289,8 +312,9 @@ class Sessao {
       ztmRequisicaoId: campos[0], ztmUnidadeCod: unidade, ztmSetorCod: "", ztmGrava: "S",
       ztmCkImpresso: "N", ztmCkLiberado: "N", ztmCheckGridOcultaIngressos: "N", ztmOrder: "",
     });
+    if (!this.formaResultados) this.formaResultados = this.ultimaForma;
     return lista(j?.rows).map((row: any) => {
-      const d = celulasParaDict(row?.cell ?? [], COLUNAS_RESULTADO);
+      const d = linhaParaDict(row, COLUNAS_RESULTADO);
       return { Parametro: limpar(d.Parametro), Result: limpar(d.Result), Calcu: limpar(d.Calcu), Unidmed: limpar(d.Unidmed), Flegui: limpar(d.Flegui) };
     });
   }
@@ -336,7 +360,7 @@ async function acaoPedidos(s: Sessao, b: any) {
     }
   }
   return {
-    ok: true, unidade, unidades: s.info!.unidades, janelas: jan.length,
+    ok: true, unidade, unidades: s.info!.unidades, janelas: jan.length, forma: s.formaPedidos,
     pedidos: pedidos.map((p) => ({
       solicitacao: limpar(p.Solicita), entrada: limpar(p.Entrada), prontuario: limpar(p.Prontuario),
       sexo: limpar(p.Sexo), sexoDesc: limpar(p.SexoDesc), status: limpar(p.Status), infopac: limpar(p.InfoPac),
@@ -359,7 +383,7 @@ async function acaoResultados(s: Sessao, b: any) {
       out.push({ infopac, erro: e instanceof ErroPortal ? e.message : "Falha ao ler o pedido." });
     }
   }
-  return { ok: true, resultados: out };
+  return { ok: true, resultados: out, forma: s.formaResultados };
 }
 
 Deno.serve(async (req) => {
