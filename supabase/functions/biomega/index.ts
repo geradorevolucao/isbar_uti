@@ -93,7 +93,11 @@ function forma(j: any): string {
   if (j === null || typeof j !== "object") return typeof j;
   const r0 = lista(j.rows)[0];
   const c = r0 && typeof r0 === "object" && !Array.isArray(r0) ? r0.cell : undefined;
-  let txt = `chaves=${nomes(j).split(",").slice(0, 8).join(",")}; rows=${tipo(j.rows)}; linha=${tipo(r0)}`;
+  let txt = `chaves=${nomes(j).split(",").slice(0, 8).join(",")}; records=${String(j.records ?? "").slice(0, 10)}; total=${String(j.total ?? "").slice(0, 10)}; rows=${tipo(j.rows)}`;
+  if (j.rows && typeof j.rows === "object" && !Array.isArray(j.rows)) txt += ` [${nomes(j.rows).slice(0, 60)}]`;
+  txt += `; linha=${tipo(r0)}`;
+  if (typeof r0 === "string") txt += ` "${limpar(r0).slice(0, 80)}"`;
+  if (j.pagination !== undefined) txt += `; pagination=${tipo(j.pagination)}${j.pagination && typeof j.pagination === "object" ? " [" + nomes(j.pagination) + "]" : ""}`;
   if (r0 && typeof r0 === "object" && !Array.isArray(r0)) txt += ` [${nomes(r0)}]`;
   txt += `; cell=${tipo(c)}`;
   if (c && typeof c === "object" && !Array.isArray(c)) txt += ` [${nomes(c)}]`;
@@ -186,6 +190,7 @@ class Sessao {
   etapa = "login";
   ultimaForma = "";
   formaPedidos = "";
+  msgPortal = "";
   formaResultados = "";
   constructor(private usuario: string, private senha: string) {}
 
@@ -293,6 +298,7 @@ class Sessao {
       if (!this.formaPedidos) this.formaPedidos = this.ultimaForma;
       let novos = 0;
       for (const row of lista(j?.rows)) {
+        if (typeof row === "string" || typeof row === "number"){ const m = limpar(row); if (m && !this.msgPortal) this.msgPortal = m.slice(0, 200); continue; }
         const p = linhaParaDict(row, COLUNAS_PEDIDO);
         const chave = limpar(p.Solicita) || limpar(p.InfoPac);
         if (vistos.has(chave)) continue;
@@ -360,7 +366,7 @@ async function acaoPedidos(s: Sessao, b: any) {
     }
   }
   return {
-    ok: true, unidade, unidades: s.info!.unidades, janelas: jan.length, forma: s.formaPedidos,
+    ok: true, unidade, unidades: s.info!.unidades, janelas: jan.length, forma: s.formaPedidos, mensagem: s.msgPortal || undefined,
     pedidos: pedidos.map((p) => ({
       solicitacao: limpar(p.Solicita), entrada: limpar(p.Entrada), prontuario: limpar(p.Prontuario),
       sexo: limpar(p.Sexo), sexoDesc: limpar(p.SexoDesc), status: limpar(p.Status), infopac: limpar(p.InfoPac),
