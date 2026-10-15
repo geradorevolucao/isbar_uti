@@ -2028,7 +2028,7 @@ function biomegaTestBox(){
         : `Não funcionou${r && r.etapa ? " (etapa: " + r.etapa + ")" : ""}: ${(r && r.erro) || "resposta inesperada"}${r && r.codigo ? " [" + r.codigo + "]" : ""}${r && r.detalhe ? " · " + r.detalhe : ""}${r && r.amostra ? " · resposta: " + r.amostra : ""}`)
         + (r && r.ok && bioCred() ? " Usuário e senha lembrados neste aparelho." : "");
     } catch(e){
-      out.textContent = e.status === 404 ? "A função biomega ainda não foi publicada no Supabase." : "Erro: " + e.message;
+      out.textContent = e.status === 404 ? "A função biomega ainda não foi publicada no Supabase." : e.status === 0 ? "Não consegui falar com a função biomega no Supabase. Confira se ela foi publicada com o nome biomega (Edge Functions → Functions)." : "Erro: " + e.message;
     } finally {
       b.disabled = false;
       if (!bioCred()) pi.value = "";
@@ -3222,7 +3222,7 @@ async function bioBuscar(){
     msg.textContent = `${e.pedidos} pedido(s) em ${dias} dias · ${e.resultados.length} resultado(s).`;
     bioMostra();
   } catch(err){
-    msg.textContent = err.status === 404 ? "A função biomega ainda não foi publicada no Supabase." : "Erro: " + err.message;
+    msg.textContent = err.status === 404 ? "A função biomega ainda não foi publicada no Supabase." : err.status === 0 ? "Não consegui falar com a função biomega no Supabase. Confira se ela foi publicada com o nome biomega (Edge Functions → Functions)." : "Erro: " + err.message;
   } finally { go.disabled = !session; }
 }
 function bioTexto(){

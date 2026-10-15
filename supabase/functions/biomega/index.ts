@@ -88,7 +88,8 @@ function celulasParaDict(cell: unknown[], colunas: string[]): Record<string, unk
 }
 /** InfoPac = Base64("idRequisicao||unidade||...") → lista de campos. */
 function decodificarInfopac(valor: unknown): string[] {
-  const bruto = limpar(valor).replace(/\s+/g, "");
+  // como base64.b64decode do Python (validate=False): ignora caracteres fora do alfabeto base64
+  const bruto = limpar(valor).replace(/[^A-Za-z0-9+/]/g, "");
   if (!bruto) return [];
   try {
     const bin = atob(bruto + "=".repeat((4 - (bruto.length % 4)) % 4));
