@@ -3207,6 +3207,8 @@ async function bioBuscar(){
     if (Array.isArray(r1.unidades) && r1.unidades.length){ bioUnidades = r1.unidades; bioPreencheUnidades(unidade); }
     const pedidos = r1.pedidos || [];
     const diag = [];
+    if (r1.mensagem) diag.push("Mensagem do portal: " + r1.mensagem + (unidade ? "" : " (unidade: padrão do portal – tente escolher a unidade na lista)"));
+    if (!pedidos.length && r1.forma) diag.push("Diagnóstico técnico (envie ao Claude) – pedidos: " + r1.forma + " · unidade usada: " + (r1.unidade || "?"));
     if (pedidos.length && pedidos.every(x => !x.solicitacao && !x.entrada)) diag.push("Diagnóstico técnico (envie ao Claude) – pedidos: " + (r1.forma || "sem forma"));
     const sexo = BIO.prepararPedidos(pront, pedidos);
     const validos = pedidos.filter(x => !x._pulado), lidos = new Map();
