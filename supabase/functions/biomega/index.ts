@@ -80,7 +80,23 @@ function limpar(valor: unknown): string {
   const texto = String(valor ?? "").replace(/<\/?[a-zA-Z][^>]*>/g, " ");
   return unescapeHtml(texto).replace(/\s+/g, " ").trim();
 }
-function celulasParaDict(cell: unknown[], colunas: string[]): Record<string, unknown> {
+/** Lista do jqGrid: o PHP às vezes manda objeto ({"0": …, "1": …}) em vez de array. */
+function lista(x: unknown): any[] {
+  if (Array.isArray(x)) return x;
+  if (x && typeof x === "object") return Object.values(x as Record<string, unknown>);
+  return [];
+}
+/** Estrutura da resposta, sem conteúdo (para diagnóstico; nunca inclui dados de paciente). */
+function forma(j: any): string {
+  if (j === null || typeof j !== "object") return typeof j;
+  const rows = j.rows;
+  const r = Array.isArray(rows) ? `array(${rows.length})` : rows && typeof rows === "object" ? `objeto(${Object.keys(rows).length})` : typeof rows;
+  const r0 = lista(rows)[0], c = r0 && typeof r0 === "object" ? r0.cell : undefined;
+  const cel = Array.isArray(c) ? `array(${c.length})` : c && typeof c === "object" ? `objeto(${Object.keys(c).length})` : typeof c;
+  return `chaves=${Object.keys(j).slice(0, 8).join(",")}; rows=${r}; cell=${cel}`;
+}
+function celulasParaDict(cell0: unknown, colunas: string[]): Record<string, unknown> {
+  const cell = lista(cell0);
   const c = cell.length === colunas.length + 1 ? cell.slice(1) : cell; // multiselect inclui a coluna "cb"
   const d: Record<string, unknown> = {};
   colunas.forEach((k, i) => { d[k] = c[i]; });
@@ -147,6 +163,8 @@ function opcoes(miolo: string) {
 class Sessao {
   cookies = new Map<string, string>();
   info: Info | null = null;
+  etapa = "login";
+  ultimaForma = "";
   constructor(private usuario: string, private senha: string) {}
 
   private guardar(res: Response) {
@@ -222,14 +240,17 @@ class Sessao {
         Accept: "application/json, text/javascript, */*; q=0.01", Referer: URL_CONSULTAS, Origin: PORTAL,
       },
     });
+    let j: any;
     try {
       if (r.status >= 400) throw new Error("http");
-      return JSON.parse(r.texto);
+      j = JSON.parse(r.texto);
     } catch {
       // Resposta não-JSON (tela de login / sessão encerrada): refaz o login uma vez.
       if (tentativa === 1) { await this.conectar(); return this.post(down, page, rows, dados, 2); }
       throw new ErroPortal("O portal não devolveu dados válidos mesmo após novo login.", "SESSAO");
     }
+    this.ultimaForma = forma(j);
+    return j;
   }
 
   async listarPedidos(prontuario: string, inicio: number, fim: number, unidade: string) {
@@ -248,7 +269,7 @@ class Sessao {
     for (let pagina = 1; pagina <= 100; pagina++) {
       const j = await this.post("R", pagina, PEDIDOS_POR_PAGINA, dados);
       let novos = 0;
-      for (const row of j?.rows ?? []) {
+      for (const row of lista(j?.rows)) {
         const p = celulasParaDict(row?.cell ?? [], COLUNAS_PEDIDO);
         const chave = limpar(p.Solicita) || limpar(p.InfoPac);
         if (vistos.has(chave)) continue;
@@ -268,7 +289,7 @@ class Sessao {
       ztmRequisicaoId: campos[0], ztmUnidadeCod: unidade, ztmSetorCod: "", ztmGrava: "S",
       ztmCkImpresso: "N", ztmCkLiberado: "N", ztmCheckGridOcultaIngressos: "N", ztmOrder: "",
     });
-    return (j?.rows ?? []).map((row: any) => {
+    return lista(j?.rows).map((row: any) => {
       const d = celulasParaDict(row?.cell ?? [], COLUNAS_RESULTADO);
       return { Parametro: limpar(d.Parametro), Result: limpar(d.Result), Calcu: limpar(d.Calcu), Unidmed: limpar(d.Unidmed), Flegui: limpar(d.Flegui) };
     });
@@ -303,10 +324,11 @@ async function acaoPedidos(s: Sessao, b: any) {
   const dias = Math.min(MAX_DIAS, Math.max(1, parseInt(b.dias, 10) || 30));
   const fimIso = /^\d{4}-\d{2}-\d{2}$/.test(b.fim ?? "") ? b.fim : new Date().toISOString().slice(0, 10);
   await s.conectar();
+  s.etapa = "pedidos";
   const unidade = String(b.unidade ?? "") || s.info!.unidade;
-  const lista = janelas(dias, isoParaDia(fimIso));
+  const jan = janelas(dias, isoParaDia(fimIso));
   const pedidos: Record<string, unknown>[] = [], lidos = new Set<string>();
-  for (const [inicio, fim] of lista) {
+  for (const [inicio, fim] of jan) {
     for (const p of await s.listarPedidos(prontuario, inicio, fim, unidade)) {
       const chave = limpar(p.Solicita) || String(p.InfoPac ?? "");
       if (lidos.has(chave)) continue;
@@ -314,7 +336,7 @@ async function acaoPedidos(s: Sessao, b: any) {
     }
   }
   return {
-    ok: true, unidade, unidades: s.info!.unidades, janelas: lista.length,
+    ok: true, unidade, unidades: s.info!.unidades, janelas: jan.length,
     pedidos: pedidos.map((p) => ({
       solicitacao: limpar(p.Solicita), entrada: limpar(p.Entrada), prontuario: limpar(p.Prontuario),
       sexo: limpar(p.Sexo), sexoDesc: limpar(p.SexoDesc), status: limpar(p.Status), infopac: limpar(p.InfoPac),
@@ -323,12 +345,13 @@ async function acaoPedidos(s: Sessao, b: any) {
 }
 
 async function acaoResultados(s: Sessao, b: any) {
-  const lista = Array.isArray(b.pedidos) ? b.pedidos.slice(0, MAX_PEDIDOS_POR_LOTE) : [];
-  if (!lista.length) throw new ErroPortal("Nenhum pedido informado.", "ENTRADA");
+  const lote = Array.isArray(b.pedidos) ? b.pedidos.slice(0, MAX_PEDIDOS_POR_LOTE) : [];
+  if (!lote.length) throw new ErroPortal("Nenhum pedido informado.", "ENTRADA");
   await s.conectar();
+  s.etapa = "resultados";
   const unidade = String(b.unidade ?? "") || s.info!.unidade;
   const out = [];
-  for (const p of lista) {
+  for (const p of lote) {
     const infopac = String(p?.infopac ?? "");
     try {
       out.push({ infopac, linhas: await s.resultadosDoPedido(infopac, unidade) });
@@ -363,6 +386,11 @@ Deno.serve(async (req) => {
     if (e instanceof ErroPortal) return json(req, 200, { ok: false, codigo: e.codigo, erro: e.message, detalhe: e.detalhe });
     const msg = e instanceof Error ? e.message : String(e);
     const tempo = /timed out|timeout|abort/i.test(msg);
-    return json(req, 200, { ok: false, codigo: "REDE", erro: tempo ? "O portal não respondeu a tempo." : "Falha de rede ao falar com o portal.", detalhe: msg.slice(0, 120) });
+    const rede = tempo || /fetch|network|connect|dns|error sending request|tls|certificate|reset/i.test(msg);
+    if (rede) return json(req, 200, { ok: false, codigo: "REDE", erro: tempo ? "O portal não respondeu a tempo." : "Falha de rede ao falar com o portal.", detalhe: msg.slice(0, 120) });
+    return json(req, 200, {
+      ok: false, codigo: "INTERNO", erro: `Erro ao interpretar a resposta do portal (etapa: ${s.etapa}).`,
+      detalhe: `${msg.slice(0, 100)} · ${s.ultimaForma || "sem resposta de dados"}`,
+    });
   }
 });
