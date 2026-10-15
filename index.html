@@ -1122,7 +1122,11 @@ function saveNow(){
     saveEncrypted().then(() => setStatus("Salvo às " + hhmm(new Date()))).catch(() => setStatus("Não foi possível salvar"));
     return;
   }
-  try { localStorage.setItem(KEY, JSON.stringify(store)); setStatus("Salvo às " + hhmm(new Date())); }
+  try {
+    const { biomega, ...settings } = store.settings || {};   // a senha do portal só fica na cópia cifrada (conta ativa)
+    localStorage.setItem(KEY, JSON.stringify({ ...store, settings }));
+    setStatus("Salvo às " + hhmm(new Date()));
+  }
   catch(e){ storageOK = false; setStatus("Não foi possível salvar"); }
 }
 /* marca o paciente como alterado (data da versão + fila de sincronização) */
@@ -1923,30 +1927,57 @@ async function lockNow(){
   location.reload();
 }
 
-/* ---------- teste do login no Biomega (função biomega-login no Supabase) ----------
-   Primeiro passo da integração: só confere se o portal aceita login vindo do servidor.
-   Usuário e senha do portal vão só nesta requisição; não ficam salvos no aparelho nem no servidor. */
+/* ---------- login no Biomega (função biomega-login no Supabase) ----------
+   Usuário e senha do portal podem ficar lembrados neste aparelho, em store.settings.biomega:
+   só com a conta ativa, porque aí o store é gravado cifrado (isbar-enc-v1) com a mesma chave dos
+   prontuários. Não vão para o servidor (a sincronização envia só os pacientes) nem para o backup .json,
+   e "Sair da conta" apaga. */
+const canRemember = () => !!(cryptoKey && session);
+function bioCred(){ const c = canRemember() && store.settings && store.settings.biomega; return c && c.usuario && c.senha ? c : null; }
+function setBioCred(usuario, senha){
+  store.settings = store.settings || {};
+  if (usuario && senha && canRemember()) store.settings.biomega = { usuario, senha, salvo: Date.now() };
+  else delete store.settings.biomega;
+  saveNow();
+}
 function biomegaTestBox(){
+  const saved = bioCred();
   const u = field("Usuário do portal", { type: "text", autocomplete: "off", autocapitalize: "none", spellcheck: "false" });
   const p = field("Senha do portal", { type: "password", autocomplete: "off" });
-  const out = el("p", { class: "sub", role: "status" });
+  const ui = u.querySelector("input"), pi = p.querySelector("input");
+  if (saved){ ui.value = saved.usuario; pi.value = saved.senha; }
+  const rem = checkbox("Lembrar usuário e senha neste aparelho (cifrados com os prontuários)", !!saved);
+  if (!canRemember()) rem.input.disabled = true;
+  const out = el("p", { class: "sub", role: "status", text: saved ? "Usuário e senha lembrados neste aparelho." : "" });
+  const forget = el("button", { class: "linkbtn", type: "button", text: "Esquecer usuário e senha", hidden: !saved || null });
+  forget.onclick = () => { setBioCred(null); ui.value = ""; pi.value = ""; rem.input.checked = false; forget.hidden = true; out.textContent = "Usuário e senha apagados deste aparelho."; };
   const b = el("button", { class: "btn", type: "button", text: "Testar login no Biomega" });
   b.onclick = async () => {
-    const usuario = u.querySelector("input").value.trim(), senha = p.querySelector("input").value;
+    const usuario = ui.value.trim(), senha = pi.value;
     if (!usuario || !senha){ out.textContent = "Informe usuário e senha do portal."; return; }
     b.disabled = true; out.textContent = "Testando… (pode levar até 30 s)";
     try {
       const r = await api("/functions/v1/biomega-login", { method: "POST", body: { usuario, senha } });
-      out.textContent = r && r.ok
+      if (r && r.ok){
+        if (rem.input.checked) setBioCred(usuario, senha); else if (bioCred()) setBioCred(null);
+        forget.hidden = !bioCred();
+      }
+      out.textContent = (r && r.ok
         ? `Funcionou: o portal aceitou o login pelo servidor e a página de consultas abriu (${r.unidades} unidade(s), ${r.ms} ms).`
-        : `Não funcionou${r && r.etapa ? " (etapa: " + r.etapa + ")" : ""}: ${(r && r.erro) || "resposta inesperada"}${r && r.codigo ? " [" + r.codigo + "]" : ""}${r && r.detalhe ? " · " + r.detalhe : ""}${r && r.amostra ? " · resposta: " + r.amostra : ""}`;
+        : `Não funcionou${r && r.etapa ? " (etapa: " + r.etapa + ")" : ""}: ${(r && r.erro) || "resposta inesperada"}${r && r.codigo ? " [" + r.codigo + "]" : ""}${r && r.detalhe ? " · " + r.detalhe : ""}${r && r.amostra ? " · resposta: " + r.amostra : ""}`)
+        + (r && r.ok && bioCred() ? " Usuário e senha lembrados neste aparelho." : "");
     } catch(e){
       out.textContent = e.status === 404 ? "A função biomega-login ainda não foi publicada no Supabase." : "Erro: " + e.message;
-    } finally { b.disabled = false; p.querySelector("input").value = ""; }
+    } finally {
+      b.disabled = false;
+      if (!bioCred()) pi.value = "";
+    }
   };
-  return el("details", { class: "biomega" }, el("summary", { text: "Teste: login no Biomega" }),
-    el("p", { class: "sub", text: "Confere se o portal aceita login vindo do servidor do Anamnesia. Usuário e senha não são salvos." }),
-    u, p, el("div", { class: "acts" }, b), out);
+  // desmarcar "lembrar" apaga na hora o que estava salvo
+  rem.input.addEventListener("change", () => { if (!rem.input.checked && bioCred()){ setBioCred(null); forget.hidden = true; out.textContent = "Usuário e senha apagados deste aparelho."; } });
+  return el("details", { class: "biomega" }, el("summary", { text: "Biomega: login no portal" }),
+    el("p", { class: "sub", text: "Confere se o portal aceita login vindo do servidor do Anamnesia. Se marcar “Lembrar”, usuário e senha ficam só neste aparelho, cifrados com a mesma senha de criptografia dos prontuários; não vão para o servidor nem para o backup, e “Sair da conta” apaga." }),
+    u, p, rem.box, el("div", { class: "acts" }, b), forget, out);
 }
 
 /* ---------- telas de conta ---------- */
