@@ -50,11 +50,18 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 - **E-mail:** "Abrir no app de e-mail" (`mailto:`) ou "Abrir no Gmail (web)", já com destinatário, assunto (momento, leito e data, sem o nome) e o texto no corpo; o texto também é copiado. O último e-mail fica lembrado no aparelho (`isbar-mailto`). Não há envio automático pelo servidor.
 - **Código temporário** (no lugar do invertexto.com, que não tem forma oficial de gravar por outro site): código de 12 caracteres (alfabeto sem 0/O/1/I, 60 bits), validade de 2, 12 ou 24 h. O texto é cifrado no aparelho (AES-GCM, chave = PBKDF2 do código, 100 mil iterações); a tabela `shares` guarda só o SHA-256 do código e o texto cifrado. Gerar exige estar logado; abrir não exige: tela inicial ou ⋯ → "Abrir texto por código", que chama a função `get_share` (só devolve o código exato e não vencido). Os vencidos são apagados a cada novo código; "Apagar agora" apaga na hora.
 
+## Integração com o Biomega/Lisnet (em andamento)
+- **Objetivo:** puxar exames do portal Biomega/Lisnet de dentro do Anamnesia, sem depender do app Flask no PC de casa nem do Tailscale. Custo zero; credenciais e resultados só em memória, sem gravar. A rotina diária das 05:00 continua no PC.
+- **Passo 1, feito:** a Edge Function `supabase/functions/biomega-login/index.ts` (Deno) faz só o login por HTTP puro: `GET /laudos/` → `POST /laudos/z_login.php` (perfil "consultas", `ztmCaptcha=NADA`) → `GET /laudos/consultas/`, e confere o `ztmAcaoTks` e as unidades. Ela exige usuário logado (valida o token em `/auth/v1/user`), não registra credenciais e devolve só o resultado (OK ou o código do portal; em `AcessoIpNegado`, o IP recusado). No app: ⋯ → Conta e sincronização → "Teste: login no Biomega".
+- **Próximo passo, se o login pela nuvem for aceito:** portar `portal.py`, `clinica.py`, `formato_prontuario.py` e `series.py` (do app Flask do autor) para a função. O tempo de execução é limitado, então dividir as extrações longas em janelas de 90 dias, em chamadas separadas. **Se for recusado:** avaliar outro host com saída no Brasil.
+- **Não ler nem copiar** do PC do autor: `credenciais.dat`, `segredos.py`, `config_local.json`.
+
 ## Testes (como foram feitos)
 - **Playwright (Chromium headless):** fluxos de lista, prontuário, prescrição e impressão (`page.pdf` com `emulate_media("print")`), migração de dados antigos e modo escuro.
 - **Sincronização:** um servidor Python que simula o Supabase (rotas `/auth/v1/*`, `/rest/v1/records`, `/rest/v1/user_keys`), com dois contextos de navegador fazendo o papel de dois aparelhos.
 - **Nos testes, clicar em `#homeGo` antes de interagir**, porque a tela inicial cobre o app.
 - **Código temporário:** servidor Node que simula `/rest/v1/shares` e `/rest/v1/rpc/get_share`, com dois contextos de navegador (gerar e abrir). A tabela `shares` foi testada no PostgreSQL local (RLS, limite de 24 h, `get_share` para `anon`, limpeza dos vencidos).
+- **`biomega-login`:** `deno check` e execução local contra um portal e um `/auth/v1/user` simulados: login aceito, senha errada, `AcessoIpNegado`, tempo esgotado, chamada sem login recusada e senha ausente dos logs. O botão do app foi testado no Playwright.
 - **`supabase-setup.sql`:** testado em PostgreSQL 16 local com um esquema `auth` simulado (`auth.users`, `auth.uid()`, papéis `anon`/`authenticated`): RLS entre dois usuários, upsert mais antigo ignorado, *tombstone* aceito e reexecução do script.
 
 ## Situação da publicação
