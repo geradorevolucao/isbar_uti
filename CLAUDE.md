@@ -1,6 +1,6 @@
 # Anamnesia — contexto do projeto
 
-Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que não esquecer") para uso de um médico residente: evoluções de CTI, enfermaria de clínica médica e interconsulta de hematologia, além de uma proposta de prescrição para discussão com a preceptoria.
+Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que não esquecer") para uso de um médico residente: evoluções de CTI e de enfermaria de clínica médica, um bloco de notas por paciente, além de uma proposta de prescrição para discussão com a preceptoria.
 
 ## Preferências do autor (seguir sempre)
 - Responder em português do Brasil.
@@ -16,7 +16,7 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 ## Telas (`body[data-view]`)
 1. **Tela inicial** (`#home`): saudação animada com traçado de ECG. Respeita `prefers-reduced-motion`. O botão "Começar" leva à lista.
 2. **Meus pacientes** (`list`): adicionar, editar, mudar de módulo e excluir pacientes; filtro por módulo e busca por nome ou leito.
-3. **Prontuário** (`chart`): formulário gerado a partir de um esquema declarativo (`CTI`, `ENF`, `IC`). "Gerar texto" monta o texto para colar no prontuário oficial.
+3. **Prontuário** (`chart`): formulário gerado a partir de um esquema declarativo (`CTI`, `ENF`, `NOTA`). "Gerar texto" monta o texto para colar no prontuário oficial.
 4. **Prescrição** (`rx`): proposta com itens nas situações Manter, Nova, Alterar ou Suspender, e aprazamento automático a partir da frequência e do 1º horário. Os botões "+ Escolher dieta" e "+ Escolher da lista" abrem o catálogo `RX_CAT` (dieta, sintomáticos, anticoagulação, correção de glicose, antibioticoterapia, anti-hipertensivos, betabloqueadores, estatinas, protetores gástricos, laxativos, diuréticos e antiagregantes), com busca pelo começo das palavras e filtro por categoria; a opção escolhida entra como "Nova", com descrição, dose, via, frequência e observação preenchidas. A impressão leva a marca-d'água "SIMULAÇÃO – NÃO VÁLIDA" e o aviso de que não serve para dispensação. **Manter essa identificação**: a folha não pode ser confundida com uma prescrição real, e não deve usar logotipo do hospital ou do MV.
 
 ## Modelos de evolução (objeto `TPL`)
@@ -29,12 +29,8 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
   - As situações usam a mesma chave da lista de problemas (`prob`). Em "Nova evolução do dia" a ficha passa para Evolução: a propedêutica externa e interna é copiada para "Propedêutica" (se vazia) e título vazio vira "Situação a esclarecer". Contexto, HPP (`comorb`), MUC, alergias e cirurgias também são compartilhados.
   - O campo `problems` aceita `subs` (subtópicos), `item` (nome do card) e `itemPh` (exemplo do título).
   - **Impressão:** situações e problemas saem no formato do texto gerado: "1. Título" e uma linha "- Subtópico:" por item, também em branco. Na impressão (inclusive Ctrl+P), `fitProbAreas` faz os subtópicos crescerem até mostrar todo o texto.
-- **`ic`, Interconsulta de hematologia:** segue a folha de rosto da interconsulta da residência (docx enviado pelo autor). O modelo é dinâmico (`build: icModel`): o campo `ic_mom` escolhe entre 1ª avaliação, Avaliações subsequentes e Após diagnóstico; neste último, `ic_dx` escolhe o bloco da doença (aplasia de medula óssea, PTI, trombose, mieloma múltiplo, linfoma, SMD, leucemia aguda), seguido de Internação (comorbidades, cateter, transfusão, profilaxias, intercorrências) e Evolução (DE, evolução, ao exame, CD).
-  - Campos com o mesmo significado usam a mesma chave em todos os modelos, para os dados serem aproveitados na troca.
-  - O texto (`icText`) segue o formato da folha: começa com `# INTERCONSULTA – HEMATOLOGIA #`. As seções Identificação e Momento não entram no texto. Os grupos têm `tx: { h, m }` (`in`: uma linha; `bl`: título e linhas "- "; `lf`: um campo por linha) e os campos podem ter `blk` (subtítulo do bloco, como "1) INFECCIOSA").
-  - Superfície corpórea calculada pela fórmula de Mosteller.
-  - "Nova avaliação" apaga Evolução, Ao exame e CD, passa a 1ª avaliação para Avaliações subsequentes e avança o "Hoje D" da QT pelos dias passados.
-  - Dados do modelo antigo da IC continuam guardados; `tipo: "Seguimento"` é migrado para `ic_mom: "Avaliações subsequentes"`.
+- **`nota`, Notas** (substituiu a IC Hemato, a pedido do autor): bloco de notas por paciente, no lugar do invertexto.com. Identificação (nome, leito, data) e um campo grande "Texto" (`nota`) onde se cola a evolução copiada do sistema. O texto gerado é a nota exatamente como foi colada (sem título); o botão é "Copiar / enviar" e abre a mesma janela de copiar, e-mail e código temporário. Sincroniza cifrada com a conta, como os demais prontuários. A lista mostra a 1ª linha da nota. Sem referências (o rodapé some) e sem "Nova evolução". Na impressão, a nota cresce até mostrar todo o texto.
+  - Fichas antigas com `tpl: "ic"` passam para `nota` em `normalizeStore` (os campos antigos ficam guardados nos dados).
 - Tipos de campo: `text`, `num`, `area`, `date`, `radio`, `check`, `calc`, `pair`, `gcs`, `list`, `problems`, `outline` (itens `k_i` com subtópicos `k_i_j`; `n` itens, `ns` subtópicos, `min` abertos de início, `item` = nome; `k_n` e `k_i_n` guardam quantos estão abertos). Opções: `def` (valor padrão de um radio), `tl` (rótulo no texto gerado; `""` imprime só o valor), `daily` (apagado na nova evolução), `ph` (exemplo em cinza, não entra no texto).
 
 ## Dados
@@ -84,6 +80,6 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
   - Bromoprida EV: 8 mg 8/8h (definido pelo autor).
   - Esquema de correção de insulina: faixas do RABBIT 2 (confirmado pelo autor).
 - Enfermaria: as condutas da admissão ficam só na admissão (não passam para a evolução).
-- IC Hemato: manter como está (Mosteller, classificação de risco da leucemia aguda e rótulo "DE"); o autor vai pedir outras mudanças depois.
+- IC Hemato: retirada por completo e trocada por Notas (um bloco de notas por paciente, pela conta do Anamnesia).
 - Grafia: **"Anamnesia"**, sem acento.
 - Manter o web app como está, inclusive a seção Condutas da enfermaria, até o autor pedir mudanças.
