@@ -392,6 +392,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
         <button type="button" data-act="opencode" data-views="list">Abrir texto por código</button>
         <button type="button" data-act="edit" data-views="chart rx">Editar dados do paciente</button>
         <button type="button" data-act="newday" hidden></button>
+        <button type="button" data-act="std" hidden>Preencher com o texto padrão</button>
         <button type="button" data-act="rx-newday" data-views="rx">Nova proposta do dia</button>
         <button type="button" data-act="biomega" data-views="chart">Exames do Biomega</button>
         <button type="button" data-act="print" data-views="chart rx">Imprimir / salvar PDF</button>
@@ -780,7 +781,7 @@ const ENF = [
    [F("muc","Medicação, dose e posologia","area",{tl:"",rows:4})]
  ]}]},
  { id: "EV", letter: "EV", title: "EVOLUÇÃO DIÁRIA", nav: "Evolução", daily: true, groups: [ { rows: [
-   [F("evol","Evolução nas últimas 24 h (queixas, intercorrências)","area",{tl:"",rows:4})],
+   [F("evol","Evolução nas últimas 24 h (queixas, intercorrências)","area",{tl:"",rows:4,std:"Avalio paciente em leito de enfermaria, alerta, estável e eupneico, sem queixas. Refere boa aceitação da dieta. Diurese presente, sem queixas urinárias. Evacuações presentes, sem alterações."})],
    [F("dieta_acc","Aceitação da dieta","text",{w:"m"}), F("diurese_q","Diurese","text",{w:"s"}), F("evac_q","Evacuações","text",{w:"s"})]
  ]}]},
  { id: "SV", letter: "SV", title: "DADOS VITAIS", nav: "Vitais", daily: true, groups: [ { rows: [
@@ -1036,6 +1037,14 @@ function keysOf(f){
   return [f.k];
 }
 function eachField(model, cb){ model.forEach(sec => sec.groups.forEach(g => g.rows.forEach(r => r.forEach(f => cb(f, sec, g))))); }
+/* texto padrão (opção std, definido pelo autor): escrito só nos campos vazios, na ficha nova,
+   na "Nova evolução do dia" e em ⋯ → "Preencher com o padrão"; depois é editável como qualquer texto */
+const hasStd = (t, d) => { let s = false; eachField(modelOf(t, d), f => { if (f.std) s = true; }); return s; };
+function fillStd(t, d){
+  let n = 0;
+  eachField(modelOf(t, d), f => { if (f.std && String(d[f.k] == null ? "" : d[f.k]).trim() === ""){ d[f.k] = f.std; n++; } });
+  return n;
+}
 
 /* =====================================================================
    CAMPOS CALCULADOS
@@ -1298,7 +1307,7 @@ function onInput(e){
     if (inp.value === "") delete d[k]; else d[k] = inp.value;
   }
   if (JSON.stringify(d[k] == null ? null : d[k]) === before) return;   // nada mudou (ex.: evento "change" ao sair do campo)
-  if (renderedSig !== store.mode + "|" + sigOf(TPL[store.mode], d)) fillForm();
+  if (renderedSig !== store.mode + "|" + sigOf(TPL[store.mode], d)){ fillStd(TPL[store.mode], d); fillForm(); }   // ex.: Admissão → Evolução
   refreshDerived();
   if (k === "nome" || k === "leito") refreshSelect();
   changed();
@@ -1486,6 +1495,7 @@ function newDay(){
     }
     d.enf_mom = "Evolução";
   }
+  fillStd(t, d);
   d.data_aval = today;
   fillForm(); changed(); saveNow(); toast("Pronto para a evolução de hoje");
 }
@@ -1547,6 +1557,9 @@ function onMenu(act){
     case "rx-newday": rxNewDay(); break;
     case "rx-clear": rxClear(); break;
     case "newday": newDay(); break;
+    case "std":
+      if (p){ const n = fillStd(TPL[p.tpl], p.data); fillForm(); if (n){ changed(); saveNow(); } toast(n ? "Texto padrão inserido nos campos vazios" : "Os campos com texto padrão já estão preenchidos"); }
+      break;
     case "print": doPrint(); break;
     case "expand": document.querySelectorAll("details.grp").forEach(x => x.open = true); break;
     case "collapse": document.querySelectorAll("details.grp").forEach(x => x.open = false); break;
@@ -2180,7 +2193,7 @@ function savePtDialog(){
   const tpl = (f.querySelector("input[name=tpl]:checked") || {}).value || "cti";
   if (!nome && !leito){ $("#ptMsg").textContent = "Informe ao menos o nome ou o leito."; return; }
   let id = editingId;
-  if (!id){ id = uid(); store.patients[id] = { tpl, updated: Date.now(), data: newData(tpl) }; }
+  if (!id){ id = uid(); store.patients[id] = { tpl, updated: Date.now(), data: newData(tpl) }; fillStd(TPL[tpl], store.patients[id].data); }
   const p = store.patients[id];
   const set = (k, v) => { if (v) p.data[k] = v; else delete p.data[k]; };
   set("nome", nome); set("leito", leito); set("idade", idade); set("sexo", sexo);
@@ -2601,6 +2614,7 @@ function menuState(){
   const p = cur(), t = p ? TPL[p.tpl] : null;
   const nd = $('[data-act="newday"]');
   nd.hidden = !(view === "chart" && t && t.newDay); if (t && t.newDay) nd.textContent = t.newDay;
+  $('[data-act="std"]').hidden = !(view === "chart" && t && hasStd(t, p.data));
   const hasGroups = !!(t && modelOf(t, p.data).some(s => s.groups.some(g => g.title)));
   $('[data-act="expand"]').hidden = $('[data-act="collapse"]').hidden = !(view === "chart" && hasGroups);
 }
