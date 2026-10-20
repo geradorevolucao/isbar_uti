@@ -790,14 +790,14 @@ const ENF = [
    [F("hgt","Glicemias capilares","text",{w:"full"})]
  ]}]},
  { id: "EF", letter: "EF", title: "EXAME FÍSICO", nav: "Exame físico", daily: true, groups: [ { rows: [
-   [F("ef_geral","Geral","text",{w:"full",ph:"ex.: BEG, LOTE, corado, hidratado, anictérico, acianótico"})],
-   [F("ef_acv","ACV","text",{w:"full",ph:"ex.: RCR 2T, BNF, sem sopros"})],
-   [F("ef_ar","AR","text",{w:"full",ph:"ex.: MV presente bilateralmente, sem ruídos adventícios"})],
-   [F("ef_abd","Abdome","text",{w:"full",ph:"ex.: flácido, indolor, RHA presentes, sem visceromegalias"})],
-   [F("ef_ext","Extremidades","text",{w:"full",ph:"ex.: sem edema, panturrilhas livres, TEC < 3 s"})],
-   [F("ef_neuro","Neurológico","text",{w:"full",ph:"ex.: Glasgow 15, sem déficits focais"})],
+   [F("ef_geral","Ectoscopia","area",{rows:3,std:"Bom estado geral, lúcido e orientado em tempo e espaço, corado, hidratado, anictérico, acianótico, eupneico"})],
+   [F("ef_acv","Aparelho cardiovascular","area",{rows:2,std:"Ritmo cardíaco regular em 2 tempos, bulhas normofonéticas, sem sopros"})],
+   [F("ef_ar","Aparelho respiratório","area",{rows:2,std:"Sons respiratórios audíveis bilateralmente, sem alterações à ausculta"})],
+   [F("ef_abd","Abdome","area",{rows:3,std:"Plano, flácido, indolor à palpação, ruídos hidroaéreos presentes, sem visceromegalias, sem sinais de irritação peritoneal"})],
+   [F("ef_ext","Extremidades","area",{rows:3,std:"Bem perfundidas, pulsos periféricos palpáveis e simétricos, sem edema, panturrilhas livres, tempo de enchimento capilar menor que 3 segundos"})],
+   [F("ef_neuro","Neurológico","area",{rows:2,std:"Glasgow 15, pupilas isocóricas e fotorreagentes, sem déficits focais, sem sinais meníngeos"})],
    [F("ef_outros","Outros (pele, dispositivos)","text",{w:"full"})]
- ], hint: "Os textos em cinza são apenas exemplos de formato e não entram na evolução." }]},
+ ], hint: "Os campos vazios recebem o exame físico normal padrão (na Nova evolução do dia ou em ⋯ → Preencher com o texto padrão). Altere só o que for diferente no paciente." }]},
  { id: "EC", letter: "EC", title: "EXAMES COMPLEMENTARES", nav: "Exames", groups: [ { rows: [
    [F("ec_lab","Laboratoriais","area",{rows:4})],
    [F("ec_img","Imagem","area",{rows:2})],
@@ -3020,7 +3020,7 @@ let bioUnidades = null, bioUltimo = null;
 function bioAlvos(){
   const p = cur(); if (!p) return [];
   const out = [];
-  eachField(modelOf(TPL[store.mode], p.data), (f, sec, g) => { if (f.t === "area") out.push({ k: f.k, l: `${sec.title} › ${f.tl || f.l || g.title || f.k}` }); });
+  eachField(modelOf(TPL[store.mode], p.data), (f, sec, g) => { if (f.t === "area" && sec.id !== "EF") out.push({ k: f.k, l: `${sec.title} › ${f.tl || f.l || g.title || f.k}` }); });
   const pref = ["ext_lab", "ec_lab", "evolucao"];
   out.sort((a, b) => (pref.indexOf(a.k) + 1 || 99) - (pref.indexOf(b.k) + 1 || 99));
   return out;
