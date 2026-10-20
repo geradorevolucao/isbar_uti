@@ -781,7 +781,7 @@ const ENF = [
    [F("muc","Medicação, dose e posologia","area",{tl:"",rows:4})]
  ]}]},
  { id: "EV", letter: "EV", title: "EVOLUÇÃO DIÁRIA", nav: "Evolução", daily: true, groups: [ { rows: [
-   [F("evol","Evolução nas últimas 24 h (queixas, intercorrências)","area",{tl:"",rows:4,std:"Avalio paciente em leito de enfermaria, alerta, estável e eupneico, sem queixas. Refere boa aceitação da dieta. Diurese presente, sem queixas urinárias. Evacuações presentes, sem alterações."})],
+   [F("evol","Evolução nas últimas 24 h (queixas, intercorrências)","area",{tl:"",rows:4,std:{M:"Avalio paciente em leito de enfermaria, alerta, estável e eupneico, sem queixas. Refere boa aceitação da dieta. Diurese presente, sem queixas urinárias. Evacuações presentes, sem alterações.",F:"Avalio paciente em leito de enfermaria, alerta, estável e eupneica, sem queixas. Refere boa aceitação da dieta. Diurese presente, sem queixas urinárias. Evacuações presentes, sem alterações."}})],
    [F("dieta_acc","Aceitação da dieta","text",{w:"m"}), F("diurese_q","Diurese","text",{w:"s"}), F("evac_q","Evacuações","text",{w:"s"})]
  ]}]},
  { id: "SV", letter: "SV", title: "DADOS VITAIS", nav: "Vitais", daily: true, groups: [ { rows: [
@@ -790,14 +790,14 @@ const ENF = [
    [F("hgt","Glicemias capilares","text",{w:"full"})]
  ]}]},
  { id: "EF", letter: "EF", title: "EXAME FÍSICO", nav: "Exame físico", daily: true, groups: [ { rows: [
-   [F("ef_geral","Geral","text",{w:"full",ph:"ex.: BEG, LOTE, corado, hidratado, anictérico, acianótico"})],
-   [F("ef_acv","ACV","text",{w:"full",ph:"ex.: RCR 2T, BNF, sem sopros"})],
-   [F("ef_ar","AR","text",{w:"full",ph:"ex.: MV presente bilateralmente, sem ruídos adventícios"})],
-   [F("ef_abd","Abdome","text",{w:"full",ph:"ex.: flácido, indolor, RHA presentes, sem visceromegalias"})],
-   [F("ef_ext","Extremidades","text",{w:"full",ph:"ex.: sem edema, panturrilhas livres, TEC < 3 s"})],
-   [F("ef_neuro","Neurológico","text",{w:"full",ph:"ex.: Glasgow 15, sem déficits focais"})],
+   [F("ef_geral","Ectoscopia","area",{rows:3,std:{M:"Bom estado geral, lúcido e orientado em tempo e espaço, corado, hidratado, anictérico, acianótico, eupneico",F:"Bom estado geral, lúcida e orientada em tempo e espaço, corada, hidratada, anictérica, acianótica, eupneica"}})],
+   [F("ef_acv","Aparelho cardiovascular","area",{rows:2,std:"Ritmo cardíaco regular em 2 tempos, bulhas normofonéticas, sem sopros"})],
+   [F("ef_ar","Aparelho respiratório","area",{rows:2,std:"Sons respiratórios audíveis bilateralmente, sem alterações à ausculta"})],
+   [F("ef_abd","Abdome","area",{rows:3,std:"Plano, flácido, indolor à palpação, ruídos hidroaéreos presentes, sem visceromegalias, sem sinais de irritação peritoneal"})],
+   [F("ef_ext","Extremidades","area",{rows:3,std:"Bem perfundidas, pulsos periféricos palpáveis e simétricos, sem edema, panturrilhas livres, tempo de enchimento capilar menor que 3 segundos"})],
+   [F("ef_neuro","Neurológico","area",{rows:2,std:"Glasgow 15, pupilas isocóricas e fotorreagentes, sem déficits focais, sem sinais meníngeos"})],
    [F("ef_outros","Outros (pele, dispositivos)","text",{w:"full"})]
- ], hint: "Os textos em cinza são apenas exemplos de formato e não entram na evolução." }]},
+ ], hint: "Os campos vazios recebem o exame físico normal padrão (na Nova evolução do dia ou em ⋯ → Preencher com o texto padrão). Altere só o que for diferente no paciente." }]},
  { id: "EC", letter: "EC", title: "EXAMES COMPLEMENTARES", nav: "Exames", groups: [ { rows: [
    [F("ec_lab","Laboratoriais","area",{rows:4})],
    [F("ec_img","Imagem","area",{rows:2})],
@@ -1038,12 +1038,18 @@ function keysOf(f){
 }
 function eachField(model, cb){ model.forEach(sec => sec.groups.forEach(g => g.rows.forEach(r => r.forEach(f => cb(f, sec, g))))); }
 /* texto padrão (opção std, definido pelo autor): escrito só nos campos vazios, na ficha nova,
-   na "Nova evolução do dia" e em ⋯ → "Preencher com o padrão"; depois é editável como qualquer texto */
+   na "Nova evolução do dia" e em ⋯ → "Preencher com o padrão"; depois é editável como qualquer texto.
+   std pode ser { M, F }: vale o sexo da ficha (sem sexo, M) */
 const hasStd = (t, d) => { let s = false; eachField(modelOf(t, d), f => { if (f.std) s = true; }); return s; };
+const stdOf = (f, sexo) => typeof f.std === "string" ? f.std : (sexo === "F" ? f.std.F : f.std.M);
 function fillStd(t, d){
   let n = 0;
-  eachField(modelOf(t, d), f => { if (f.std && String(d[f.k] == null ? "" : d[f.k]).trim() === ""){ d[f.k] = f.std; n++; } });
+  eachField(modelOf(t, d), f => { if (f.std && String(d[f.k] == null ? "" : d[f.k]).trim() === ""){ d[f.k] = stdOf(f, d.sexo); n++; } });
   return n;
+}
+// ao mudar o sexo, troca o gênero dos textos padrão que ainda não foram editados
+function swapStdSexo(t, d, antes){
+  eachField(modelOf(t, d), f => { if (f.std && typeof f.std !== "string" && d[f.k] === stdOf(f, antes)) d[f.k] = stdOf(f, d.sexo); });
 }
 
 /* =====================================================================
@@ -1297,7 +1303,7 @@ function onInput(e){
   const inp = e.target; const k = inp && inp.dataset ? inp.dataset.k : null;
   if (!k || !cur()) return;
   const d = cur().data;
-  const before = JSON.stringify(d[k] == null ? null : d[k]);
+  const before = JSON.stringify(d[k] == null ? null : d[k]), sexoAntes = d.sexo;
   if (inp.type === "checkbox"){
     const vals = [...document.querySelectorAll(`#form input[name="${k}"]:checked`)].map(x => x.value);
     if (vals.length) d[k] = vals; else delete d[k];
@@ -1307,6 +1313,7 @@ function onInput(e){
     if (inp.value === "") delete d[k]; else d[k] = inp.value;
   }
   if (JSON.stringify(d[k] == null ? null : d[k]) === before) return;   // nada mudou (ex.: evento "change" ao sair do campo)
+  if (k === "sexo"){ swapStdSexo(TPL[store.mode], d, sexoAntes); fillForm(); }
   if (renderedSig !== store.mode + "|" + sigOf(TPL[store.mode], d)){ fillStd(TPL[store.mode], d); fillForm(); }   // ex.: Admissão → Evolução
   refreshDerived();
   if (k === "nome" || k === "leito") refreshSelect();
@@ -2193,11 +2200,14 @@ function savePtDialog(){
   const tpl = (f.querySelector("input[name=tpl]:checked") || {}).value || "cti";
   if (!nome && !leito){ $("#ptMsg").textContent = "Informe ao menos o nome ou o leito."; return; }
   let id = editingId;
-  if (!id){ id = uid(); store.patients[id] = { tpl, updated: Date.now(), data: newData(tpl) }; fillStd(TPL[tpl], store.patients[id].data); }
+  if (!id){ id = uid(); store.patients[id] = { tpl, updated: Date.now(), data: newData(tpl) }; }
   const p = store.patients[id];
   const set = (k, v) => { if (v) p.data[k] = v; else delete p.data[k]; };
+  const sexoAntes = p.data.sexo;
   set("nome", nome); set("leito", leito); set("idade", idade); set("sexo", sexo);
   const tplChanged = p.tpl !== tpl; p.tpl = tpl;
+  if (!editingId) fillStd(TPL[tpl], p.data);
+  else if (sexoAntes !== p.data.sexo) swapStdSexo(TPL[tpl], p.data, sexoAntes);
   changed(id); saveNow();
   $("#ptDlg").close();
   if (view === "list") renderList();
@@ -3020,7 +3030,7 @@ let bioUnidades = null, bioUltimo = null;
 function bioAlvos(){
   const p = cur(); if (!p) return [];
   const out = [];
-  eachField(modelOf(TPL[store.mode], p.data), (f, sec, g) => { if (f.t === "area") out.push({ k: f.k, l: `${sec.title} › ${f.tl || f.l || g.title || f.k}` }); });
+  eachField(modelOf(TPL[store.mode], p.data), (f, sec, g) => { if (f.t === "area" && sec.id !== "EF") out.push({ k: f.k, l: `${sec.title} › ${f.tl || f.l || g.title || f.k}` }); });
   const pref = ["ext_lab", "ec_lab", "evolucao"];
   out.sort((a, b) => (pref.indexOf(a.k) + 1 || 99) - (pref.indexOf(b.k) + 1 || 99));
   return out;
