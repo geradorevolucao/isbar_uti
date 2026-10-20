@@ -63,6 +63,13 @@ details.menu .menu-list button:hover{background:var(--band)}
 .sec-h .letter.l2{font-size:1rem}
 .sec-h .letter.l3{font-size:.8rem;letter-spacing:.02em}
 .listrow{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.ol-item{margin-bottom:2px}
+.ol-subs{padding-left:2.4rem}
+.ol-sub{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.ol-sub .n{width:1rem;text-align:center;color:var(--muted);flex:0 0 auto}
+.ol-sub .inp{flex:1}
+.ol-item[hidden],.ol-sub[hidden],.ol-addsub[hidden]{display:none!important}
+.ol-addsub{height:34px;padding:0 10px;font-size:.8rem;flex:0 0 auto;align-self:center}
 .listrow .n{width:1.6rem;text-align:right;color:var(--muted);font-weight:600;font-size:.9rem;flex:0 0 auto}
 .listrow .inp{flex:1}
 .prob{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;background:color-mix(in srgb,var(--band) 35%,transparent)}
@@ -795,7 +802,7 @@ const ENF = [
    [F("ec_outros","Outros (culturas, ECG etc.)","area",{rows:2})]
  ], hint: "Para trazer os exames do laboratório: ⋯ → Exames do Biomega → Inserir no prontuário (entra em “Laboratoriais”)." }]},
  { id: "CD", letter: "CD", title: "CONDUTAS", nav: "Condutas", groups: [ { rows: [
-   [F("condutas","Condutas","area",{tl:"",rows:5})]
+   [F("cdl","Condutas","outline",{n:20,ns:8,min:3,item:"Conduta",tl:""})]
  ]}]}
 ];
 
@@ -1163,6 +1170,13 @@ function normalizeStore(st){
   }
   if (!TPL[st.mode]) st.mode = "cti";
   if (!st.settings || typeof st.settings !== "object") st.settings = {};
+  for (const p of Object.values(st.patients)){
+    const d = p.data;
+    if (p.tpl !== "enf" || !d || !String(d.condutas || "").trim() || Object.keys(d).some(k => k.startsWith("cdl_"))) continue;
+    String(d.condutas).split(/\r?\n/).map(x => x.replace(/^\s*(?:[-–•*]|\d+[.)])\s*/, "").trim()).filter(Boolean).slice(0, 20)
+      .forEach((x, i) => { d["cdl_" + (i + 1)] = x; });
+    d.condutas_antigo = d.condutas; delete d.condutas;   // guardado, e não migra de novo
+  }
   return st;
 }
 function loadStore(){
@@ -1232,6 +1246,8 @@ function fmt(v, d){ if (!isFinite(v)) return ""; return v.toFixed(d).replace("."
 function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 2000); }
 function setStatus(msg){ $("#status").textContent = msg; }
 const D = () => (cur() ? cur().data : {});
+/* campo "outline": itens (k_i) com subtópicos (k_i_j); k_n e k_i_n guardam quantos estão abertos */
+const olKeys = f => Array.from({ length: f.n }, (_, i) => [f.k + "_" + (i + 1), ...Array.from({ length: f.ns }, (_, j) => `${f.k}_${i + 1}_${j + 1}`)]).flat();
 const listKeys = f => Array.from({ length: f.n }, (_, i) => f.k + "_" + (i + 1));
 const subsOf = f => f.subs || PROB_SUBS;
 const probKeysOne = (f, i) => [f.k + "_" + i, ...subsOf(f).map(([s]) => f.k + "_" + i + "_" + s)];
@@ -1241,6 +1257,7 @@ function keysOf(f){
   if (f.t === "pair") return f.keys;
   if (f.t === "gcs") return ["gcs_o","gcs_v","gcs_m"];
   if (f.t === "list") return listKeys(f);
+  if (f.t === "outline") return olKeys(f);
   if (f.t === "problems") return probKeys(f);
   if (f.t === "calc") return [];
   return [f.k];
@@ -1336,6 +1353,24 @@ function renderField(f){
       box.append(el("button", { class: "btn add-prob", type: "button", "data-add-prob": f.k, text: "+ Adicionar " + (f.item || "problema").toLowerCase() }));
       return box;
     }
+    case "outline": {
+      const item = f.item || "Item";
+      const box = el("div", { class: "fld " + w, "data-ol": f.k, "data-max": String(f.n), "data-maxs": String(f.ns), "data-min": String(f.min || 1), role: "group", "aria-label": f.l });
+      for (let i = 1; i <= f.n; i++){
+        const subs = el("div", { class: "ol-subs" });
+        for (let j = 1; j <= f.ns; j++) subs.append(el("div", { class: "ol-sub", "data-j": String(j) },
+          el("span", { class: "n", text: "–" }),
+          el("div", { class: "inp" }, inputFor(`${f.k}_${i}_${j}`, { autocapitalize: "sentences", placeholder: "Subtópico", "aria-label": `${item} ${i}, subtópico ${j}` }))));
+        box.append(el("div", { class: "ol-item", "data-i": String(i) },
+          el("div", { class: "listrow" },
+            el("span", { class: "n", text: i + "." }),
+            el("div", { class: "inp" }, inputFor(`${f.k}_${i}`, { autocapitalize: "sentences", placeholder: `${item} ${i}`, "aria-label": `${item} ${i}` })),
+            el("button", { class: "btn add-prob ol-addsub", type: "button", "data-add-sub": `${f.k}|${i}`, title: "Adicionar subtópico", "aria-label": `Adicionar subtópico à ${item.toLowerCase()} ${i}`, text: "+ sub" })),
+          subs));
+      }
+      box.append(el("button", { class: "btn add-prob", type: "button", "data-add-ol": f.k, text: "+ Adicionar " + item.toLowerCase() }));
+      return box;
+    }
     case "list": {
       const box = el("div", { class: "fld " + w, role: "group", "aria-label": f.l });
       listKeys(f).forEach((k, i) => {
@@ -1420,6 +1455,39 @@ function updateProbs(){
     box.querySelector(".add-prob").hidden = shown >= max;
   });
 }
+function updateOutline(){
+  const d = D(), cheio = k => d[k] != null && String(d[k]).trim() !== "";
+  document.querySelectorAll("#form [data-ol]").forEach(box => {
+    const k = box.dataset.ol, max = Number(box.dataset.max), maxs = Number(box.dataset.maxs), min = Number(box.dataset.min) || 1;
+    const ultSub = i => { let u = 0; for (let j = 1; j <= maxs; j++) if (cheio(`${k}_${i}_${j}`)) u = j; return u; };
+    let last = 0; for (let i = 1; i <= max; i++) if (cheio(`${k}_${i}`) || ultSub(i)) last = i;
+    const shown = Math.min(max, Math.max(min, last, Number(d[k + "_n"]) || 0));
+    box.querySelectorAll(".ol-item").forEach(it => {
+      const i = Number(it.dataset.i); it.hidden = i > shown;
+      const ss = Math.min(maxs, Math.max(ultSub(i), Number(d[`${k}_${i}_n`]) || 0));
+      it.querySelectorAll(".ol-sub").forEach(sb => sb.hidden = Number(sb.dataset.j) > ss);
+      it.querySelector(".ol-addsub").hidden = ss >= maxs;
+    });
+    box.querySelector("[data-add-ol]").hidden = shown >= max;
+  });
+}
+function onAddOutline(e){
+  const p = cur(); if (!p) return;
+  const bi = e.target.closest("[data-add-ol]"), bs = e.target.closest("[data-add-sub]");
+  if (!bi && !bs) return;
+  let foco;
+  if (bi){
+    const k = bi.dataset.addOl, box = bi.closest("[data-ol]");
+    const shown = box.querySelectorAll(".ol-item:not([hidden])").length;
+    p.data[k + "_n"] = String(shown + 1); foco = `${k}_${shown + 1}`;
+  } else {
+    const [k, i] = bs.dataset.addSub.split("|"), it = bs.closest(".ol-item");
+    const ss = it.querySelectorAll(".ol-sub:not([hidden])").length;
+    p.data[`${k}_${i}_n`] = String(ss + 1); foco = `${k}_${i}_${ss + 1}`;
+  }
+  updateOutline(); changed();
+  const inp = document.getElementById("f_" + foco); if (inp) inp.focus();
+}
 function onAddProb(e){
   const b = e.target.closest("[data-add-prob]"); if (!b || !cur()) return;
   const k = b.dataset.addProb, box = b.closest("[data-probs]");
@@ -1439,6 +1507,7 @@ function fillForm(){
     else inp.value = v == null ? "" : v;
   });
   updateProbs();
+  updateOutline();
   refreshDerived();
 }
 
@@ -1563,6 +1632,16 @@ function buildText(){
                 const v = String(d[f.k + "_" + i + "_" + sk] || "").trim();
                 if (v) gLines.push(`   - ${sl}: ${v.replace(/\n/g, "\n     ")}`);
               });
+            }
+            return;
+          }
+          if (f.t === "outline"){
+            for (let i = 1; i <= f.n; i++){
+              const t = String(d[`${f.k}_${i}`] || "").trim();
+              const subs = Array.from({ length: f.ns }, (_, j) => String(d[`${f.k}_${i}_${j + 1}`] || "").trim()).filter(Boolean);
+              if (!t && !subs.length) continue;
+              if (t) gLines.push("- " + t);
+              subs.forEach(x => gLines.push((t ? "   - " : "- ") + x));
             }
             return;
           }
@@ -3310,6 +3389,7 @@ form.addEventListener("input", onInput);
 form.addEventListener("change", onInput);
 form.addEventListener("click", onRadioClick);
 form.addEventListener("click", onAddProb);
+form.addEventListener("click", onAddOutline);
 
 $("#modes").addEventListener("click", e => { const b = e.target.closest("button[data-mode]"); if (b) switchMode(b.dataset.mode); });
 $("#ptSelect").addEventListener("change", e => switchTo(e.target.value));
