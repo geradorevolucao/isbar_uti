@@ -790,12 +790,10 @@ const ENF = [
    [F("ef_outros","Outros (pele, dispositivos)","text",{w:"full"})]
  ], hint: "Os textos em cinza são apenas exemplos de formato e não entram na evolução." }]},
  { id: "EC", letter: "EC", title: "EXAMES COMPLEMENTARES", nav: "Exames", groups: [ { rows: [
-   [F("ec_data","Data da coleta","date")],
-   [F("hb","Hb","num"), F("leuco","Leuco","num"), F("plaq","Plaq","num"), F("ur","Ur","num"), F("cr","Cr","num"), F("na","Na","num"), F("k","K","num"), F("pcr","PCR","num")],
-   [F("ec_lab","Outros laboratoriais","area",{rows:2})],
+   [F("ec_lab","Laboratoriais","area",{rows:4})],
    [F("ec_img","Imagem","area",{rows:2})],
    [F("ec_outros","Outros (culturas, ECG etc.)","area",{rows:2})]
- ]}]},
+ ], hint: "Para trazer os exames do laboratório: ⋯ → Exames do Biomega → Inserir no prontuário (entra em “Laboratoriais”)." }]},
  { id: "CD", letter: "CD", title: "CONDUTAS", nav: "Condutas", groups: [ { rows: [
    [F("condutas","Condutas","area",{tl:"",rows:5})]
  ]}]}
