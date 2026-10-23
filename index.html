@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Anamnesia – o prontuário eletrônico que te lembra do que não esquecer. Evoluções de CTI (ISBAR), enfermaria e interconsulta.">
+<meta name="description" content="Anamnesia – o prontuário eletrônico que te lembra do que não esquecer. Evoluções de CTI (ISBAR), enfermaria e notas.">
 <meta name="theme-color" content="#1D4E6E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -79,6 +79,11 @@ details.menu .menu-list button:hover{background:var(--band)}
 .prob-h .inp input{font-weight:600}
 .prob-subs{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:8px 12px}
 .add-prob{align-self:flex-start}
+.cond-sub{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--band) 45%,transparent);border-radius:0 var(--radius) var(--radius) 0}
+.cond-sub[hidden],.diary-row[hidden]{display:none}
+.diary-row{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:flex-start;margin-bottom:8px}
+.diary-d{flex:0 0 10.5rem}
+.diary-t{flex:1 1 16rem;min-width:0}
 .inp input::placeholder,.inp textarea::placeholder{color:var(--muted);opacity:.7;font-style:italic}
 
 .syncst{border:0;background:none;padding:0;font-size:.78rem;color:var(--muted);white-space:nowrap;cursor:pointer}
@@ -613,13 +618,29 @@ const SYNC_ANON_KEY = "sb_publishable_DR4jR2oJ8ll253P-7lwZsw_UhYI2KEI";   // cha
 
 /* =====================================================================
    MODELO (esquema dos campos)
-   t: text | num | area | date | radio | check | calc | pair | gcs | list
+   t: text | num | area | date | radio | check | calc | pair | gcs | list | problems | outline
+      | cond (seleção que abre campos: opts + sub { opção: [campos] })
+      | diary (registros por dia: data k_i_d + texto k_i; k_n guarda quantos estão abertos)
    w: xs | s | m | l | full | auto  (largura)
    u: unidade   tl: rótulo usado no texto gerado (quando diferente)
    ===================================================================== */
 const F = (k, l, t = "text", o = {}) => ({ k, l, t, ...o });
 const SN = ["sim", "não"];
 
+/* modos de suporte ventilatório e seus parâmetros (campo "cond": abrem ao escolher o modo).
+   Os parâmetros que já existiam usam as mesmas chaves (vc, fr, peep, fio2, ppico, pplato, cn_l),
+   para os cálculos de VC/peso predito, driving pressure e complacência continuarem funcionando.
+   Recomendações brasileiras de ventilação mecânica 2013 (AMIB/SBPT). */
+const VENT = {
+  VCV:  [F("vc","Volume corrente","num",{w:"s",u:"mL"}), F("fr","FR programada","num",{w:"s",u:"irpm"}), F("peep","PEEP","num",{w:"s",u:"cmH2O"}), F("fio2","FiO2","num",{w:"s",u:"%"}), F("vm_fluxo","Fluxo inspiratório","num",{w:"s",u:"L/min"}), F("ppico","Ppico","num",{w:"s",u:"cmH2O"}), F("pplato","Pplatô","num",{w:"s",u:"cmH2O"})],
+  PCV:  [F("vm_pins","Pressão inspiratória acima da PEEP","num",{w:"s",u:"cmH2O"}), F("vm_tins","Tempo inspiratório","num",{w:"s",u:"s"}), F("fr","FR programada","num",{w:"s",u:"irpm"}), F("peep","PEEP","num",{w:"s",u:"cmH2O"}), F("fio2","FiO2","num",{w:"s",u:"%"}), F("vc","Volume corrente obtido","num",{w:"s",u:"mL"})],
+  PSV:  [F("vm_ps","Pressão de suporte","num",{w:"s",u:"cmH2O"}), F("peep","PEEP","num",{w:"s",u:"cmH2O"}), F("fio2","FiO2","num",{w:"s",u:"%"}), F("vc","Volume corrente obtido","num",{w:"s",u:"mL"}), F("vm_frp","FR do paciente","num",{w:"s",u:"irpm"})],
+  CPAP: [F("peep","CPAP (PEEP)","num",{w:"s",u:"cmH2O"}), F("fio2","FiO2","num",{w:"s",u:"%"})],
+  CNBF: [F("cn_l","Fluxo de O2","num",{w:"s",u:"L/min"})]
+};
+const CTI_PROB_SUBS = [["apr","Apresentação"],["etio","Etiologia"],["prop","Propedêutica"]];   // mesmas chaves da enfermaria
+
+/* estrutura montada pelo autor no editor (23/10/2026) */
 const CTI = [
  { id: "I", title: "IDENTIFICAÇÃO", groups: [ { rows: [
    [F("data_aval","Data da avaliação","date")],
@@ -627,110 +648,77 @@ const CTI = [
    [F("peso","Peso","num",{w:"s",u:"kg"}), F("altura","Altura","num",{w:"s",u:"cm"}), F("pp","Peso predito","calc",{w:"s",u:"kg",fn:"pp"})],
    [F("adm_hosp","Admissão hospitalar","date"), F("adm_cti","Admissão no CTI","date"), F("dcti","D de CTI","num",{tl:"D de CTI"})],
    [F("proc","Procedência","radio",{opts:["PS","Enfermaria","Bloco","Outro serviço"]}), F("proc_outro","Outro serviço (qual)","text",{w:"m"})],
-   [F("alergias","Alergias","text",{w:"m"}), F("isolamento","Isolamento","text",{w:"m"})],
+   [F("isolamento","Isolamento","text",{w:"m"})],
    [F("diretivas","Diretivas/limitação terapêutica","text",{w:"full"})]
  ]}]},
-
- { id: "S", title: "SITUAÇÃO", groups: [ { rows: [
-   [F("motivo","Motivo da internação no CTI","area")],
-   [F("dx1","Diagnóstico ativo 1","text",{w:"full"})],
-   [F("dx2","Diagnóstico ativo 2","text",{w:"full"})],
-   [F("dx3","Diagnóstico ativo 3","text",{w:"full"})],
+ { id: "S", title: "SITUAÇÃO", groups: [
+  { title: "Lista de problemas ativos", rows: [
+   [F("prob","Problemas","problems",{n:12,subs:CTI_PROB_SUBS,item:"Problema",tl:""})],
+   [F("motivo","Contexto","area",{rows:5})],
    [F("intercorr","Intercorrências nas últimas 24 h","area")],
-   [F("sofa","SOFA atual","num"), F("sofa_ant","SOFA anterior","num"), F("apache","APACHE II/SAPS 3 na admissão","text",{w:"s"})],
-   [F("evolucao","Evolução global","radio",{opts:["melhora","estável","piora"]})]
- ]}]},
-
+   [F("atb","Antimicrobiano(s)","text",{w:"m"}), F("atb_d","D","num",{tl:"D do antimicrobiano"}), F("atb_de","de (dias)","num",{tl:"Duração prevista (dias)"})]
+  ]},
+  { title: "Evolução da internação", rows: [
+   [F("evint","Registros por dia","diary",{n:40,tl:""})]
+  ]}
+ ]},
  { id: "B", title: "BACKGROUND (HISTÓRICO)", groups: [ { rows: [
-   [F("comorb","Comorbidades","area")],
-   [F("funcional","Funcionalidade prévia","text",{w:"full"})],
-   [F("meds","Medicações de uso domiciliar","area")],
-   [F("proced","Procedimentos/cirurgias nesta internação","area")],
-   [F("atb_prev","Antimicrobianos e culturas prévios","area")]
+   [F("comorb","Comorbidades","area",{rows:2})],
+   [F("meds","Medicações de uso contínuo","area",{rows:2})],
+   [F("alergias_sn","Alergias","cond",{opts:["Sim","Não"],sub:{ "Sim": [F("alergias","Quais","text",{w:"full"})] }})],
+   [F("social","Social","area",{rows:2})]
  ]}]},
-
  { id: "A", title: "AVALIAÇÃO POR SISTEMAS", groups: [
+  { title: "Dados vitais", rows: [
+   [F("pa","PA","pair",{keys:["pas","pad"],sep:"/",u:"mmHg"}), F("pam","PAM","calc",{fn:"pam"}), F("fc","FC","num",{u:"bpm"}), F("fr_pac","FR","num",{u:"irpm"}), F("spo2","SpO2","num",{u:"%"}), F("tmax","Tmáx","num",{u:"°C"})]
+  ]},
+  { title: "Balanço hídrico", rows: [
+   [F("bh_ganhos","Ganhos","num",{w:"m",u:"mL"}), F("bh_perdas","Perdas","num",{w:"m",u:"mL"})],
+   [F("bh24","Balanço hídrico 24 h","num",{w:"m",u:"mL"}), F("bh_acum","BH acumulado","num",{w:"m",u:"mL"})],
+   [F("diurese","Diurese","num",{w:"s",u:"mL/24 h"}), F("dkgh","Diurese/kg/h","calc",{w:"m",u:"mL/kg/h",fn:"dkgh"})]
+  ]},
+  { title: "Medicações em infusão contínua", rows: [
+   [F("sedacao","Sedação","text",{w:"l"}), F("sed_dose","Dose","num",{w:"s",u:"mL/h",tl:"Dose da sedação"})],
+   [F("analgesia","Analgesia","text",{w:"l"}), F("anal_dose","Dose","num",{w:"s",u:"mL/h",tl:"Dose da analgesia"})],
+   [F("dva","Droga vasoativa","text",{w:"l"}), F("dva_dose","Dose","text",{w:"s",u:"mcg/kg/min",tl:"Dose da droga vasoativa"})]
+  ]},
+  { title: "Dispositivos", rows: [
+   [F("cvc","CVC: sítio","text",{w:"m"}), F("cvc_dt","D","date",{w:"auto",tl:"CVC D"})],
+   [F("pai","PAI","text",{w:"m"}), F("pai_dt","D","date",{w:"auto",tl:"PAI D"})],
+   [F("svd","SVD","radio",{opts:["Sim","Não"]}), F("svd_dt","D","date",{w:"auto",tl:"SVD D"})],
+   [F("drenos","Drenos","text",{w:"l"}), F("drenos_deb","Débito","num",{w:"s",u:"mL/24h",tl:"Débito dos drenos"})],
+   [F("disp_outros","Outros","text",{w:"full",tl:"Outros dispositivos"})]
+  ]},
   { title: "Neurológico", rows: [
-   [F("sedacao","Sedação","text",{w:"l"}), F("sed_dose","Dose","text",{w:"m",tl:"Dose da sedação"})],
-   [F("analgesia","Analgesia","text",{w:"l"}), F("anal_dose","Dose","text",{w:"m",tl:"Dose da analgesia"})],
-   [F("rass","RASS","text",{w:"xs"}), F("rass_alvo","RASS alvo","text",{w:"xs"}), F("dor","Dor (CPOT/BPS/EVN)","text",{w:"s"})],
-   [F("gcs","Glasgow","gcs",{w:"m"}), F("pupilas","Pupilas","text",{w:"m"})],
+   [F("rass","RASS","text",{w:"s"}), F("gcs","Glasgow","gcs",{w:"m"}), F("pupilas","Pupilas","radio",{opts:["Miose","Isocóricas","Midríase","Anisocóricas"]})],
    [F("deficit","Déficit focal","text",{w:"full"})],
-   [F("cam","CAM-ICU","radio",{opts:["positivo","negativo","não avaliável"]})],
-   [F("despertar","Despertar diário realizado?","radio",{opts:SN}), F("despertar_mot","Motivo","text",{w:"l",tl:"Motivo (despertar)"})]
-  ], hint: "Glasgow: no paciente intubado, digite T no campo V (ex.: O3 VT M5 = 8T)." },
-  { title: "Cardiovascular / hemodinâmico", rows: [
-   [F("pa","PA","pair",{keys:["pas","pad"],sep:"/",u:"mmHg"}), F("pam","PAM","calc",{fn:"pam"}), F("fc","FC","num"), F("ritmo","Ritmo","text",{w:"m"})],
-   [F("dva","Vasopressor/inotrópico","text",{w:"l"}), F("dva_dose","Dose","text",{w:"s",u:"mcg/kg/min",tl:"Dose do vasopressor/inotrópico"}), F("dva_tend","Tendência","radio",{opts:["↑","↓","="]})],
-   [F("lactato","Lactato","num"), F("lact_ant","Lactato anterior","num"), F("tec","TEC","num",{u:"s"}), F("livedo","Livedo","text",{w:"s"})],
-   [F("svco2","SvcO2","num"), F("gapco2","Gap CO2","num")],
-   [F("pocus","Fluidorresponsividade/POCUS","area")],
-   [F("bh24","Balanço hídrico 24 h","num",{w:"s",u:"mL"}), F("bh_acum","BH acumulado","num",{w:"s",u:"mL"})],
-   [F("cardio_ex","ECG/ECO/troponina/BNP","area")]
+   [F("cam","CAM-ICU","radio",{opts:["positivo","negativo","não avaliável"]})]
+  ]},
+  { title: "Cardiovascular", rows: [
+   [F("ritmo","Ritmo","text",{w:"m"}), F("tec","TEC","num",{u:"s"}), F("livedo","Livedo","text",{w:"s"})],
+   [F("cardio_ex","Hemodinâmica","area",{rows:2})],
+   [F("pocus","Fluidorresponsividade/POCUS","area",{rows:2})]
   ]},
   { title: "Respiratório", rows: [
    [F("suporte","Suporte","check",{opts:["AA","CN","CNAF","VNI","TOT","TQT"]})],
-   [F("cn_l","CN","num",{u:"L/min",tl:"CN"}), F("cnaf_l","CNAF fluxo","num",{u:"L/min"}), F("cnaf_fio2","CNAF FiO2","num"), F("resp_d","D do dispositivo","num")],
-   [F("tot_n","TOT nº","text",{w:"xs"}), F("rima","Rima","num",{u:"cm"}), F("cuff","Cuff","num",{w:"s",u:"cmH2O"})],
-   [F("vm_modo","VM: modo","text",{w:"m"}), F("vc","VC","num",{w:"s",u:"mL"}), F("vckg","VC/peso predito","calc",{w:"s",u:"mL/kg PP",fn:"vckg"})],
-   [F("peep","PEEP","num"), F("fio2","FiO2 (VM)","num"), F("fr","FR","num")],
-   [F("ppico","Ppico","num"), F("pplato","Pplatô","num"), F("dp","Driving pressure","calc",{fn:"dp"}), F("cst","Complacência","calc",{w:"s",u:"mL/cmH2O",fn:"cst"})],
-   [F("ph","pH","num"), F("paco2","PaCO2","num"), F("pao2","PaO2","num"), F("hco3","HCO3","num"), F("be","BE","num"), F("pf","P/F","calc",{fn:"pf"})],
-   [F("spo2","SpO2","num",{u:"%"}), F("spo2_alvo","SpO2 alvo","text",{w:"xs"}), F("secrecao","Secreção","text",{w:"m"})],
-   [F("imagem","Imagem (RX/USG)","text",{w:"full"})],
+   [F("vent_modo","Modo de suporte ventilatório","cond",{opts:["VCV","PCV","PSV","CPAP","CNBF"],sub:VENT})],
+   [F("cnaf_l","CNAF fluxo","num",{u:"L/min"}), F("cnaf_fio2","CNAF FiO2","num"), F("resp_d","D do dispositivo","num")],
+   [F("tot_n","TOT nº","text",{w:"xs"}), F("rima","Rima","num",{u:"cm"}), F("cuff","Cuff","num",{w:"s",u:"cmH2O"}), F("vckg","VC/peso predito","calc",{w:"s",u:"mL/kg PP",fn:"vckg"}), F("dp","Driving pressure","calc",{fn:"dp"}), F("cst","Complacência","calc",{w:"s",u:"mL/cmH2O",fn:"cst"}), F("spo2_alvo","SpO2 alvo","text",{w:"xs"}), F("secrecao","Secreção","text",{w:"m"})],
    [F("tre","Apto a TRE?","radio",{opts:SN}), F("tre_mot","Motivo","text",{w:"l",tl:"Motivo (TRE)"})],
    [F("tre_res","Resultado do TRE","text",{w:"full"})],
    [F("prona","Prona/bloqueador neuromuscular","text",{w:"full"})]
-  ], hint: "P/F calculada com a FiO2 da VM (ou, se vazia, a da CNAF). FiO2 aceita 40 ou 0,4. Driving pressure = Pplatô − PEEP; complacência = VC / (Pplatô − PEEP)." },
-  { title: "Renal / metabólico", rows: [
-   [F("diurese","Diurese","num",{w:"s",u:"mL/24 h"}), F("dkgh","Diurese/kg/h","calc",{w:"s",u:"mL/kg/h",fn:"dkgh"}), F("kdigo","KDIGO","text",{w:"xs"})],
-   [F("ur","Ur","num"), F("cr","Cr","num"), F("cr_basal","Cr basal","num")],
-   [F("trs","TRS","radio",{opts:["não","sim"]}), F("trs_mod","Modalidade","text",{w:"m",tl:"Modalidade da TRS"}), F("uf","UF","text",{w:"s"})],
-   [F("na","Na","num"), F("k","K","num"), F("cl","Cl","num"), F("mg","Mg","num"), F("p","P","num"), F("cai","Cai","num"), F("ag","Ânion gap","calc",{fn:"ag"})],
-   [F("glic","Glicemias","pair",{keys:["glic_min","glic_max"],sep:" a "}), F("insulina","Insulina","text",{w:"m"}), F("hipoglic","Hipoglicemia","text",{w:"s"})]
-  ], hint: "Diurese/kg/h usa o peso informado em Identificação. Ânion gap = Na − (Cl + HCO3), com o HCO3 da gasometria." },
+  ]},
   { title: "Gastrointestinal / nutrição", rows: [
-   [F("dieta","Dieta","check",{opts:["zero","VO","enteral","parenteral"]}), F("vazao","Vazão","num",{u:"mL/h"})],
-   [F("meta_kcal","Meta calórica","num",{w:"s",u:"kcal"}), F("meta_ptn","Meta proteica","num",{w:"s",u:"g"}), F("atingido","Atingido","num",{u:"%"})],
-   [F("intoler","Intolerância (vômitos, distensão, resíduo)","text",{w:"full"})],
-   [F("evac","Última evacuação","text",{w:"m"}), F("pia","PIA","text",{w:"xs"})],
-   [F("exame_abd","Exame abdominal","text",{w:"full"})],
-   [F("tgo","TGO","num"), F("tgp","TGP","num"), F("bt","BT","num"), F("fa","FA","num"), F("ggt","GGT","num"), F("alb","Albumina","num"), F("lipase","Lipase","num")]
+   [F("dieta","Dieta","check",{w:"auto",opts:["Suspensa","VO","Enteral","Parenteral"]}), F("vazao","Vazão","num",{u:"mL/h"})],
+   [F("evac","Última evacuação","date",{w:"auto"}), F("evac_asp","Aspecto da evacuação","check",{w:"auto",opts:["Diarreia","Melena","Consistente"]})],
+   [F("glic_ctrl","Controle glicêmico","radio",{opts:["Adequado","Inadequado"]})]
   ]},
-  { title: "Hematológico", rows: [
-   [F("hb","Hb","num"), F("leuco","Leuco","num"), F("plaq","Plaq","num"), F("inr","INR","num"), F("ttpa","TTPa","num"), F("fibrin","Fibrinogênio","num")],
-   [F("sangramento","Sangramento","text",{w:"full"})],
-   [F("hemocomp","Hemocomponentes","text",{w:"full"})],
-   [F("anticoag","Anticoagulação plena","text",{w:"full"})]
-  ]},
-  { title: "Infeccioso", rows: [
-   [F("tmax","Tmáx","num",{u:"°C"}), F("pcr","PCR/PCT","text",{w:"s"}), F("pcr_tend","Tendência","text",{w:"s",tl:"Tendência PCR/PCT"})],
-   [F("foco","Foco provável","text",{w:"full"})],
-   [F("atb","Antimicrobiano(s)","text",{w:"l"}), F("atb_d","D","num",{tl:"D do antimicrobiano"}), F("atb_de","de (dias)","num",{tl:"Duração prevista (dias)"}), F("atb_ajuste","Ajuste renal?","radio",{opts:SN})],
-   [F("culturas","Culturas (data / material / resultado)","area")],
-   [F("descalon","Descalonamento ou suspensão possível?","text",{w:"full"})]
-  ]},
-  { title: "Dispositivos", rows: [
-   [F("cvc","CVC: sítio","text",{w:"m"}), F("cvc_d","D","num",{tl:"CVC D"}), F("pai","PAI","text",{w:"m"}), F("pai_d","D","num",{tl:"PAI D"}), F("svd_d","SVD: D","num",{tl:"SVD D"})],
-   [F("drenos","Drenos","text",{w:"l"}), F("drenos_deb","Débito","text",{w:"s",tl:"Débito dos drenos"})],
-   [F("disp_outros","Outros","text",{w:"full",tl:"Outros dispositivos"})],
-   [F("retirar","Algum pode ser retirado hoje?","text",{w:"full"})]
-  ]},
-  { title: "Pele / mobilidade", rows: [
-   [F("lpp","Lesão por pressão","text",{w:"l"}), F("braden","Braden","num")],
-   [F("feridas","Feridas","text",{w:"full"})],
-   [F("mobil","Nível de mobilização/fisioterapia","text",{w:"full"})]
-  ]},
-  { title: "Checklist FAST HUGS BID", rows: [
-   [F("fhb","Itens checados","check",{opts:["Dieta","Analgesia","Sedação","Tromboprofilaxia","Cabeceira 30–45°","Profilaxia de úlcera de estresse","Glicemia","TRE","Hábito intestinal","Cateteres","Descalonamento de antimicrobianos"]})],
-   [F("trombo","Tromboprofilaxia (qual)","text",{w:"m"}), F("pue","Profilaxia de úlcera de estresse indicada?","text",{w:"m"})]
-  ]},
-  { title: "Família", rows: [
-   [F("boletim","Boletim realizado?","radio",{opts:SN})],
-   [F("pontos","Pontos discutidos","area")]
+  { title: "Exames complementares", rows: [
+   [F("ec_lab","Laboratoriais","area")],
+   [F("imagem","Imagem","area")],
+   [F("culturas","Culturas","area",{rows:2})]
   ]}
  ]},
-
  { id: "R", title: "RECOMENDAÇÕES / PLANO", groups: [
   { title: "Problemas e condutas", rows: [
    [F("p1","Problema 1","text",{w:"full"})], [F("c1","→ Conduta","area",{tl:"Conduta 1"})],
@@ -887,20 +875,18 @@ const NOTA = [
 /* ---------------- REFERÊNCIAS ---------------- */
 const REFS_CTI = [
  "Marshall S, Harrison J, Flanagan B. The teaching of a structured tool improves the clarity and content of interprofessional clinical communication. <i>Qual Saf Health Care</i>. 2009;18(2):137-40.",
- "Vincent JL. Give your patient a fast hug (at least) once a day. <i>Crit Care Med</i>. 2005;33(6):1225-9.",
+ "Weed LL. Medical records that guide and teach. <i>N Engl J Med</i>. 1968;278(11):593-600. (Lista de problemas)",
  "Marra A, Ely EW, Pandharipande PP, Patel MB. The ABCDEF Bundle in Critical Care. <i>Crit Care Clin</i>. 2017;33(2):225-43.",
  "Devlin JW, et al. Clinical Practice Guidelines for the Prevention and Management of Pain, Agitation/Sedation, Delirium, Immobility, and Sleep Disruption in Adult Patients in the ICU (PADIS). <i>Crit Care Med</i>. 2018;46(9):e825-73.",
  "Sessler CN, et al. The Richmond Agitation-Sedation Scale. <i>Am J Respir Crit Care Med</i>. 2002;166(10):1338-44.",
  "Ely EW, et al. Delirium in mechanically ventilated patients: validity and reliability of the CAM-ICU. <i>JAMA</i>. 2001;286(21):2703-10.",
- "Vincent JL, et al. The SOFA score to describe organ dysfunction/failure. <i>Intensive Care Med</i>. 1996;22(7):707-10.",
- "KDIGO Clinical Practice Guideline for Acute Kidney Injury. <i>Kidney Int Suppl</i>. 2012;2(1):1-138.",
  "Evans L, et al. Surviving Sepsis Campaign: International Guidelines for Management of Sepsis and Septic Shock 2021. <i>Crit Care Med</i>. 2021;49(11):e1063-143.",
  "Singer P, et al. ESPEN guideline on clinical nutrition in the intensive care unit. <i>Clin Nutr</i>. 2019;38(1):48-79.",
  "Teasdale G, Jennett B. Assessment of coma and impaired consciousness: a practical scale. <i>Lancet</i>. 1974;2(7872):81-4. (Glasgow total)",
  "The Acute Respiratory Distress Syndrome Network. Ventilation with lower tidal volumes as compared with traditional tidal volumes for acute lung injury and ARDS. <i>N Engl J Med</i>. 2000;342(18):1301-8. (Peso predito e VC em mL/kg)",
  "Amato MBP, et al. Driving pressure and survival in the acute respiratory distress syndrome. <i>N Engl J Med</i>. 2015;372(8):747-55. (Driving pressure)",
- "ARDS Definition Task Force. Acute respiratory distress syndrome: the Berlin Definition. <i>JAMA</i>. 2012;307(23):2526-33. (Relação P/F)",
- "Kraut JA, Madias NE. Serum anion gap: its uses and limitations in clinical medicine. <i>Clin J Am Soc Nephrol</i>. 2007;2(1):162-74. (Ânion gap)"
+ "Barbas CSV, Ísola AM, Farias AMC, et al. Recomendações brasileiras de ventilação mecânica 2013. Parte I. <i>Rev Bras Ter Intensiva</i>. 2014;26(2):89-121. (Modos VCV, PCV, PSV e CPAP e seus parâmetros)",
+ "Barbas CSV, Ísola AM, Farias AMC, et al. Recomendações brasileiras de ventilação mecânica 2013. Parte II. <i>Rev Bras Ter Intensiva</i>. 2014;26(3):215-39."
 ];
 const REFS_ENF = [
  "Weed LL. Medical records that guide and teach. <i>N Engl J Med</i>. 1968;278(11):593-600. (Prontuário orientado por problemas)",
@@ -919,7 +905,7 @@ const TPL = {
 const modelOf = (t, d) => t.build ? t.build(d || {}) : t.model;
 const sigOf = (t, d) => t.sig ? t.sig(d || {}) : "";
 
-const DEFAULT_W = { text:"m", num:"xs", area:"full", date:"s", radio:"auto", check:"full", calc:"xs", pair:"s", gcs:"m", list:"full", problems:"full" };
+const DEFAULT_W = { text:"m", num:"xs", area:"full", date:"s", radio:"auto", check:"full", calc:"xs", pair:"s", gcs:"m", list:"full", problems:"full", cond:"full", diary:"full" };
 const PROB_SUBS = [["apr","Apresentação"],["etio","Etiologia"],["prop","Propedêutica"],["plano","Plano de cuidados"]];
 
 /* =====================================================================
@@ -942,6 +928,24 @@ function normalizeStore(st){
   if (st.mode === "ic") st.mode = "nota";
   if (st.currentBy.ic && !st.currentBy.nota) st.currentBy.nota = st.currentBy.ic;
   delete st.currentBy.ic;
+  // CTI (estrutura do autor, 23/10/2026): diagnósticos ativos viram problemas, "Alergias" ganha o Sim/Não,
+  // as opções da dieta mudaram de nome e o modo ventilatório escrito antes vira a seleção nova
+  for (const p of Object.values(st.patients)){
+    const d = p.data;
+    if (p.tpl !== "cti" || !d || d.cti_v2) continue;
+    let mud = false;
+    if (!Object.keys(d).some(k => /^prob_\d+$/.test(k) && String(d[k]).trim())){
+      let i = 0; ["dx1", "dx2", "dx3"].forEach(k => { if (String(d[k] || "").trim()){ d["prob_" + (++i)] = d[k]; mud = true; } });
+    }
+    if (String(d.alergias || "").trim() && !d.alergias_sn){ d.alergias_sn = "Sim"; mud = true; }
+    if (Array.isArray(d.dieta)){
+      const M = { zero: "Suspensa", enteral: "Enteral", parenteral: "Parenteral" }, nd = d.dieta.map(x => M[x] || x);
+      if (nd.join() !== d.dieta.join()){ d.dieta = nd; mud = true; }
+    }
+    const vm = String(d.vm_modo || "").trim().toUpperCase();
+    if (!d.vent_modo && ["VCV", "PCV", "PSV", "CPAP"].includes(vm)){ d.vent_modo = vm; mud = true; }
+    if (mud) d.cti_v2 = 1;
+  }
   if (!TPL[st.mode]) st.mode = "cti";
   if (!st.settings || typeof st.settings !== "object") st.settings = {};
   for (const p of Object.values(st.patients)){
@@ -1027,12 +1031,16 @@ const subsOf = f => f.subs || PROB_SUBS;
 const probKeysOne = (f, i) => [f.k + "_" + i, ...subsOf(f).map(([s]) => f.k + "_" + i + "_" + s)];
 const probKeys = f => Array.from({ length: f.n }, (_, i) => probKeysOne(f, i + 1)).flat();
 const probFilled = (f, d, i) => probKeysOne(f, i).some(k => d[k] != null && String(d[k]).trim() !== "");
+const diaryKeys = f => Array.from({ length: f.n }, (_, i) => [`${f.k}_${i + 1}_d`, `${f.k}_${i + 1}`]).flat();
+const condKeys = f => [f.k, ...new Set(Object.values(f.sub || {}).flat().flatMap(keysOf))];
 function keysOf(f){
   if (f.t === "pair") return f.keys;
   if (f.t === "gcs") return ["gcs_o","gcs_v","gcs_m"];
   if (f.t === "list") return listKeys(f);
   if (f.t === "outline") return olKeys(f);
   if (f.t === "problems") return probKeys(f);
+  if (f.t === "diary") return diaryKeys(f);
+  if (f.t === "cond") return condKeys(f);
   if (f.t === "calc") return [];
   return [f.k];
 }
@@ -1060,8 +1068,9 @@ const CALC = {
   pp(d){ return fmt(CALC.ppRaw(d), 1); },
   pam(d){ const a = num(d.pas), b = num(d.pad); return (a > 0 && b > 0) ? fmt((a + 2*b)/3, 0) : ""; },
   vckg(d){ const vc = num(d.vc), p = CALC.ppRaw(d); return (vc > 0 && p > 0) ? fmt(vc/p, 1) : ""; },
-  dp(d){ const pl = num(d.pplato), pe = num(d.peep); return (isFinite(pl) && isFinite(pe)) ? fmt(pl - pe, 0) : ""; },
-  cst(d){ const vc = num(d.vc), dp = num(d.pplato) - num(d.peep); return (vc > 0 && dp > 0) ? fmt(vc/dp, 1) : ""; },
+  // o Pplatô só é pedido no VCV: com outro modo marcado, um Pplatô antigo não entra no cálculo
+  dp(d){ if (d.vent_modo && d.vent_modo !== "VCV") return ""; const pl = num(d.pplato), pe = num(d.peep); return (isFinite(pl) && isFinite(pe)) ? fmt(pl - pe, 0) : ""; },
+  cst(d){ if (d.vent_modo && d.vent_modo !== "VCV") return ""; const vc = num(d.vc), dp = num(d.pplato) - num(d.peep); return (vc > 0 && dp > 0) ? fmt(vc/dp, 1) : ""; },
   pf(d){ const po = num(d.pao2); let fi = num(d.fio2); if (!(fi > 0)) fi = num(d.cnaf_fio2); if (!(po > 0 && fi > 0)) return ""; if (fi > 1) fi = fi/100; return fi <= 1 ? fmt(po/fi, 0) : ""; },
   dkgh(d){ const u = num(d.diurese), p = num(d.peso); return (u >= 0 && p > 0) ? fmt(u/p/24, 2) : ""; },
   ag(d){ const na = num(d.na), cl = num(d.cl), hc = num(d.hco3); return [na,cl,hc].every(isFinite) ? fmt(na - cl - hc, 1) : ""; },
@@ -1167,6 +1176,35 @@ function renderField(f){
       });
       return box;
     }
+    case "cond": {
+      // seleção que abre campos: os campos de cada opção ficam num bloco que só aparece com a opção marcada;
+      // uma chave pode aparecer em mais de uma opção (ex.: PEEP), por isso os ids ganham o sufixo da opção
+      const fs = el("fieldset", { class: "fld cond " + w }, el("legend", { text: f.l }));
+      const opts = el("div", { class: "opts" });
+      f.opts.forEach(o => opts.append(el("label", { class: "opt" },
+        el("input", { type: "radio", name: f.k, value: o, "data-k": f.k, "data-cond-key": "1" }), el("span", { text: o }))));
+      fs.append(opts);
+      f.opts.forEach((o, oi) => {
+        const sub = el("div", { class: "row cond-sub", "data-cond": f.k, "data-opt": o, hidden: true });
+        (f.sub[o] || []).forEach(sf => sub.append(renderField(sf)));
+        sub.querySelectorAll("[id]").forEach(x => { x.id += "__" + oi; });
+        sub.querySelectorAll("label[for]").forEach(x => { x.htmlFor += "__" + oi; });
+        fs.append(sub);
+      });
+      return fs;
+    }
+    case "diary": {
+      const box = el("div", { class: "fld " + w, "data-diary": f.k, "data-max": String(f.n), role: "group", "aria-label": f.l });
+      for (let i = 1; i <= f.n; i++){
+        const kd = `${f.k}_${i}_d`, kt = `${f.k}_${i}`;
+        box.append(el("div", { class: "diary-row", "data-i": String(i) },
+          el("div", { class: "fld diary-d" }, el("label", { for: "f_" + kd, text: "Dia" }), el("div", { class: "inp" }, inputFor(kd, { type: "date" }))),
+          el("div", { class: "fld diary-t" }, el("label", { for: "f_" + kt, text: "Evolução" }),
+            el("div", { class: "inp" }, el("textarea", { id: "f_" + kt, "data-k": kt, rows: "2", autocapitalize: "sentences" })))));
+      }
+      box.append(el("button", { class: "btn add-prob", type: "button", "data-add-diary": f.k, text: "+ Adicionar dia" }));
+      return box;
+    }
     case "radio": case "check": {
       const fs = el("fieldset", { class: "fld " + w }, el("legend", { text: f.l }));
       const opts = el("div", { class: "opts" });
@@ -1259,6 +1297,29 @@ function updateOutline(){
     box.querySelector("[data-add-ol]").hidden = shown >= max;
   });
 }
+function updateConds(){
+  const d = D();
+  document.querySelectorAll("#form [data-cond]").forEach(b => { b.hidden = d[b.dataset.cond] !== b.dataset.opt; });
+}
+function updateDiary(){
+  const d = D(), cheio = k => d[k] != null && String(d[k]).trim() !== "";
+  document.querySelectorAll("#form [data-diary]").forEach(box => {
+    const k = box.dataset.diary, max = Number(box.dataset.max);
+    let last = 0; for (let i = 1; i <= max; i++) if (cheio(`${k}_${i}_d`) || cheio(`${k}_${i}`)) last = i;
+    const shown = Math.min(max, Math.max(1, last, Number(d[k + "_n"]) || 0));
+    box.querySelectorAll(".diary-row").forEach(r => r.hidden = Number(r.dataset.i) > shown);
+    box.querySelector("[data-add-diary]").hidden = shown >= max;
+  });
+}
+function onAddDiary(e){
+  const b = e.target.closest("[data-add-diary]"); if (!b || !cur()) return;
+  const k = b.dataset.addDiary, d = cur().data, box = b.closest("[data-diary]");
+  const i = box.querySelectorAll(".diary-row:not([hidden])").length + 1;
+  d[k + "_n"] = String(i);
+  if (!d[`${k}_${i}_d`]) d[`${k}_${i}_d`] = todayISO();
+  fillForm(); changed();
+  const ta = document.getElementById(`f_${k}_${i}`); if (ta) ta.focus();
+}
 function onAddOutline(e){
   const p = cur(); if (!p) return;
   const bi = e.target.closest("[data-add-ol]"), bs = e.target.closest("[data-add-sub]");
@@ -1296,6 +1357,8 @@ function fillForm(){
   });
   updateProbs();
   updateOutline();
+  updateConds();
+  updateDiary();
   refreshDerived();
 }
 
@@ -1314,6 +1377,7 @@ function onInput(e){
   }
   if (JSON.stringify(d[k] == null ? null : d[k]) === before) return;   // nada mudou (ex.: evento "change" ao sair do campo)
   if (k === "sexo"){ swapStdSexo(TPL[store.mode], d, sexoAntes); fillForm(); }
+  if (inp.dataset.condKey) fillForm();   // abre os campos da opção escolhida, já com os valores atuais
   if (renderedSig !== store.mode + "|" + sigOf(TPL[store.mode], d)){ fillStd(TPL[store.mode], d); fillForm(); }   // ex.: Admissão → Evolução
   refreshDerived();
   if (k === "nome" || k === "leito") refreshSelect();
@@ -1434,6 +1498,28 @@ function buildText(){
             }
             return;
           }
+          if (f.t === "diary"){
+            const it = [];
+            for (let i = 1; i <= f.n; i++){
+              const dt = d[`${f.k}_${i}_d`] || "", tx = String(d[`${f.k}_${i}`] || "").trim();
+              if (tx) it.push({ dt, tx, i });
+            }
+            it.sort((a, b) => (a.dt || "9999") < (b.dt || "9999") ? -1 : (a.dt || "9999") > (b.dt || "9999") ? 1 : a.i - b.i);
+            it.forEach(x => gLines.push((x.dt ? brDate(x.dt) + " – " : "") + x.tx.replace(/\n/g, "\n   ")));
+            return;
+          }
+          if (f.t === "cond"){
+            const v = d[f.k]; if (!v) return;
+            const parts = [lab ? `${lab}: ${v}` : v]; let longo = false;
+            (f.sub[v] || []).forEach(sf => {
+              const sv = valueText(sf, d); if (!sv) return;
+              const sl = sf.tl != null ? sf.tl : sf.l;
+              parts.push(sl ? `${sl}: ${sv}` : sv);
+              if (sf.t === "area") longo = true;
+            });
+            if (longo) gLines.push(parts.join(" | ")); else inline.push(parts.join(" | "));
+            return;
+          }
           if (f.t === "list"){
             const items = listKeys(f).map(k => String(d[k] || "").trim()).filter(Boolean);
             if (items.length){ if (lab) gLines.push(lab + ":"); items.forEach((x, i) => gLines.push(`${i + 1}. ${x}`)); }
@@ -1509,7 +1595,7 @@ function newDay(){
 
 /* na impressão, os subtópicos das situações/problemas crescem até mostrar todo o texto */
 function fitProbAreas(on){
-  document.querySelectorAll("#form .prob-subs textarea, #form textarea[data-k=nota]").forEach(t => {
+  document.querySelectorAll("#form .prob-subs textarea, #form .diary-t textarea, #form textarea[data-k=nota]").forEach(t => {
     t.style.height = "";
     if (on && t.value) t.style.height = (t.scrollHeight + 2) + "px";
   });
@@ -2129,7 +2215,7 @@ function openPatient(id, v = "chart"){
 /* ---------------- lista de pacientes ---------------- */
 function ptSnippet(p){
   const d = p.data || {};
-  if (p.tpl === "cti") return d.motivo || d.dx1 || "";
+  if (p.tpl === "cti") return d.prob_1 || d.motivo || d.dx1 || "";
   if (p.tpl === "enf") return d.prob_1 || d.motivo || "";
   return (String(d.nota || "").split(/\r?\n/).find(x => x.trim()) || "").trim();   // nota: 1ª linha
 }
@@ -3182,6 +3268,7 @@ form.addEventListener("change", onInput);
 form.addEventListener("click", onRadioClick);
 form.addEventListener("click", onAddProb);
 form.addEventListener("click", onAddOutline);
+form.addEventListener("click", onAddDiary);
 
 $("#modes").addEventListener("click", e => { const b = e.target.closest("button[data-mode]"); if (b) switchMode(b.dataset.mode); });
 $("#ptSelect").addEventListener("change", e => switchTo(e.target.value));
