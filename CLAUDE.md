@@ -13,6 +13,10 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 - **Publicação:** GitHub Pages (usuário `geradorevolucao`, branch `main`, pasta raiz), com domínio próprio `anamnesia.net.br`.
 - **`supabase-setup.sql`:** cria as tabelas `records` e `user_keys` com Row Level Security, e um gatilho que recusa gravações mais antigas (comparando `updated_at`) e carimba `server_ts`. Pode ser rodado de novo sem perder dados. `user_keys` só aceita leitura e criação (sem update/delete).
 
+## Visual (tema escolhido pelo autor no painel de design, 23/10/2026)
+- Cor principal azul-petróleo (`--accent:#1D4E6E`, igual à anterior), fundo "névoa azul" (`--bg:#EAF0F5`, `--line:#CFDAE4`), fonte Georgia (serifada, do sistema, sem baixar nada), 16 px, cantos de 4 px (`--radius`; todos os retângulos usam a variável, pílulas e círculos não) e densidade compacta (campos com 6 px de espaço interno, 6–8 px entre campos). O modo escuro não mudou.
+- O painel fica em https://claude.ai/artifact/47N38tWvdua5tq3yqAFeHh: o autor escolhe, copia o bloco "Tema para aplicar" e envia no chat.
+
 ## Telas (`body[data-view]`)
 1. **Tela inicial** (`#home`): saudação animada com traçado de ECG. Respeita `prefers-reduced-motion`. O botão "Começar" leva à lista.
 2. **Meus pacientes** (`list`): adicionar, editar, mudar de módulo e excluir pacientes; filtro por módulo e busca por nome ou leito.
