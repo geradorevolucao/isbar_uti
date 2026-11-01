@@ -83,6 +83,20 @@ details.menu .menu-list button:hover{background:var(--band)}
 .cond-sub[hidden],.diary-row[hidden]{display:none}
 .diary-row{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:flex-start;margin-bottom:8px}
 .diary-d{flex:0 0 10.5rem}
+.rep-item{border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px}
+.rep-item[hidden]{display:none}
+.rep-h{font-weight:700;color:var(--accent);margin-bottom:6px}
+fieldset.inf{border:0;padding:0;margin:0 0 6px}
+fieldset.inf>legend{font-weight:700;color:var(--ink);margin-bottom:6px}
+.inf-item .row{align-items:flex-start}
+.inf-dose{font-size:.85rem;font-weight:700;color:var(--accent);min-height:1.2em}
+.inf-outra[hidden],.inf-item[hidden],.inf-info[hidden]{display:none}
+.inf-info summary{cursor:pointer;color:var(--accent);font-size:.9rem}
+.inf-txt{white-space:pre-line;font-size:.88rem;color:var(--ink);margin:6px 0 0;background:var(--band);border-radius:var(--radius);padding:10px 12px}
+.inp select{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;padding:14px;outline:none}
+.opts.vert{flex-direction:column;align-items:stretch}
+.opts.vert .opt{display:block}
+.opts.vert .opt span{display:flex;width:100%;border-radius:var(--radius);padding:8px 12px;min-height:44px;line-height:1.35}
 .diary-t{flex:1 1 16rem;min-width:0}
 .inp input::placeholder,.inp textarea::placeholder{color:var(--muted);opacity:.7;font-style:italic}
 
@@ -166,6 +180,23 @@ body[data-view="list"] header.top,body[data-view="rx"] header.top{padding-bottom
 .code-big{font:700 1.5rem/1.2 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.06em;color:var(--accent)}
 .code-exp{font-size:.82rem;color:var(--muted);flex:1 1 10rem}
 .h-code{display:block;margin:14px auto 0;color:var(--muted)}
+.home-in[hidden]{display:none}
+.h-step{max-width:620px;text-align:left}
+.h-step-t{font-size:1.6rem;margin:0 0 4px;color:var(--accent);text-align:center}
+.h-step .h-sub{text-align:center;margin:0 0 18px}
+.h-login{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.h-login > div > h4:first-child,.h-login > div > h4:first-child + .sub{display:none}
+.h-or{display:flex;align-items:center;gap:12px;color:var(--muted);margin:16px 0}
+.h-or::before,.h-or::after{content:"";flex:1;border-top:1px solid var(--line)}
+.h-wide{width:100%;height:50px;justify-content:center}
+.h-note{font-size:.85rem;color:var(--muted);text-align:center;margin:8px 0 0}
+.h-menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:14px}
+.h-card{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:18px;min-height:110px;border:1px solid var(--line);border-left:0;border-radius:var(--radius);background:var(--card);color:var(--ink);cursor:pointer;font:inherit;box-shadow:inset 6px 0 0 var(--accent)}
+.h-card:hover{background:var(--band)}
+.h-card-t{font-weight:700;font-size:1.1rem;color:var(--accent)}
+.h-card-s{font-size:.88rem;color:var(--muted)}
+.h-card-n{margin-top:auto;font-size:.8rem;color:var(--muted)}
+.h-links{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 18px;margin-top:18px}
 .rxp .hint{margin-top:0}
 .rxp-cat h4{margin:14px 0 6px;font-size:.85rem;color:var(--accent);text-transform:uppercase;letter-spacing:.03em}
 .rxp-item{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:var(--radius);padding:9px 12px;margin:0 0 6px;cursor:pointer;font:inherit}
@@ -362,7 +393,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <body>
 
 <section class="home play" id="home" aria-label="Boas-vindas">
-  <div class="home-in">
+  <div class="home-in" id="homeWelcome">
     <svg class="ecg" viewBox="0 0 320 80" aria-hidden="true">
       <path class="trace" pathLength="100" d="M2 40 H96 L104 34 L112 40 H128 L136 48 L146 6 L158 74 L168 40 H186 L200 30 L214 40 H318"/>
       <path class="beat" pathLength="100" d="M2 40 H96 L104 34 L112 40 H128 L136 48 L146 6 L158 74 L168 40 H186 L200 30 L214 40 H318"/>
@@ -371,6 +402,28 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <p class="h-sub fx d3">o prontuário eletrônico que te lembra do que não esquecer</p>
     <button class="btn primary h-go fx d4" type="button" id="homeGo">Começar</button>
     <button class="linkbtn h-code fx d4" type="button" id="homeCode">Abrir texto por código</button>
+  </div>
+  <div class="home-in h-step" id="homeLoginStep" hidden>
+    <h2 class="h-step-t">Entrar</h2>
+    <p class="h-sub">Com a conta, os prontuários ficam cifrados e sincronizados entre os seus aparelhos.</p>
+    <div class="acct h-login" id="homeLogin"></div>
+    <div class="h-or"><span>ou</span></div>
+    <button class="btn h-wide" type="button" id="homeNoLogin">Entrar sem login</button>
+    <p class="h-note">Sem login, os prontuários ficam salvos só neste navegador, neste aparelho.</p>
+  </div>
+  <div class="home-in h-step" id="homeMenuStep" hidden>
+    <h2 class="h-step-t">O que você quer abrir?</h2>
+    <p class="h-sub" id="homeWho"></p>
+    <div class="h-menu" role="group" aria-label="Módulos">
+      <button class="h-card" type="button" data-hm="cti"><span class="h-card-t">Evolução CTI</span><span class="h-card-s">ISBAR</span><span class="h-card-n" data-hm-n="cti"></span></button>
+      <button class="h-card" type="button" data-hm="enf"><span class="h-card-t">Evolução enfermaria</span><span class="h-card-s">Clínica médica</span><span class="h-card-n" data-hm-n="enf"></span></button>
+      <button class="h-card" type="button" data-hm="nota"><span class="h-card-t">Notas</span><span class="h-card-s">Bloco de notas por paciente</span><span class="h-card-n" data-hm-n="nota"></span></button>
+      <button class="h-card" type="button" data-hm="all"><span class="h-card-t">Meus pacientes</span><span class="h-card-s">Todos os prontuários</span><span class="h-card-n" data-hm-n="all"></span></button>
+    </div>
+    <div class="h-links">
+      <button class="linkbtn" type="button" id="homeAcct">Conta e sincronização</button>
+      <button class="linkbtn" type="button" id="homeCode2">Abrir texto por código</button>
+    </div>
   </div>
 </section>
 
@@ -638,6 +691,73 @@ const VENT = {
   PCV:  [F("vm_pins","Pressão inspiratória","num",{w:"s",u:"cmH2O"}), F("vm_tins","Tempo inspiratório","num",{w:"s",u:"s"}), F("fr","FR programada","num",{w:"s",u:"irpm"}), F("peep","PEEP","num",{w:"s",u:"cmH2O"}), F("fio2","FiO2","num",{w:"s",u:"%"}), F("vc","Volume corrente","num",{w:"s",u:"mL"})],
   PSV:  [F("vm_ps","Pressão de suporte","num",{w:"s",u:"cmH2O"}), F("peep","PEEP","num",{w:"s",u:"cmH2O"}), F("fio2","FiO2","num",{w:"s",u:"%"}), F("vc","Volume corrente","num",{w:"s",u:"mL"}), F("vm_frp","FR do paciente","num",{w:"s",u:"irpm"})]
 };
+/* medicações em infusão contínua (pedido do autor, 01/11/2026; diluições e doses conferidas pelo autor).
+   conc: concentração da solução; un: unidade da dose calculada; peso: dose por kg (peso real, campo "Peso");
+   sem conc: só droga e vazão, com o texto informativo de doses usuais.
+   Doses: Overgaard e Džavík 2008 (vasoativas), Surviving Sepsis 2021 (vasopressina), ACC/AHA 2017 (nitroprussiato e
+   nitroglicerina), Barr 2013 e PADIS 2018 (sedação e analgesia). Apresentações: bulas registradas na ANVISA. */
+const INF = {
+  noradrenalina:  { nome: "Noradrenalina", conc: 100, un: "mcg/kg/min", peso: true, dec: 2,
+    dil: "5 ampolas (4 mg/4 mL de norepinefrina base cada) + 180 mL de SF 0,9% ou SG 5% = 20 mg em 200 mL (100 mcg/mL)", doses: "0,01 a 3 mcg/kg/min", ref: "Overgaard e Džavík, 2008" },
+  adrenalina:     { nome: "Adrenalina", conc: 60, un: "mcg/kg/min", peso: true, dec: 2,
+    dil: "6 ampolas (1 mg/1 mL) + 94 mL de SF 0,9% = 6 mg em 100 mL (60 mcg/mL)", doses: "0,01 a 0,1 mcg/kg/min", ref: "Overgaard e Džavík, 2008" },
+  vasopressina:   { nome: "Vasopressina", conc: 0.2, un: "UI/min", peso: false, dec: 3,
+    dil: "1 ampola (20 UI/1 mL) + 99 mL de SF 0,9% = 20 UI em 100 mL (0,2 UI/mL)", doses: "até 0,03 UI/min, associada à noradrenalina (dose não ajustada pelo peso)", ref: "Surviving Sepsis Campaign, 2021" },
+  dobutamina:     { nome: "Dobutamina", conc: 4000, un: "mcg/kg/min", peso: true, dec: 1,
+    dil: "4 ampolas (250 mg/20 mL) + 170 mL de SF 0,9% = 1.000 mg em 250 mL (4 mg/mL)", doses: "2 a 20 mcg/kg/min", ref: "Overgaard e Džavík, 2008" },
+  dopamina:       { nome: "Dopamina", conc: 1000, un: "mcg/kg/min", peso: true, dec: 1,
+    dil: "5 ampolas (50 mg/10 mL) + 200 mL de SF 0,9% = 250 mg em 250 mL (1 mg/mL)", doses: "2 a 20 mcg/kg/min", ref: "Overgaard e Džavík, 2008" },
+  nitroprussiato: { nome: "Nitroprussiato de sódio", conc: 200, un: "mcg/kg/min", peso: true, dec: 2,
+    dil: "1 ampola (50 mg/2 mL) + 248 mL de SG 5% = 50 mg em 250 mL (200 mcg/mL); proteger da luz", doses: "início com 0,3 a 0,5 mcg/kg/min; máximo de 10 mcg/kg/min", ref: "ACC/AHA, 2017" },
+  nitroglicerina: { nome: "Nitroglicerina", conc: 200, un: "mcg/min", peso: false, dec: 0,
+    dil: "1 ampola (50 mg/10 mL) + 240 mL de SG 5% = 50 mg em 250 mL (200 mcg/mL)", doses: "início com 5 mcg/min, aumentos de 5 mcg/min a cada 3 a 5 min, até 20 mcg/min (dose não ajustada pelo peso)", ref: "ACC/AHA, 2017" },
+  midazolam:      { nome: "Midazolam", doses: "0,02 a 0,1 mg/kg/h", ref: "Barr et al., 2013" },
+  propofol:       { nome: "Propofol", doses: "5 a 50 mcg/kg/min (0,3 a 3 mg/kg/h)", ref: "Barr et al., 2013" },
+  dexmedetomidina:{ nome: "Dexmedetomidina", doses: "0,2 a 0,7 mcg/kg/h", ref: "Barr et al., 2013" },
+  cetamina:       { nome: "Cetamina", doses: "como adjuvante analgésico: bolus de 0,5 mg/kg e depois 1 a 2 mcg/kg/min", ref: "PADIS, 2018" },
+  fentanil:       { nome: "Fentanil", doses: "0,7 a 10 mcg/kg/h", ref: "Barr et al., 2013" },
+  morfina:        { nome: "Morfina", doses: "2 a 30 mg/h", ref: "Barr et al., 2013" }
+};
+// dose a partir da vazão: mL/h × concentração ÷ 60 (÷ peso quando a dose é por kg)
+function infDose(id, vazao, peso){
+  const m = INF[id], v = num(vazao); if (!m || !m.conc || !(v >= 0) || String(vazao).trim() === "") return "";
+  if (m.peso){ const p = num(peso); if (!(p > 0)) return "informe o peso"; return fmt(v * m.conc / (p * 60), m.dec) + " " + m.un; }
+  return fmt(v * m.conc / 60, m.dec) + " " + m.un;
+}
+function infInfo(id){
+  const m = INF[id]; if (!m) return "";
+  return [m.dil ? "Diluição padrão: " + m.dil + "." : "", "Doses usuais: " + m.doses + ".", m.conc ? "Dose = vazão (mL/h) × concentração ÷ 60" + (m.peso ? " ÷ peso real (kg)." : ".") : "", "Fonte: " + m.ref + "."].filter(Boolean).join("\n");
+}
+/* sítios dos acessos (pedido do autor, 01/11/2026) */
+const CVC_SITIOS = ["Veia jugular interna direita", "Veia jugular interna esquerda", "Veia subclávia direita", "Veia subclávia esquerda", "Veia femoral direita", "Veia femoral esquerda", "Membro superior direito (PICC)", "Membro superior esquerdo (PICC)"];
+const PAI_SITIOS = ["Artéria radial direita", "Artéria radial esquerda", "Artéria femoral direita", "Artéria femoral esquerda", "Artéria pediosa direita", "Artéria pediosa esquerda", "Artéria braquial direita", "Artéria braquial esquerda"];
+/* escalas do neurológico: RASS (Sessler 2002; versão em português: Nassar Junior 2008) e Glasgow (Teasdale 1974; Teasdale 2014) */
+const RASS_OPC = {
+  "+4": "+4 · Combativo: claramente combativo, violento, perigo imediato para a equipe",
+  "+3": "+3 · Muito agitado: puxa ou remove tubos ou cateteres; agressivo",
+  "+2": "+2 · Agitado: movimentos frequentes sem propósito; briga com o ventilador",
+  "+1": "+1 · Inquieto: ansioso, mas sem movimentos agressivos ou vigorosos",
+  "0":  "0 · Alerta e calmo",
+  "-1": "−1 · Sonolento: não totalmente alerta, mas desperta de forma sustentada (abertura ocular e contato visual por 10 s ou mais) ao chamado",
+  "-2": "−2 · Sedação leve: desperta brevemente (contato visual por menos de 10 s) ao chamado",
+  "-3": "−3 · Sedação moderada: movimento ou abertura ocular ao chamado, sem contato visual",
+  "-4": "−4 · Sedação profunda: sem resposta ao chamado, mas movimento ou abertura ocular ao estímulo físico",
+  "-5": "−5 · Não despertável: sem resposta ao chamado nem ao estímulo físico"
+};
+const GCS_O = { "4": "4 · Espontânea", "3": "3 · Ao som (ao chamado)", "2": "2 · À pressão (estímulo doloroso)", "1": "1 · Ausente" };
+const GCS_V = { "5": "5 · Orientado", "4": "4 · Confuso", "3": "3 · Palavras inapropriadas", "2": "2 · Sons incompreensíveis", "1": "1 · Ausente", "T": "T · Intubado ou traqueostomizado (não avaliável)" };
+const GCS_M = { "6": "6 · Obedece a comandos", "5": "5 · Localiza o estímulo", "4": "4 · Flexão normal (retirada)", "3": "3 · Flexão anormal (decorticação)", "2": "2 · Extensão (descerebração)", "1": "1 · Ausente" };
+const NEURO_ESCALAS = {
+  "RASS": [F("rass","RASS","radio",{w:"full",vert:true,opts:["+4","+3","+2","+1","0","-1","-2","-3","-4","-5"],optl:RASS_OPC})],
+  "Glasgow": [F("gcs_o","Abertura ocular","radio",{w:"full",vert:true,opts:["4","3","2","1"],optl:GCS_O}),
+              F("gcs_v","Resposta verbal","radio",{w:"full",vert:true,opts:["5","4","3","2","1","T"],optl:GCS_V}),
+              F("gcs_m","Resposta motora","radio",{w:"full",vert:true,opts:["6","5","4","3","2","1"],optl:GCS_M}),
+              F("gcs_tot","Glasgow total","calc",{fn:"gcs"})]
+};
+const NEURO_TXT = {
+  "RASS": d => d.rass ? "RASS " + String(d.rass).replace("-", "−") + " (" + RASS_OPC[d.rass].split(" · ")[1].split(":")[0].toLowerCase() + ")" : "",
+  "Glasgow": d => ["gcs_o", "gcs_v", "gcs_m"].some(k => d[k]) ? `Glasgow ${CALC.gcs(d) || "?"} (O${d.gcs_o || "?"} V${d.gcs_v || "?"} M${d.gcs_m || "?"})` : ""
+};
 const CTI_PROB_SUBS = [["apr","Apresentação"],["etio","Etiologia"],["prop","Propedêutica"]];   // mesmas chaves da enfermaria
 
 /* estrutura montada pelo autor no editor (23/10/2026) */
@@ -645,11 +765,11 @@ const CTI = [
  { id: "I", title: "IDENTIFICAÇÃO", groups: [ { rows: [
    [F("nome","Nome","text",{w:"l"}), F("idade","Idade","num",{w:"s",u:"anos"}), F("sexo","Sexo","radio",{opts:["M","F"],optl:{M:"Masculino",F:"Feminino"}})],
    [F("leito","Leito","radio",{w:"full",opts:["1","2","3","4","5","6","7","8","9","10"]})],
-   [F("peso","Peso","num",{w:"s",u:"kg"}), F("altura","Altura","num",{w:"s",u:"cm"}), F("pp","Peso predito","calc",{w:"s",u:"kg",fn:"pp"}), F("adm_hosp","Admissão SCBH","date"), F("adm_cti","Admissão CTI","date"), F("dcti","Dias","num")]
+   [F("peso","Peso","num",{w:"s",u:"kg"}), F("altura","Altura","num",{w:"s",u:"cm"}), F("pp","Peso predito","calc",{w:"s",u:"kg",fn:"pp"}), F("adm_hosp","Admissão SCBH","date"), F("adm_cti","Admissão CTI","date"), F("dcti_c","Dias","calc",{fn:"dcti"})]
  ]}]},
  { id: "S", title: "SITUAÇÃO", groups: [
   { title: "Lista de problemas ativos", rows: [
-   [F("prob","Problemas","problems",{n:12,subs:CTI_PROB_SUBS,item:"Problema",tl:""})],
+   [F("prob","Problemas","problems",{n:12,subs:[],item:"Problema",tl:""})],
    [F("motivo","Contexto","area",{rows:5})],
    [F("atb","Antimicrobianos em uso","text",{w:"l"}), F("atb_d1","D1","date")],
    [F("atb_prev","Antimicrobianos prévios","text",{w:"l"}), F("atb_prev_ini","Início","date"), F("atb_prev_fim","Término","date")]
@@ -674,19 +794,24 @@ const CTI = [
    [F("diurese","Diurese","num",{w:"s",u:"mL/24 h"}), F("dkgh","Diurese/kg/h","calc",{w:"m",u:"mL/kg/h",fn:"dkgh"})]
   ]},
   { title: "Medicações em infusão contínua", rows: [
-   [F("sedacao","Sedação","text",{w:"l"}), F("sed_dose","Dose","num",{w:"s",u:"mL/h",tl:"Dose da sedação"})],
-   [F("analgesia","Analgesia","text",{w:"l"}), F("anal_dose","Dose","num",{w:"s",u:"mL/h",tl:"Dose da analgesia"})],
-   [F("dva","Droga vasoativa","text",{w:"l"}), F("dva_dose","Dose","text",{w:"s",u:"mcg/kg/min",tl:"Dose da droga vasoativa"})]
+   [F("inf_sed","Sedação","infusao",{n:6,item:"sedativo",drogas:["midazolam","propofol","dexmedetomidina","cetamina"]})],
+   [F("inf_anal","Analgesia","infusao",{n:6,item:"analgésico",drogas:["fentanil","morfina"]})],
+   [F("inf_dva","Drogas vasoativas","infusao",{n:8,item:"droga",drogas:["noradrenalina","adrenalina","vasopressina","dobutamina","dopamina","nitroprussiato","nitroglicerina"]})]
   ]},
   { title: "Dispositivos", rows: [
-   [F("cvc","CVC","text",{w:"l"}), F("cvc_dt","D","date",{w:"auto",tl:"CVC D"})],
-   [F("pai","PAI","text",{w:"l"}), F("pai_dt","D","date",{w:"auto",tl:"PAI D"})],
+   [F("cvcs","CVC","repeat",{n:6,item:"Cateter",cols:[
+     F("sitio","Sítio","select",{w:"l",tl:"",opts:CVC_SITIOS}),
+     F("tipo","Tipo","select",{w:"m",tl:"",opts:["Duplo lúmen","Triplo lúmen","Cateter de hemodiálise","PICC"]}),
+     F("perm","Permanência","select",{w:"m",tl:"",opts:["Curta duração","Longa duração"]}),
+     F("dt","D","date",{w:"auto"})]})],
+   [F("pai_sitio","PAI","radio",{opts:PAI_SITIOS}), F("pai_dt","D","date",{w:"auto",tl:"PAI D"})],
    [F("svd","SVD","radio",{opts:["Sim","Não"]}), F("svd_dt","D","date",{w:"auto",tl:"SVD D"})],
    [F("drenos","Drenos","text",{w:"l"}), F("drenos_deb","Débito","num",{w:"s",u:"mL/12h",tl:"Débito dos drenos"})],
    [F("disp_outros","Outros","text",{w:"full",tl:"Outros dispositivos"})]
   ]},
   { title: "Neurológico", rows: [
-   [F("rass","RASS","text",{w:"s"}), F("gcs","Glasgow","gcs",{w:"m"}), F("pupilas","Pupilas","radio",{opts:["Miose","Isocóricas","Midríase","Anisocóricas"]})],
+   [F("neuro_escala","Escala","cond",{opts:["RASS","Glasgow"],sub:NEURO_ESCALAS,subtxt:NEURO_TXT})],
+   [F("pupilas","Pupilas","radio",{opts:["Miose","Isocóricas","Midríase","Anisocóricas"]})],
    [F("cam","CAM-ICU","radio",{opts:["positivo","negativo","não avaliável"]})]
   ]},
   { title: "Cardiovascular", rows: [
@@ -712,21 +837,11 @@ const CTI = [
   ]}
  ]},
  { id: "R", title: "RECOMENDAÇÕES / PLANO", groups: [
-  { title: "Problemas e condutas", rows: [
-   [F("p1","Problema 1","text",{w:"full"})], [F("c1","→ Conduta","area",{tl:"Conduta 1"})],
-   [F("p2","Problema 2","text",{w:"full"})], [F("c2","→ Conduta","area",{tl:"Conduta 2"})],
-   [F("p3","Problema 3","text",{w:"full"})], [F("c3","→ Conduta","area",{tl:"Conduta 3"})]
-  ]},
-  { title: "Metas para 24 h", rows: [
-   [F("m_pam","PAM ≥","num",{tl:"PAM ≥"}), F("m_spo2","SpO2","pair",{keys:["m_spo2a","m_spo2b"],sep:"–",u:"%"}), F("m_bh","BH","text",{w:"s"}), F("m_rass","RASS","text",{w:"xs"}), F("m_glic","Glicemia","pair",{keys:["m_glica","m_glicb"],sep:"–"})]
+  { title: "Condutas", rows: [
+   [F("cdl","Condutas","outline",{n:20,ns:8,min:3,item:"Conduta",tl:""})]
   ]},
   { title: "Pendências e seguimento", rows: [
-   [F("exames","Exames pendentes/a solicitar","area")],
-   [F("pareceres","Pareceres","text",{w:"full"})],
-   [F("pendencias","Pendências para o plantão","area")],
-   [F("chamar","Chamar se","area")],
-   [F("prognostico","Prognóstico/cuidados paliativos","text",{w:"full"})],
-   [F("alta","Previsão de alta do CTI","text",{w:"full"})]
+   [F("pend","Pendências","outline",{n:20,ns:8,min:3,item:"Pendência",tl:""})]
   ]}
  ]}
 ];
@@ -871,7 +986,12 @@ const REFS_CTI = [
  "Marra A, Ely EW, Pandharipande PP, Patel MB. The ABCDEF Bundle in Critical Care. <i>Crit Care Clin</i>. 2017;33(2):225-43.",
  "Devlin JW, et al. Clinical Practice Guidelines for the Prevention and Management of Pain, Agitation/Sedation, Delirium, Immobility, and Sleep Disruption in Adult Patients in the ICU (PADIS). <i>Crit Care Med</i>. 2018;46(9):e825-73.",
  "Sessler CN, et al. The Richmond Agitation-Sedation Scale. <i>Am J Respir Crit Care Med</i>. 2002;166(10):1338-44.",
+ "Nassar Junior AP, Pires Neto RC, de Figueiredo WB, Park M. Validity, reliability and applicability of Portuguese versions of sedation-agitation scales among critically ill patients. <i>Sao Paulo Med J</i>. 2008;126(4):215-9. (RASS em português)",
+ "Teasdale G, Maas A, Lecky F, Manley G, Stocchetti N, Murray G. The Glasgow Coma Scale at 40 years: standing the test of time. <i>Lancet Neurol</i>. 2014;13(8):844-54. (Descrições da escala de Glasgow)",
  "Ely EW, et al. Delirium in mechanically ventilated patients: validity and reliability of the CAM-ICU. <i>JAMA</i>. 2001;286(21):2703-10.",
+ "Overgaard CB, Džavík V. Inotropes and vasopressors: review of physiology and clinical use in cardiovascular disease. <i>Circulation</i>. 2008;118(10):1047-56. (Doses das drogas vasoativas)",
+ "Whelton PK, et al. 2017 ACC/AHA/AAPA/ABC/ACPM/AGS/APhA/ASH/ASPC/NMA/PCNA Guideline for the Prevention, Detection, Evaluation, and Management of High Blood Pressure in Adults. <i>Hypertension</i>. 2018;71(6):e13-115. (Doses de nitroprussiato e nitroglicerina)",
+ "Barr J, et al. Clinical practice guidelines for the management of pain, agitation, and delirium in adult patients in the intensive care unit. <i>Crit Care Med</i>. 2013;41(1):263-306. (Doses de sedativos e analgésicos)",
  "Evans L, et al. Surviving Sepsis Campaign: International Guidelines for Management of Sepsis and Septic Shock 2021. <i>Crit Care Med</i>. 2021;49(11):e1063-143.",
  "Singer P, et al. ESPEN guideline on clinical nutrition in the intensive care unit. <i>Clin Nutr</i>. 2019;38(1):48-79.",
  "Teasdale G, Jennett B. Assessment of coma and impaired consciousness: a practical scale. <i>Lancet</i>. 1974;2(7872):81-4. (Glasgow total)",
@@ -897,7 +1017,7 @@ const TPL = {
 const modelOf = (t, d) => t.build ? t.build(d || {}) : t.model;
 const sigOf = (t, d) => t.sig ? t.sig(d || {}) : "";
 
-const DEFAULT_W = { text:"m", num:"xs", area:"full", date:"s", radio:"auto", check:"full", calc:"xs", pair:"s", gcs:"m", list:"full", problems:"full", cond:"full", diary:"full" };
+const DEFAULT_W = { text:"m", num:"xs", area:"full", date:"s", radio:"auto", check:"full", calc:"xs", pair:"s", gcs:"m", list:"full", problems:"full", cond:"full", diary:"full", select:"m", repeat:"full", infusao:"full" };
 const PROB_SUBS = [["apr","Apresentação"],["etio","Etiologia"],["prop","Propedêutica"],["plano","Plano de cuidados"]];
 
 /* =====================================================================
@@ -950,6 +1070,51 @@ function normalizeStore(st){
     if (!d.dieta_tipo && Array.isArray(d.dieta)){ const m = d.dieta.includes("Suspensa") ? "Suspensa" : d.dieta.includes("VO") ? "VO" : d.dieta.includes("Enteral") ? "SNE" : ""; if (m){ d.dieta_tipo = m; mud = true; } }
     if (!d.evac_aspecto && Array.isArray(d.evac_asp) && d.evac_asp.length){ d.evac_aspecto = d.evac_asp[0]; mud = true; }
     if (mud) d.cti_v3 = 1;
+  }
+  // CTI, ajuste de 01/11/2026: plano e pendências em campos livres; escala neurológica escolhida entre RASS e Glasgow
+  for (const p of Object.values(st.patients)){
+    const d = p.data;
+    if (p.tpl !== "cti" || !d || d.cti_v4) continue;
+    let mud = false;
+    const tem = pre => Object.keys(d).some(k => k.startsWith(pre) && String(d[k]).trim());
+    const linhas = v => String(v || "").split(/\r?\n/).map(x => x.replace(/^\s*(?:[-–•*]|\d+[.)])\s*/, "").trim()).filter(Boolean);
+    if (!tem("cdl_")){
+      let i = 0;
+      [1, 2, 3].forEach(n => {
+        const pr = String(d["p" + n] || "").trim(), cd = linhas(d["c" + n]);
+        if (!pr && !cd.length) return;
+        i++; d["cdl_" + i] = pr || cd.shift() || "";
+        cd.slice(0, 8).forEach((x, j) => { d[`cdl_${i}_${j + 1}`] = x; });
+        mud = true;
+      });
+    }
+    if (!tem("pend_")){
+      let i = 0;
+      [["exames", "Exames pendentes/a solicitar"], ["pareceres", "Pareceres"], ["pendencias", "Pendências para o plantão"], ["chamar", "Chamar se"], ["prognostico", "Prognóstico/cuidados paliativos"], ["alta", "Previsão de alta do CTI"]].forEach(([k, l]) => {
+        const v = linhas(d[k]); if (!v.length) return;
+        d["pend_" + (++i)] = `${l}: ${v.join("; ")}`; mud = true;
+      });
+    }
+    if (!d.neuro_escala){
+      if (["gcs_o", "gcs_v", "gcs_m"].some(k => d[k])){ d.neuro_escala = "Glasgow"; mud = true; }
+      else if (d.rass){ d.neuro_escala = "RASS"; mud = true; }
+    }
+    if (mud) d.cti_v4 = 1;
+  }
+  // CTI, 01/11/2026: sedação, analgesia e droga vasoativa escritas antes viram o 1º item de cada lista
+  for (const p of Object.values(st.patients)){
+    const d = p.data;
+    if (p.tpl !== "cti" || !d || d.cti_v5) continue;
+    let mud = false;
+    const acha = t => { const n = String(t || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); return Object.keys(INF).find(id => n && (n.startsWith(id) || (n.length >= 4 && id.startsWith(n.split(/\s/)[0])) || n.startsWith(INF[id].nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")))); };
+    [["sedacao", "sed_dose", "inf_sed"], ["analgesia", "anal_dose", "inf_anal"], ["dva", null, "inf_dva"]].forEach(([kn, kd, kf]) => {
+      const t = String(d[kn] || "").trim(); if (!t || d[kf + "_1_droga"]) return;
+      const id = acha(t);
+      d[kf + "_1_droga"] = id || "outra"; if (!id) d[kf + "_1_outra"] = t;
+      if (kd && String(d[kd] || "").trim()) d[kf + "_1_vi"] = d[kd];
+      mud = true;
+    });
+    if (mud) d.cti_v5 = 1;
   }
   if (!TPL[st.mode]) st.mode = "cti";
   if (!st.settings || typeof st.settings !== "object") st.settings = {};
@@ -1037,6 +1202,10 @@ const probKeysOne = (f, i) => [f.k + "_" + i, ...subsOf(f).map(([s]) => f.k + "_
 const probKeys = f => Array.from({ length: f.n }, (_, i) => probKeysOne(f, i + 1)).flat();
 const probFilled = (f, d, i) => probKeysOne(f, i).some(k => d[k] != null && String(d[k]).trim() !== "");
 const diaryKeys = f => Array.from({ length: f.n }, (_, i) => [`${f.k}_${i + 1}_d`, `${f.k}_${i + 1}`]).flat();
+const repKeys = f => Array.from({ length: f.n }, (_, i) => f.cols.map(c => `${f.k}_${i + 1}_${c.k}`)).flat();
+const repCol = (f, i, c) => Object.assign({}, c, { k: `${f.k}_${i}_${c.k}` });
+const INF_COLS = ["droga", "outra", "vi", "vf"];
+const infKeys = f => Array.from({ length: f.n }, (_, i) => INF_COLS.map(c => `${f.k}_${i + 1}_${c}`)).flat();
 const condKeys = f => [f.k, ...new Set(Object.values(f.sub || {}).flat().flatMap(keysOf))];
 function keysOf(f){
   if (f.t === "pair") return f.keys;
@@ -1045,6 +1214,8 @@ function keysOf(f){
   if (f.t === "outline") return olKeys(f);
   if (f.t === "problems") return probKeys(f);
   if (f.t === "diary") return diaryKeys(f);
+  if (f.t === "repeat") return repKeys(f);
+  if (f.t === "infusao") return infKeys(f);
   if (f.t === "cond") return condKeys(f);
   if (f.t === "calc") return [];
   return [f.k];
@@ -1079,6 +1250,11 @@ const CALC = {
   pf(d){ const po = num(d.pao2); let fi = num(d.fio2); if (!(fi > 0)) fi = num(d.cnaf_fio2); if (!(po > 0 && fi > 0)) return ""; if (fi > 1) fi = fi/100; return fi <= 1 ? fmt(po/fi, 0) : ""; },
   dkgh(d){ const u = num(d.diurese), p = num(d.peso); return (u >= 0 && p > 0) ? fmt(u/p/24, 2) : ""; },
   ag(d){ const na = num(d.na), cl = num(d.cl), hc = num(d.hco3); return [na,cl,hc].every(isFinite) ? fmt(na - cl - hc, 1) : ""; },
+  dcti(d){   // dia da admissão no CTI = D1 (definido pelo autor)
+    if (!d.adm_cti) return "";
+    const n = Math.round((new Date(todayISO() + "T12:00") - new Date(d.adm_cti + "T12:00")) / 864e5) + 1;
+    return n >= 1 ? String(n) : "";
+  },
   gcs(d){
     const o = num(d.gcs_o), m = num(d.gcs_m), vr = String(d.gcs_v || "").trim();
     if (!(o > 0 && m > 0) || !vr) return "";
@@ -1198,6 +1374,42 @@ function renderField(f){
       });
       return fs;
     }
+    case "select":
+      return el("div", { class: "fld " + w },
+        el("label", { for: id, text: f.l }),
+        el("div", { class: "inp" }, el("select", { id, "data-k": f.k }, el("option", { value: "", text: "—" }), ...f.opts.map(o => el("option", { value: o, text: o })))));
+    case "repeat": {
+      // itens repetidos (ex.: vários CVC), cada um com as mesmas colunas; k_n guarda quantos estão abertos
+      const box = el("div", { class: "fld " + w, "data-rep": f.k, "data-max": String(f.n), role: "group", "aria-label": f.l });
+      for (let i = 1; i <= f.n; i++){
+        const row = el("div", { class: "row" });
+        f.cols.forEach(c => row.append(renderField(repCol(f, i, c))));
+        box.append(el("div", { class: "rep-item", "data-i": String(i) }, el("div", { class: "rep-h", text: `${f.l} ${i}` }), row));
+      }
+      box.append(el("button", { class: "btn add-prob", type: "button", "data-add-rep": f.k, text: "+ Adicionar " + (f.item || "item").toLowerCase() }));
+      return box;
+    }
+    case "infusao": {
+      // cada item: droga da lista (ou "Outra"), vazão ao receber e ao passar o plantão, dose calculada e texto informativo
+      const box = el("fieldset", { class: "fld inf " + w, "data-inf": f.k, "data-max": String(f.n) }, el("legend", { text: f.l }));
+      for (let i = 1; i <= f.n; i++){
+        const kk = c => `${f.k}_${i}_${c}`;
+        const vaz = (c, l) => el("div", { class: "fld w-s" }, el("label", { for: "f_" + kk(c), text: l }),
+          el("div", { class: "inp" }, inputFor(kk(c), { inputmode: "decimal" }), el("span", { class: "u", text: "mL/h" })),
+          el("span", { class: "inf-dose", "data-inf-dose": `${f.k}|${i}|${c}`, "aria-live": "polite" }));
+        box.append(el("div", { class: "rep-item inf-item", "data-i": String(i) },
+          el("div", { class: "row" },
+            el("div", { class: "fld w-m" }, el("label", { for: "f_" + kk("droga"), text: `${(f.item || "droga").replace(/^./, c => c.toUpperCase())} ${i}` }),
+              el("div", { class: "inp" }, el("select", { id: "f_" + kk("droga"), "data-k": kk("droga") }, el("option", { value: "", text: "—" }),
+                ...f.drogas.map(id => el("option", { value: id, text: INF[id].nome })), el("option", { value: "outra", text: "Outra" })))),
+            el("div", { class: "fld w-m inf-outra", "data-inf-outra": `${f.k}|${i}` }, el("label", { for: "f_" + kk("outra"), text: "Qual" }),
+              el("div", { class: "inp" }, inputFor(kk("outra"), { autocapitalize: "sentences" }))),
+            vaz("vi", "Ao receber o plantão"), vaz("vf", "Ao passar o plantão")),
+          el("details", { class: "inf-info", "data-inf-info": `${f.k}|${i}` }, el("summary", { text: "ⓘ Diluição e doses" }), el("p", { class: "inf-txt" }))));
+      }
+      box.append(el("button", { class: "btn add-prob", type: "button", "data-add-inf": f.k, text: "+ Adicionar " + (f.item || "droga") }));
+      return box;
+    }
     case "diary": {
       const box = el("div", { class: "fld " + w, "data-diary": f.k, "data-max": String(f.n), role: "group", "aria-label": f.l });
       for (let i = 1; i <= f.n; i++){
@@ -1212,7 +1424,7 @@ function renderField(f){
     }
     case "radio": case "check": {
       const fs = el("fieldset", { class: "fld " + w }, el("legend", { text: f.l }));
-      const opts = el("div", { class: "opts" });
+      const opts = el("div", { class: "opts" + (f.vert ? " vert" : "") });
       f.opts.forEach(o => {
         opts.append(el("label", { class: "opt" },
           el("input", { type: f.t === "radio" ? "radio" : "checkbox", name: f.k, value: o, "data-k": f.k, "data-multi": f.t === "check" ? "1" : null, "data-def": f.def || null }),
@@ -1316,6 +1528,44 @@ function updateDiary(){
     box.querySelector("[data-add-diary]").hidden = shown >= max;
   });
 }
+function updateRepeat(){
+  const d = D(), cheio = k => d[k] != null && String(d[k]).trim() !== "";
+  document.querySelectorAll("#form [data-rep]").forEach(box => {
+    const k = box.dataset.rep, max = Number(box.dataset.max);
+    const fi = fieldsIndex.find(x => x.f.k === k && x.f.t === "repeat"); if (!fi) return;
+    let last = 0; for (let i = 1; i <= max; i++) if (fi.f.cols.some(c => cheio(`${k}_${i}_${c.k}`))) last = i;
+    const shown = Math.min(max, Math.max(1, last, Number(d[k + "_n"]) || 0));
+    box.querySelectorAll(".rep-item").forEach(r => r.hidden = Number(r.dataset.i) > shown);
+    box.querySelector("[data-add-rep]").hidden = shown >= max;
+  });
+}
+function onAddRep(e){
+  const b = e.target.closest("[data-add-rep]"); if (!b || !cur()) return;
+  const k = b.dataset.addRep, i = b.closest("[data-rep]").querySelectorAll(".rep-item:not([hidden])").length + 1;
+  cur().data[k + "_n"] = String(i);
+  updateRepeat(); changed();
+  const it = b.closest("[data-rep]").querySelector(`.rep-item[data-i="${i}"] select, .rep-item[data-i="${i}"] input`); if (it) it.focus();
+}
+function updateInf(){
+  const d = D(), cheio = k => d[k] != null && String(d[k]).trim() !== "";
+  document.querySelectorAll("#form [data-inf]").forEach(box => {
+    const k = box.dataset.inf, max = Number(box.dataset.max);
+    let last = 0; for (let i = 1; i <= max; i++) if (INF_COLS.some(c => cheio(`${k}_${i}_${c}`))) last = i;
+    const shown = Math.min(max, Math.max(1, last, Number(d[k + "_n"]) || 0));
+    box.querySelectorAll(".inf-item").forEach(r => r.hidden = Number(r.dataset.i) > shown);
+    box.querySelector("[data-add-inf]").hidden = shown >= max;
+  });
+  document.querySelectorAll("#form [data-inf-outra]").forEach(x => { const [k, i] = x.dataset.infOutra.split("|"); x.hidden = d[`${k}_${i}_droga`] !== "outra"; });
+  document.querySelectorAll("#form [data-inf-dose]").forEach(x => { const [k, i, c] = x.dataset.infDose.split("|"); const v = infDose(d[`${k}_${i}_droga`], d[`${k}_${i}_${c}`], d.peso); x.textContent = v ? "= " + v : ""; });
+  document.querySelectorAll("#form [data-inf-info]").forEach(x => { const [k, i] = x.dataset.infInfo.split("|"); const t = infInfo(d[`${k}_${i}_droga`]); x.hidden = !t; x.querySelector(".inf-txt").textContent = t; });
+}
+function onAddInf(e){
+  const b = e.target.closest("[data-add-inf]"); if (!b || !cur()) return;
+  const k = b.dataset.addInf, i = b.closest("[data-inf]").querySelectorAll(".inf-item:not([hidden])").length + 1;
+  cur().data[k + "_n"] = String(i);
+  updateInf(); changed();
+  const s = document.getElementById(`f_${k}_${i}_droga`); if (s) s.focus();
+}
 function onAddDiary(e){
   const b = e.target.closest("[data-add-diary]"); if (!b || !cur()) return;
   const k = b.dataset.addDiary, d = cur().data, box = b.closest("[data-diary]");
@@ -1364,6 +1614,8 @@ function fillForm(){
   updateOutline();
   updateConds();
   updateDiary();
+  updateRepeat();
+  updateInf();
   refreshDerived();
 }
 
@@ -1408,6 +1660,7 @@ function isFilled(f, d){
 
 function refreshDerived(){
   const d = D();
+  if (document.querySelector("#form [data-inf]")) updateInf();
   document.querySelectorAll("#form [data-calc]").forEach(i => i.value = CALC[i.dataset.calc](d));
   document.querySelectorAll("#form [data-calc-out]").forEach(s => { const v = CALC[s.dataset.calcOut](d); s.textContent = v ? "= " + v : ""; });
   const tally = {};
@@ -1517,6 +1770,30 @@ function buildText(){
             }
             it.sort((a, b) => (a.dt || "9999") < (b.dt || "9999") ? -1 : (a.dt || "9999") > (b.dt || "9999") ? 1 : a.i - b.i);
             it.forEach(x => gLines.push((x.dt ? brDate(x.dt) + " – " : "") + x.tx.replace(/\n/g, "\n   ")));
+            return;
+          }
+          if (f.t === "infusao"){
+            const it = [];
+            for (let i = 1; i <= f.n; i++){
+              const kk = c => d[`${f.k}_${i}_${c}`], id = kk("droga");
+              const nome = id === "outra" ? String(kk("outra") || "").trim() || "Outra" : (INF[id] ? INF[id].nome : "");
+              const vz = (c, l) => { const v = String(kk(c) || "").trim(); if (!v) return ""; const ds = infDose(id, v, d.peso); return `${l} ${v} mL/h` + (ds && ds !== "informe o peso" ? ` (${ds})` : ""); };
+              const p = [vz("vi", "ao receber"), vz("vf", "ao passar")].filter(Boolean);
+              if (nome || p.length) it.push(`- ${nome || "(droga não informada)"}` + (p.length ? ": " + p.join(" | ") : ""));
+            }
+            if (it.length){ gLines.push(f.l + ":"); gLines.push(...it); }
+            return;
+          }
+          if (f.t === "repeat"){
+            let idx = 0;
+            for (let i = 1; i <= f.n; i++){
+              const vals = f.cols.map(c => { const cc = repCol(f, i, c), v = valueText(cc, d); if (!v) return ""; const l = c.tl != null ? c.tl : c.l; return l ? `${l}: ${v}` : v; }).filter(Boolean);
+              if (vals.length) gLines.push(`${f.l} ${++idx}: ${vals.join(" | ")}`);
+            }
+            return;
+          }
+          if (f.t === "cond" && f.subtxt && f.subtxt[d[f.k]]){
+            const v = f.subtxt[d[f.k]](d); if (v) inline.push(v);
             return;
           }
           if (f.t === "cond"){
@@ -1928,6 +2205,7 @@ async function completeUnlock(key, remember){
   bootUI();
   if (s) syncNow(false);
   setInterval(() => { if (document.visibilityState === "visible") syncNow(false); }, 60000);
+  if (menuAfterUnlock){ menuAfterUnlock = false; showMenu(); }
 }
 
 async function logout(){
@@ -2161,7 +2439,7 @@ async function afterLogin(){
   try { row = await fetchKeyRow(); } catch(e){ throw new Error("Entrou, mas não foi possível ler a tabela de chaves. Confira se o script SQL foi executado no Supabase. (" + e.message + ")"); }
   closeAcct();
   if (!row) openAcct("newpass");
-  else { document.body.classList.add("locked"); $("#lock").replaceChildren(acctView("unlock")); }
+  else { document.body.classList.add("locked"); $("#lock").replaceChildren(acctView("unlock")); hideHome(); }
 }
 
 /* retorno do link "esqueci a senha de login" (Supabase envia #access_token=…&type=recovery) */
@@ -3280,6 +3558,8 @@ form.addEventListener("click", onRadioClick);
 form.addEventListener("click", onAddProb);
 form.addEventListener("click", onAddOutline);
 form.addEventListener("click", onAddDiary);
+form.addEventListener("click", onAddRep);
+form.addEventListener("click", onAddInf);
 
 $("#modes").addEventListener("click", e => { const b = e.target.closest("button[data-mode]"); if (b) switchMode(b.dataset.mode); });
 $("#ptSelect").addEventListener("change", e => switchTo(e.target.value));
@@ -3340,27 +3620,66 @@ rxBox.addEventListener("click", onRxClick);
 $("#btnRxPrint").addEventListener("click", doPrint);
 $("#btnRxText").addEventListener("click", () => { $("#out").value = rxText(); $("#dlgTitle").textContent = "Proposta de prescrição"; dlg.showModal(); });
 
-/* tela inicial */
+/* tela inicial: boas-vindas → entrar (conta ou sem login) → menu dos módulos */
 const home = $("#home");
+let menuAfterUnlock = false;
+function homeStep(step){
+  $("#homeWelcome").hidden = step !== "welcome";
+  $("#homeLoginStep").hidden = step !== "login";
+  $("#homeMenuStep").hidden = step !== "menu";
+  home.dataset.step = step;
+  if (step === "login"){
+    $("#homeLogin").replaceChildren(acctView("login"));
+    menuAfterUnlock = true;
+    setTimeout(() => { const i = $("#homeLogin input"); if (i) i.focus(); }, 50);
+  }
+  if (step === "menu"){
+    $("#homeWho").textContent = session && cryptoKey ? `Conectado como ${session.email}.` : "Sem login: os prontuários ficam salvos só neste navegador.";
+    const all = Object.values(store.patients || {}), n = { all: all.length, cti: 0, enf: 0, nota: 0 };
+    all.forEach(p => { if (n[p.tpl] != null) n[p.tpl]++; });
+    document.querySelectorAll("[data-hm-n]").forEach(x => { const c = n[x.dataset.hmN]; x.textContent = c === 1 ? "1 paciente" : c + " pacientes"; });
+    setTimeout(() => $(".h-card").focus({ preventScroll: true }), 50);
+  }
+}
 function hideHome(){
   if (home.classList.contains("hide")) return;
   home.classList.add("hide");
   document.body.style.overflow = "";
   const i = document.querySelector("body.locked #lock input"); if (i) setTimeout(() => i.focus(), 360);
 }
-function showHome(){
+function showHome(step = "welcome"){
   $("#menu").open = false;
+  homeStep(step);
   home.classList.remove("play", "hide");
   void home.offsetWidth;            // reinicia a animação
   home.classList.add("play");
   document.body.style.overflow = "hidden";
-  setTimeout(() => $("#homeGo").focus({ preventScroll: true }), 50);
+  if (step === "welcome") setTimeout(() => $("#homeGo").focus({ preventScroll: true }), 50);
 }
-$("#homeGo").addEventListener("click", hideHome);
-$("#homeBtn").addEventListener("click", showHome);
-home.addEventListener("click", e => { if (e.target === home) hideHome(); });
-document.addEventListener("keydown", e => { if (!home.classList.contains("hide") && (e.key === "Enter" || e.key === "Escape")){ e.preventDefault(); hideHome(); } });
+function showMenu(){ showHome("menu"); }
+// "Começar": já conectado → menu; conta bloqueada → senha de criptografia (e depois o menu); sem conta → entrar
+function homeNext(){
+  if (session && cryptoKey) return homeStep("menu");
+  if (session && document.body.classList.contains("locked")){ menuAfterUnlock = true; return hideHome(); }
+  homeStep("login");
+}
+$("#homeGo").addEventListener("click", homeNext);
+$("#homeNoLogin").addEventListener("click", () => { menuAfterUnlock = false; homeStep("menu"); });
+$("#homeAcct").addEventListener("click", openAccountEntry);
+$("#homeCode2").addEventListener("click", openCodeDlg);
+$("#homeMenuStep").addEventListener("click", e => {
+  const b = e.target.closest("[data-hm]"); if (!b) return;
+  listFilter = b.dataset.hm; listQuery = ""; $("#search").value = "";
+  hideHome(); setView("list");
+});
+$("#homeBtn").addEventListener("click", showMenu);
+document.addEventListener("keydown", e => {
+  if (home.classList.contains("hide")) return;
+  if (home.dataset.step === "welcome" && e.key === "Enter"){ e.preventDefault(); homeNext(); }
+  else if (home.dataset.step === "menu" && e.key === "Escape"){ e.preventDefault(); hideHome(); }
+});
 document.body.style.overflow = "hidden";
+homeStep("welcome");
 setTimeout(() => $("#homeGo").focus({ preventScroll: true }), 50);
 
 const acct = $("#acct");
