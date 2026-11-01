@@ -61,6 +61,10 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
   - Conflitos: vale a última versão de cada paciente; exclusões são enviadas como marcação (*tombstone*).
 - **Configuração da sincronização:** o projeto Supabase do autor é `https://lykqudxhjnvsiprrkinh.supabase.co` (o arquivo `supabase init` do repositório é de **outro** projeto, `cspsiakuwuqegugfxepb`; não usar). O servidor digitado no aparelho ("Conta e sincronização" → Configurar servidor, guardado em `isbar-sync-cfg`) tem prioridade; as constantes `SYNC_URL` e `SYNC_ANON_KEY` servem para aparelhos sem configuração (ex.: abrir código num PC do hospital). "Alterar servidor" aparece sempre.
 - **HTTPS obrigatório:** `crypto.subtle` só existe em contexto seguro, então a conta não funciona via `http://`.
+- **Várias contas** (pedido do autor, 01/11/2026: abrir o site para outras pessoas criarem a própria conta). Cada conta só enxerga os próprios dados (RLS em `records`, `user_keys` e `shares`, testada com dois usuários), e os prontuários são cifrados com a senha de criptografia de cada um.
+  - Pacientes salvos "sem login" no navegador só entram na conta se a pessoa confirmar ao entrar; recusados, ficam em `isbar-local-guardado` e voltam para o modo sem login quando a conta sai do aparelho.
+  - Cadastro: "Criar conta" envia `redirect_to` com o endereço do site; o link de confirmação (`#access_token…&type=signup`) entra direto na conta e pede a senha de criptografia (`handleRecoveryLink`); o endereço é limpo.
+  - No Supabase (painel, feito pelo autor): ligar "Allow new users to sign up", manter "Confirm email", configurar SMTP próprio (o SMTP padrão só envia para membros da equipe do projeto) e, em URL Configuration, Site URL e Redirect URLs = `https://anamnesia.net.br`.
 
 ## Enviar o texto para outro computador (janela do texto gerado → "Enviar para outro computador")
 - **E-mail:** "Abrir no app de e-mail" (`mailto:`) ou "Abrir no Gmail (web)", já com destinatário, assunto (momento, leito e data, sem o nome) e o texto no corpo; o texto também é copiado. O último e-mail fica lembrado no aparelho (`isbar-mailto`). Não há envio automático pelo servidor.
@@ -90,7 +94,8 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 ## Situação da publicação
 - **HTTPS:** o site abre em `https://anamnesia.net.br`, necessário para a conta funcionar.
 - **Supabase:** projeto criado, `supabase-setup.sql` executado e sincronização testada pelo autor entre celular e PC.
-- **Novos cadastros desativados** no Supabase ("Allow new users to sign up" desligado), confirmado pelo autor.
+- **Cadastros:** estavam desativados ("Allow new users to sign up" desligado). Em 01/11/2026 o autor pediu para abrir; a ativação, o SMTP próprio e as URLs são feitos por ele no painel do Supabase.
+- **Funções de gatilho** (`shares_cleanup`, `records_guard`): sem permissão de execução pela API (`revoke … from public, anon, authenticated` no `supabase-setup.sql`); os gatilhos continuam funcionando (testado no PostgreSQL local). `get_share` continua aberta para `anon` de propósito (abrir texto por código sem login).
 
 ## Decisões do autor
 - Fotos do encaminhamento (exames de laboratório e imagem): a extração é feita pelo chat com o Claude, não dentro do site.

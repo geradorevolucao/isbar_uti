@@ -190,6 +190,7 @@ body[data-view="list"] header.top,body[data-view="rx"] header.top{padding-bottom
 .h-or::before,.h-or::after{content:"";flex:1;border-top:1px solid var(--line)}
 .h-wide{width:100%;height:50px;justify-content:center}
 .h-note{font-size:.85rem;color:var(--muted);text-align:center;margin:8px 0 0}
+.h-first{margin:-8px 0 14px}
 .h-menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:14px}
 .h-card{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:18px;min-height:110px;border:1px solid var(--line);border-left:0;border-radius:var(--radius);background:var(--card);color:var(--ink);cursor:pointer;font:inherit;box-shadow:inset 6px 0 0 var(--accent)}
 .h-card:hover{background:var(--band)}
@@ -406,6 +407,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <div class="home-in h-step" id="homeLoginStep" hidden>
     <h2 class="h-step-t">Entrar</h2>
     <p class="h-sub">Com a conta, os prontuários ficam cifrados e sincronizados entre os seus aparelhos.</p>
+    <p class="h-note h-first">Primeiro acesso? Digite seu e-mail e uma senha de login (mínimo de 8 caracteres) e toque em “Criar conta”. Depois de confirmar o e-mail, você cria a senha de criptografia, que só você conhece.</p>
     <div class="acct h-login" id="homeLogin"></div>
     <div class="h-or"><span>ou</span></div>
     <button class="btn h-wide" type="button" id="homeNoLogin">Entrar sem login</button>
@@ -2178,6 +2180,7 @@ async function syncNow(manual){
 }
 
 /* ---------- desbloqueio e início com a conta ---------- */
+const LOCAL_STASH = "isbar-local-guardado";
 function readPlain(){
   try { const raw = localStorage.getItem(KEY); if (!raw) return null; const s = JSON.parse(raw); return s && typeof s.patients === "object" ? s : null; } catch(e){ return null; }
 }
@@ -2188,8 +2191,16 @@ async function completeUnlock(key, remember){
   try { s = await loadEncrypted(); } catch(e){ s = null; }
   store = normalizeStore(s || { mode: "cti", currentBy: {}, patients: {} });
   ensureSyncMeta();
-  // dados que estavam só neste aparelho (modo local) entram na conta
-  const plain = readPlain();
+  // dados que estavam só neste aparelho (modo "sem login") entram na conta só se a pessoa confirmar:
+  // com várias contas, o navegador pode ter pacientes de outra pessoa. Recusados, ficam guardados à parte
+  // (LOCAL_STASH) e voltam para o modo sem login quando a conta sair deste aparelho.
+  let plain = readPlain();
+  const cheia = p => Object.keys(p.data || {}).some(k => k !== "data_aval" && k !== "enf_mom" && p.data[k] !== "" && p.data[k] != null);
+  const nLocal = plain ? Object.values(plain.patients || {}).filter(cheia).length : 0;
+  if (plain && nLocal && !confirm(`Este navegador tem ${nLocal} paciente(s) salvo(s) sem login.\n\nLevar para a conta ${session.email}?\n\nSe não forem seus, toque em Cancelar: eles ficam guardados neste navegador, fora da sua conta.`)){
+    try { localStorage.setItem(LOCAL_STASH, localStorage.getItem(KEY)); } catch(e){}
+    plain = null;
+  }
   if (plain){
     const p2 = normalizeStore(plain);
     for (const [id, p] of Object.entries(p2.patients)){
@@ -2218,6 +2229,7 @@ async function logout(){
   if (session){ await idbDel("k-" + session.user_id); ls.del(KROW_KEY + session.user_id); }
   cryptoKey = null; session = null;
   ls.del(ENC_KEY); ls.del(SESS_KEY); ls.del(KEY);
+  try { const st = localStorage.getItem(LOCAL_STASH); if (st){ localStorage.setItem(KEY, st); localStorage.removeItem(LOCAL_STASH); } } catch(e){}
   location.reload();
 }
 async function lockNow(){
@@ -2327,10 +2339,11 @@ function acctView(kind){
       const [e, p] = val(); if (!e || p.length < 8) return showMsg(root, "Informe o e-mail e uma senha de login com pelo menos 8 caracteres.", true);
       busy(root, true, "Criando conta…");
       try {
-        const j = await api("/auth/v1/signup", { method: "POST", auth: false, body: { email: e, password: p } });
+        const volta = location.protocol === "https:" ? "?redirect_to=" + encodeURIComponent(location.origin + location.pathname) : "";
+        const j = await api("/auth/v1/signup" + volta, { method: "POST", auth: false, body: { email: e, password: p } });
         busy(root, false);
         if (j && j.access_token){ setSession(j); await afterLogin(); }
-        else showMsg(root, "Conta criada. Abra o link de confirmação enviado para o seu e-mail e depois toque em “Entrar”.");
+        else showMsg(root, "Conta criada. Abra o link de confirmação enviado para o seu e-mail (confira também o spam). O link abre o Anamnesia já na sua conta.");
       } catch(err){ busy(root, false); showMsg(root, err.message, true); }
     };
     bFg.onclick = async () => {
@@ -2445,6 +2458,19 @@ async function afterLogin(){
 /* retorno do link "esqueci a senha de login" (Supabase envia #access_token=…&type=recovery) */
 async function handleRecoveryLink(){
   const h = new URLSearchParams(location.hash.replace(/^#/, ""));
+  if (h.get("error_description")){ history.replaceState(null, "", location.pathname + location.search); toast("Link inválido ou expirado. Entre ou peça um novo."); return false; }
+  // confirmação do cadastro: entra direto e pede a senha de criptografia
+  if (["signup", "email", "invite", "magiclink"].includes(h.get("type")) && h.get("access_token")){
+    history.replaceState(null, "", location.pathname + location.search);
+    try {
+      const user = await api("/auth/v1/user", { token: h.get("access_token") });
+      setSession({ access_token: h.get("access_token"), refresh_token: h.get("refresh_token"), expires_in: Number(h.get("expires_in")) || 3600, user });
+      menuAfterUnlock = true;
+      toast("E-mail confirmado");
+      await afterLogin();
+      return true;
+    } catch(e){ toast("Não foi possível confirmar o e-mail: " + e.message); return false; }
+  }
   if (h.get("type") !== "recovery" || !h.get("access_token")) return false;
   history.replaceState(null, "", location.pathname + location.search);
   try {

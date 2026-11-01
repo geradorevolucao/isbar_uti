@@ -133,6 +133,9 @@ begin
   return null;
 end;
 $$;
+-- função de gatilho: não precisa (nem deve) ser chamada pela API
+revoke all on function public.shares_cleanup() from public, anon, authenticated;
+revoke all on function public.records_guard() from public, anon, authenticated;
 drop trigger if exists shares_cleanup on public.shares;
 create trigger shares_cleanup
   after insert on public.shares
