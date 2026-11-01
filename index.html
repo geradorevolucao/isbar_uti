@@ -643,7 +643,8 @@ const CTI_PROB_SUBS = [["apr","Apresentação"],["etio","Etiologia"],["prop","Pr
 /* estrutura montada pelo autor no editor (23/10/2026) */
 const CTI = [
  { id: "I", title: "IDENTIFICAÇÃO", groups: [ { rows: [
-   [F("nome","Nome","text",{w:"l"}), F("idade","Idade","num",{w:"s",u:"anos"}), F("leito","Leito","text",{w:"s"}), F("sexo","Sexo","radio",{opts:["M","F"],optl:{M:"Masculino",F:"Feminino"}})],
+   [F("nome","Nome","text",{w:"l"}), F("idade","Idade","num",{w:"s",u:"anos"}), F("sexo","Sexo","radio",{opts:["M","F"],optl:{M:"Masculino",F:"Feminino"}})],
+   [F("leito","Leito","radio",{w:"full",opts:["1","2","3","4","5","6","7","8","9","10"]})],
    [F("peso","Peso","num",{w:"s",u:"kg"}), F("altura","Altura","num",{w:"s",u:"cm"}), F("pp","Peso predito","calc",{w:"s",u:"kg",fn:"pp"}), F("adm_hosp","Admissão SCBH","date"), F("adm_cti","Admissão CTI","date"), F("dcti","Dias","num")]
  ]}]},
  { id: "S", title: "SITUAÇÃO", groups: [
