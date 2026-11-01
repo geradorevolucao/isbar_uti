@@ -643,13 +643,8 @@ const CTI_PROB_SUBS = [["apr","Apresentação"],["etio","Etiologia"],["prop","Pr
 /* estrutura montada pelo autor no editor (23/10/2026) */
 const CTI = [
  { id: "I", title: "IDENTIFICAÇÃO", groups: [ { rows: [
-   [F("data_aval","Data da avaliação","date")],
-   [F("nome","Nome","text",{w:"l"}), F("idade","Idade","num",{u:"anos"}), F("sexo","Sexo","radio",{opts:["M","F"]}), F("leito","Leito","text",{w:"xs"})],
-   [F("peso","Peso","num",{w:"s",u:"kg"}), F("altura","Altura","num",{w:"s",u:"cm"}), F("pp","Peso predito","calc",{w:"s",u:"kg",fn:"pp"})],
-   [F("adm_hosp","Admissão hospitalar","date"), F("adm_cti","Admissão no CTI","date"), F("dcti","D de CTI","num",{tl:"D de CTI"})],
-   [F("proc","Procedência","radio",{opts:["PS","Enfermaria","Bloco","Outro serviço"]}), F("proc_outro","Outro serviço (qual)","text",{w:"m"})],
-   [F("isolamento","Isolamento","text",{w:"m"})],
-   [F("diretivas","Diretivas/limitação terapêutica","text",{w:"full"})]
+   [F("nome","Nome","text",{w:"l"}), F("idade","Idade","num",{u:"anos"}), F("sexo","Sexo","radio",{opts:["M","F"]}), F("leito","Leito","text",{w:"xs"}), F("data_aval","Data da avaliação","date")],
+   [F("peso","Peso","num",{w:"s",u:"kg"}), F("altura","Altura","num",{w:"s",u:"cm"}), F("pp","Peso predito","calc",{w:"s",u:"kg",fn:"pp"}), F("adm_hosp","Admissão hospitalar","date"), F("adm_cti","Admissão no CTI","date"), F("dcti","D de CTI","num",{tl:"D de CTI"})]
  ]}]},
  { id: "S", title: "SITUAÇÃO", groups: [
   { title: "Lista de problemas ativos", rows: [
