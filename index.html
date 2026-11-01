@@ -643,15 +643,15 @@ const CTI_PROB_SUBS = [["apr","Apresentação"],["etio","Etiologia"],["prop","Pr
 /* estrutura montada pelo autor no editor (23/10/2026) */
 const CTI = [
  { id: "I", title: "IDENTIFICAÇÃO", groups: [ { rows: [
-   [F("nome","Nome","text",{w:"l"}), F("idade","Idade","num",{u:"anos"}), F("sexo","Sexo","radio",{opts:["M","F"]}), F("leito","Leito","text",{w:"xs"}), F("data_aval","Data da avaliação","date")],
-   [F("peso","Peso","num",{w:"s",u:"kg"}), F("altura","Altura","num",{w:"s",u:"cm"}), F("pp","Peso predito","calc",{w:"s",u:"kg",fn:"pp"}), F("adm_hosp","Admissão hospitalar","date"), F("adm_cti","Admissão no CTI","date"), F("dcti","D de CTI","num",{tl:"D de CTI"})]
+   [F("nome","Nome","text",{w:"l"}), F("idade","Idade","num",{w:"s",u:"anos"}), F("leito","Leito","text",{w:"s"}), F("sexo","Sexo","radio",{opts:["M","F"],optl:{M:"Masculino",F:"Feminino"}})],
+   [F("peso","Peso","num",{w:"s",u:"kg"}), F("altura","Altura","num",{w:"s",u:"cm"}), F("pp","Peso predito","calc",{w:"s",u:"kg",fn:"pp"}), F("adm_hosp","Admissão SCBH","date"), F("adm_cti","Admissão CTI","date"), F("dcti","Dias","num")]
  ]}]},
  { id: "S", title: "SITUAÇÃO", groups: [
   { title: "Lista de problemas ativos", rows: [
    [F("prob","Problemas","problems",{n:12,subs:CTI_PROB_SUBS,item:"Problema",tl:""})],
    [F("motivo","Contexto","area",{rows:5})],
-   [F("intercorr","Intercorrências nas últimas 24 h","area")],
-   [F("atb","Antimicrobiano(s)","text",{w:"m"}), F("atb_d","D","num",{tl:"D do antimicrobiano"}), F("atb_de","de (dias)","num",{tl:"Duração prevista (dias)"})]
+   [F("atb","Antimicrobianos em uso","text",{w:"l"}), F("atb_d1","D1","date")],
+   [F("atb_prev","Antimicrobianos prévios","text",{w:"l"}), F("atb_prev_ini","Início","date"), F("atb_prev_fim","Término","date")]
   ]},
   { title: "Evolução da internação", rows: [
    [F("evint","Registros por dia","diary",{n:40,tl:""})]
@@ -1206,7 +1206,7 @@ function renderField(f){
       f.opts.forEach(o => {
         opts.append(el("label", { class: "opt" },
           el("input", { type: f.t === "radio" ? "radio" : "checkbox", name: f.k, value: o, "data-k": f.k, "data-multi": f.t === "check" ? "1" : null, "data-def": f.def || null }),
-          el("span", { text: o })));
+          el("span", { text: (f.optl && f.optl[o]) || o })));
       });
       fs.append(opts);
       return fs;
@@ -1439,6 +1439,7 @@ function valueText(f, d){
     case "calc": { const v = CALC[f.fn](d); return v ? v + u : ""; }
     case "date": return d[f.k] ? brDate(d[f.k]) : "";
     case "check": return Array.isArray(d[f.k]) && d[f.k].length ? d[f.k].join(", ") : "";
+    case "radio": return d[f.k] != null && d[f.k] !== "" ? String((f.optl && f.optl[d[f.k]]) || d[f.k]).trim() : "";
     case "pair": { const [a,b] = f.keys; if (!d[a] && !d[b]) return ""; return (d[a] || "?") + f.sep + (d[b] || "?") + u; }
     case "gcs": {
       if (!["gcs_o","gcs_v","gcs_m"].some(k => d[k])) return "";
@@ -1449,6 +1450,11 @@ function valueText(f, d){
   }
 }
 
+// data da evolução: a do campo, se o modelo tiver; sem o campo (CTI), a de hoje
+function dataRef(d){
+  let tem = false; eachField(modelOf(TPL[store.mode], d), f => { if (f.k === "data_aval") tem = true; });
+  return tem ? (d.data_aval || "") : todayISO();
+}
 function buildText(){
   const t = TPL[store.mode];
   const d = D();
@@ -1456,7 +1462,7 @@ function buildText(){
   const out = [];
   const head = [t.textTitle];
   if (d.leito) head.push("Leito " + d.leito);
-  if (d.data_aval) head.push(brDate(d.data_aval));
+  const dr = dataRef(d); if (dr) head.push(brDate(dr));
   out.push(head.join(" | "));
 
   modelOf(t, d).forEach(sec => {
@@ -2727,7 +2733,7 @@ const codeKey = code => deriveKey(code, b64(te.encode("anamnesia-share-key")), 1
 function shareSubject(){
   const p = cur(), d = p ? p.data : {};
   const what = store.mode === "enf" ? enfMom(d) + " – Clínica Médica" : TPL[store.mode].title;
-  return [what, d.leito ? "Leito " + d.leito : "", brDate(d.data_aval || todayISO())].filter(Boolean).join(" – ");
+  return [what, d.leito ? "Leito " + d.leito : "", brDate(dataRef(d) || todayISO())].filter(Boolean).join(" – ");
 }
 async function sendMail(web){
   const to = $("#mailTo").value.trim(), txt = $("#out").value;
