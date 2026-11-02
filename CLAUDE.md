@@ -94,8 +94,8 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 ## Situação da publicação
 - **HTTPS:** o site abre em `https://anamnesia.net.br`, necessário para a conta funcionar.
 - **Supabase:** projeto criado, `supabase-setup.sql` executado e sincronização testada pelo autor entre celular e PC.
-- **Cadastros:** estavam desativados ("Allow new users to sign up" desligado). Em 01/11/2026 o autor pediu para abrir; a ativação, o SMTP próprio e as URLs são feitos por ele no painel do Supabase.
-- **Funções de gatilho** (`shares_cleanup`, `records_guard`): sem permissão de execução pela API (`revoke … from public, anon, authenticated` no `supabase-setup.sql`); os gatilhos continuam funcionando (testado no PostgreSQL local). `get_share` continua aberta para `anon` de propósito (abrir texto por código sem login).
+- **Cadastros abertos** (02/11/2026): "Allow new users to sign up" ligado, "Confirm email" mantido, Site URL e Redirect URLs = `https://anamnesia.net.br`. E-mails pelo **Resend** (SMTP próprio: `smtp.resend.com`, porta 465, usuário `resend`, remetente `no-reply@anamnesia.net.br`; domínio verificado com DKIM `resend._domainkey`, CNAMEs `send` e `rsend`). A chave do Resend (só envio) fica só no painel do Supabase, nunca no repositório. Cadastro e e-mail de confirmação testados pelo autor.
+- **Funções de gatilho** (`shares_cleanup`, `records_guard`): sem permissão de execução pela API (`revoke … from public, anon, authenticated` no `supabase-setup.sql`); os gatilhos continuam funcionando (testado no PostgreSQL local; `revoke` aplicado em produção em 02/11/2026). `get_share` continua aberta para `anon` de propósito (abrir texto por código sem login).
 
 ## Decisões do autor
 - Fotos do encaminhamento (exames de laboratório e imagem): a extração é feita pelo chat com o Claude, não dentro do site.
