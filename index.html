@@ -201,10 +201,10 @@ body[data-view="list"] header.top,body[data-view="rx"] header.top{padding-bottom
 .h-card{display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;padding:28px 30px 26px 36px;min-height:clamp(130px,24vh,220px);border:1px solid var(--line);border-left:0;border-radius:var(--radius);background:var(--card);color:var(--ink);cursor:pointer;font:inherit;box-shadow:inset 8px 0 0 var(--accent)}
 @media (max-width:600px){.h-card{padding:20px 20px 18px 28px;min-height:120px}}
 .h-card:hover{background:var(--band)}
+.h-card:focus:not(:focus-visible){outline:none}
 .h-card-t{font-weight:700;font-size:clamp(1.2rem,2.2vw,1.6rem);color:var(--accent)}
 .h-card-s{font-size:clamp(.95rem,1.4vw,1.08rem);color:var(--muted)}
 .h-card-n{margin-top:auto;font-size:.95rem;color:var(--muted)}
-.h-card.h-wide-card{grid-column:1/-1;position:relative;min-height:0}
 body[data-view="ck"] .bottom{display:none}
 .ck-alert{position:absolute;top:-9px;right:-9px;min-width:28px;height:28px;padding:0 8px;border-radius:999px;background:#C62828;color:#fff;font:700 .9rem/28px Verdana,sans-serif;text-align:center;box-shadow:0 0 0 3px var(--bg)}
 .ck-alert[hidden]{display:none}
@@ -459,7 +459,6 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <h2 class="h-step-t">O que você quer abrir?</h2>
     <p class="h-sub" id="homeWho"></p>
     <div class="h-menu" role="group" aria-label="Módulos">
-      <button class="h-card h-wide-card" type="button" data-hm="ck"><span class="h-card-t">Checklist do CTI</span><span class="h-card-s">Evolução, prescrição, exames, condutas e pendências de cada leito</span><span class="h-card-n" id="hmCkN"></span><span class="ck-alert" id="hmCkAlert" hidden></span></button>
       <button class="h-card" type="button" data-hm="cti"><span class="h-card-t">Evolução CTI</span><span class="h-card-s">ISBAR</span><span class="h-card-n" data-hm-n="cti"></span></button>
       <button class="h-card" type="button" data-hm="enf"><span class="h-card-t">Evolução enfermaria</span><span class="h-card-s">Clínica médica</span><span class="h-card-n" data-hm-n="enf"></span></button>
       <button class="h-card" type="button" data-hm="nota"><span class="h-card-t">Notas</span><span class="h-card-s">Bloco de notas por paciente</span><span class="h-card-n" data-hm-n="nota"></span></button>
@@ -1201,6 +1200,7 @@ function changed(id){
   const p = store.patients[pid];
   if (p){ p.updated = Date.now(); markDirty(pid); }
   saveSoon();
+  widgetSync();
 }
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 const cur = () => store.patients[store.currentBy[store.mode]];
@@ -1877,6 +1877,7 @@ function buildText(){
 }
 
 async function copyText(txt){
+  if (APP && APP.copy){ try { APP.copy(String(txt)); return true; } catch(e){} }
   try { await navigator.clipboard.writeText(txt); return true; }
   catch(e){
     const ta = $("#out"); ta.focus(); ta.select();
@@ -1885,6 +1886,7 @@ async function copyText(txt){
 }
 
 function download(name, content, type){
+  if (APP && APP.saveFile){ try { APP.saveFile(name, String(content), type || "application/octet-stream"); return; } catch(e){} }
   const blob = new Blob([content], { type });
   const a = el("a", { href: URL.createObjectURL(blob), download: name });
   document.body.append(a); a.click();
@@ -2260,6 +2262,8 @@ async function completeUnlock(key, remember){
   bootUI();
   if (s) syncNow(false);
   setInterval(() => { if (document.visibilityState === "visible") syncNow(false); }, 60000);
+  widgetSync(true);
+  if (runPendingOpen()){ menuAfterUnlock = false; return; }
   if (menuAfterUnlock){ menuAfterUnlock = false; showMenu(); }
 }
 
@@ -2730,6 +2734,76 @@ function renderCk(){
   box.replaceChildren(...kids);
 }
 
+/* ---------------- app Android: widget do checklist ----------------
+   Pedido do autor (03/11/2026): widget na tela inicial do celular com os leitos 1 a 10 e o número de
+   itens não marcados em vermelho. Só existe dentro do app Android (pasta android/), que abre este site
+   num WebView e expõe window.AnamnesiaApp. O widget recebe só leito, iniciais e contagens
+   (escolha do autor: leito e iniciais, para expor pouco na tela inicial), nunca o prontuário.
+   Os itens fixos são contados por plantão: o widget zera sozinho na troca (7h/19h) mesmo sem abrir o app. */
+const APP = window.AnamnesiaApp || null;
+function iniciais(nome){
+  const w = String(nome || "").trim().split(/\s+/).filter(x => x && !/^(d[aeo]s?|e)$/i.test(x));
+  if (!w.length) return "";
+  const l = [w[0], w.length > 1 ? w[w.length - 1] : ""].filter(Boolean).map(x => x[0].toUpperCase() + ".");
+  return l.join(" ");
+}
+function widgetSummary(){
+  if (locked()) return { v: 1, estado: "bloqueado" };
+  const pts = ctiPatients(), beds = [];
+  const resumo = (id, p, leito) => {
+    const it = ckItems(p);
+    return { leito, id, ini: iniciais(p.data.nome), fix: it.filter(x => x.key.startsWith("f:") && !x.done).length,
+             adic: it.filter(x => x.key.startsWith("a:") && !x.done).length };
+  };
+  CK_LEITOS.forEach(b => {
+    const here = pts.filter(([, p]) => String(p.data.leito || "").trim() === b).sort((x, y) => (y[1].updated || 0) - (x[1].updated || 0));
+    if (!here.length) beds.push({ leito: b });
+    else here.forEach(([id, p]) => beds.push(resumo(id, p, b)));
+  });
+  pts.filter(([, p]) => !CK_LEITOS.includes(String(p.data.leito || "").trim()))
+     .forEach(([id, p]) => beds.push(resumo(id, p, String(p.data.leito || "").trim())));
+  return { v: 1, estado: "ok", plantao: ckShift(), fixos: CK_FIXOS.length, beds };
+}
+let widgetTimer = null;
+function widgetSync(now){
+  if (!APP || !APP.updateWidget) return;
+  clearTimeout(widgetTimer);
+  const go = () => { try { APP.updateWidget(JSON.stringify(widgetSummary())); } catch(e){} };
+  if (now) go(); else widgetTimer = setTimeout(go, 800);
+}
+// pedido vindo do widget (?abrir=ck&pt=ID ao abrir o app, ou anamnesiaOpen() com o app já aberto)
+let pendingOpen = null;
+(() => {
+  const q = new URLSearchParams(location.search);
+  if (q.get("abrir") === "ck") pendingOpen = { pt: q.get("pt") || "" };
+  if (q.has("abrir")) history.replaceState(null, "", location.pathname + location.hash);
+})();
+function runPendingOpen(){
+  if (!pendingOpen || locked() || !booted) return false;
+  const pt = pendingOpen.pt; pendingOpen = null;
+  hideHome(); setView("ck");
+  const card = pt && document.querySelector(`#ck .ck-pt[data-id="${CSS.escape(pt)}"]`);
+  if (card) setTimeout(() => card.scrollIntoView({ block: "start", behavior: "smooth" }), 400);
+  return true;
+}
+window.anamnesiaOpen = (what, pt) => { if (what === "ck"){ pendingOpen = { pt: pt || "" }; runPendingOpen(); } };
+// botão "voltar" do Android: fecha janelas e volta uma tela; devolve false quando não há para onde voltar
+window.anamnesiaBack = () => {
+  const d = document.querySelector("dialog[open]"); if (d){ d.close(); return true; }
+  if ($("#menu").open){ $("#menu").open = false; return true; }
+  if (!home.classList.contains("hide")){
+    if (home.dataset.step === "login"){ homeStep("welcome"); return true; }
+    return false;
+  }
+  if (locked()) return false;
+  if (view === "chart" || view === "rx"){ saveNow(); setView(backTo); return true; }
+  showMenu(); return true;
+};
+if (APP){
+  if (APP.print) window.print = () => { window.dispatchEvent(new Event("beforeprint")); APP.print(); };
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") widgetSync(true); });
+}
+
 /* ---------------- adicionar / editar paciente ---------------- */
 let editingId = null;
 function openPtDialog(id){
@@ -3165,6 +3239,7 @@ function cleanPresc(x){
 /* chamada quando a sincronização traz mudanças de outro aparelho */
 function onRemoteChange(changedCurrent){
   ensureCurrent(); refreshSelect();
+  widgetSync();
   if (view === "list"){ renderList(); return; }
   if (view === "ck"){ renderCk(); return; }
   if (!changedCurrent) return;
@@ -3828,10 +3903,7 @@ function homeStep(step){
     const all = Object.values(store.patients || {}), n = { all: all.length, cti: 0, enf: 0, nota: 0 };
     all.forEach(p => { if (n[p.tpl] != null) n[p.tpl]++; });
     document.querySelectorAll("[data-hm-n]").forEach(x => { const c = n[x.dataset.hmN]; x.textContent = c === 1 ? "1 paciente" : c + " pacientes"; });
-    const tot = ckTotal();
-    $("#hmCkN").textContent = tot ? (tot === 1 ? "1 item pendente" : tot + " itens pendentes") : (n.cti ? "Tudo marcado" : "Nenhum paciente no CTI");
-    $("#hmCkAlert").textContent = String(tot); $("#hmCkAlert").hidden = !tot;
-    setTimeout(() => $(".h-card").focus({ preventScroll: true }), 50);
+    if (matchMedia("(pointer: fine)").matches) setTimeout(() => $(".h-card").focus({ preventScroll: true }), 50);
   }
 }
 function hideHome(){
@@ -3862,7 +3934,6 @@ $("#homeAcct").addEventListener("click", openAccountEntry);
 $("#homeCode2").addEventListener("click", openCodeDlg);
 $("#homeMenuStep").addEventListener("click", e => {
   const b = e.target.closest("[data-hm]"); if (!b) return;
-  if (b.dataset.hm === "ck"){ hideHome(); setView("ck"); return; }
   listFilter = b.dataset.hm; listQuery = ""; $("#search").value = "";
   hideHome(); setView("list");
 });
@@ -3898,10 +3969,13 @@ document.addEventListener("visibilitychange", () => {
       catch(e){ cryptoKey = null; }
     }
     if (!recovering) showLock();
+    widgetSync(true);   // widget mostra "abra o app para desbloquear"
     return;
   }
   loadStore();
   bootUI();
+  widgetSync(true);
+  runPendingOpen();
 })();
 })();
 </script>

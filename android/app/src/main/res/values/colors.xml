@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_bg">#7A2E3B</color>
+    <color name="w_bg">#F2F7F7F8</color>
+    <color name="w_ink">#1B2631</color>
+    <color name="w_muted">#5B6B7A</color>
+    <color name="w_line">#DDE2E7</color>
+    <color name="w_accent">#7A2E3B</color>
+    <color name="w_alert">#C62828</color>
+    <color name="app_bg">#FFFFFF</color>
+</resources>
