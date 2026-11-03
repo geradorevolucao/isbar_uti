@@ -204,6 +204,10 @@ body[data-view="list"] header.top,body[data-view="rx"] header.top{padding-bottom
 .h-card-t{font-weight:700;font-size:clamp(1.2rem,2.2vw,1.6rem);color:var(--accent)}
 .h-card-s{font-size:clamp(.95rem,1.4vw,1.08rem);color:var(--muted)}
 .h-card-n{margin-top:auto;font-size:.95rem;color:var(--muted)}
+.h-card.h-wide-card{grid-column:1/-1;position:relative;min-height:0}
+body[data-view="ck"] .bottom{display:none}
+.ck-alert{position:absolute;top:-9px;right:-9px;min-width:28px;height:28px;padding:0 8px;border-radius:999px;background:#C62828;color:#fff;font:700 .9rem/28px Verdana,sans-serif;text-align:center;box-shadow:0 0 0 3px var(--bg)}
+.ck-alert[hidden]{display:none}
 .h-links{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 24px;margin-top:28px}
 .rxp .hint{margin-top:0}
 .rxp-cat h4{margin:14px 0 6px;font-size:.85rem;color:var(--accent);text-transform:uppercase;letter-spacing:.03em}
@@ -257,6 +261,36 @@ body[data-view="list"] header.top,body[data-view="rx"] header.top{padding-bottom
 .rp-sign .ln{border-top:1px solid #000;margin-bottom:4px}
 .rp-foot{font-size:8.5px;color:#555;margin-top:14px}
 .wm{position:fixed;top:48%;left:50%;transform:translate(-50%,-50%) rotate(-32deg);font-size:58px;font-weight:800;color:rgba(179,38,30,.12);white-space:nowrap;z-index:0;pointer-events:none;letter-spacing:.04em}
+
+/* ---------- checklist do CTI (inspirado no widget de lembretes do autor) ---------- */
+#ck{max-width:760px;margin:0 auto}
+.ck-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:4px 2px 14px}
+.ck-top h2{margin:0;font-size:1.35rem;color:var(--ink)}
+.ck-top .sub{color:var(--muted);font-size:.9rem}
+.ck-pt{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px 6px;margin:0 0 18px}
+.ck-pt.vago{padding-bottom:14px;background:transparent;border-style:dashed}
+.ck-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:0 34px 4px 0;background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.ck-pt.vago .ck-h{cursor:default}
+.ck-bed{font-weight:700;color:var(--accent)}
+.ck-name{font-weight:700;color:var(--ink)}
+.ck-d{color:var(--muted);font-size:.85rem}
+.ck-pt.vago .ck-bed,.ck-pt.vago .ck-name{color:var(--muted);font-weight:400}
+.ck-pt .ck-alert{top:-10px;right:-10px}
+.ck-list{list-style:none;margin:0;padding:0}
+.ck-it{display:flex;align-items:flex-start;gap:14px;padding:12px 0 0}
+.ck-it .ck-tx{flex:1;min-width:0;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.ck-it:last-child .ck-tx{border-bottom:0}
+.ck-box{flex:0 0 auto;width:26px;height:26px;margin-top:1px;border:2px solid var(--muted);border-radius:50%;background:transparent;display:grid;place-items:center;cursor:pointer;padding:0;color:#fff}
+.ck-box svg{width:14px;height:14px;visibility:hidden}
+.ck-it.done .ck-box{background:var(--accent);border-color:var(--accent)}
+.ck-it.done .ck-box svg{visibility:visible}
+.ck-row{display:flex;align-items:baseline;gap:10px}
+.ck-t{flex:1;min-width:0;font-weight:600;font-size:1.02rem;color:var(--ink);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;cursor:pointer}
+.ck-kind{flex:0 0 auto;font-size:.8rem;color:var(--accent)}
+.ck-subs{margin:4px 0 0;padding:0;list-style:none;font-size:.85rem;color:var(--muted)}
+.ck-subs li::before{content:"– "}
+.ck-it.done .ck-t,.ck-it.done .ck-subs{color:var(--muted);text-decoration:line-through}
+.ck-sec{margin:22px 2px 8px;font-size:.9rem;color:var(--muted)}
 
 /* ---------- tela inicial ---------- */
 .home{position:fixed;inset:0;z-index:60;background:var(--bg);display:grid;place-items:center;padding:24px 16px calc(24px + env(safe-area-inset-bottom));transition:opacity .35s ease, visibility .35s}
@@ -424,6 +458,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <h2 class="h-step-t">O que você quer abrir?</h2>
     <p class="h-sub" id="homeWho"></p>
     <div class="h-menu" role="group" aria-label="Módulos">
+      <button class="h-card h-wide-card" type="button" data-hm="ck"><span class="h-card-t">Checklist do CTI</span><span class="h-card-s">Evolução, prescrição, exames, condutas e pendências de cada leito</span><span class="h-card-n" id="hmCkN"></span><span class="ck-alert" id="hmCkAlert" hidden></span></button>
       <button class="h-card" type="button" data-hm="cti"><span class="h-card-t">Evolução CTI</span><span class="h-card-s">ISBAR</span><span class="h-card-n" data-hm-n="cti"></span></button>
       <button class="h-card" type="button" data-hm="enf"><span class="h-card-t">Evolução enfermaria</span><span class="h-card-s">Clínica médica</span><span class="h-card-n" data-hm-n="enf"></span></button>
       <button class="h-card" type="button" data-hm="nota"><span class="h-card-t">Notas</span><span class="h-card-s">Bloco de notas por paciente</span><span class="h-card-n" data-hm-n="nota"></span></button>
@@ -447,7 +482,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <button type="button" class="syncst" id="syncStatus" aria-live="polite"></button>
   </div>
   <div class="pt-row">
-    <button class="btn back" id="btnBack" type="button" data-views="chart rx">← Pacientes</button>
+    <button class="btn back" id="btnBack" type="button" data-views="chart rx ck">← Pacientes</button>
     <div class="search" data-views="list"><input id="search" type="search" placeholder="Buscar por nome ou leito" aria-label="Buscar paciente" autocomplete="off"></div>
     <div class="ptname" id="ptName" data-views="chart rx"></div>
     <select id="ptSelect" hidden aria-hidden="true" tabindex="-1"></select>
@@ -455,7 +490,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <details class="menu" id="menu">
       <summary class="btn" role="button" aria-label="Mais opções">⋯</summary>
       <div class="menu-list">
-        <button type="button" data-act="account" data-views="list chart rx">Conta e sincronização</button>
+        <button type="button" data-act="account" data-views="list chart rx ck">Conta e sincronização</button>
         <button type="button" data-act="opencode" data-views="list">Abrir texto por código</button>
         <button type="button" data-act="edit" data-views="chart rx">Editar dados do paciente</button>
         <button type="button" data-act="newday" hidden></button>
@@ -490,6 +525,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   </section>
   <div id="form" data-views="chart"></div>
   <div id="rx" data-views="rx"></div>
+  <section id="ck" data-views="ck" aria-label="Checklist do CTI"></section>
 </main>
 <div id="rxPrint"></div>
 <datalist id="rxFreqList"></datalist>
@@ -2491,7 +2527,7 @@ async function handleRecoveryLink(){
 /* =====================================================================
    TELAS: LISTA DE PACIENTES · PRONTUÁRIO · PRESCRIÇÃO
    ===================================================================== */
-let view = "list", listFilter = "all", listQuery = "";
+let view = "list", listFilter = "all", listQuery = "", backTo = "list";
 const TPL_LABEL = { cti: "CTI", enf: "Enfermaria", nota: "Notas" };
 
 function isBlankPatient(p){
@@ -2505,17 +2541,24 @@ function cleanupBlankPatients(){
 }
 
 function setView(v){
-  if (v !== "list" && !cur()) v = "list";
+  if (v !== "list" && v !== "ck" && !cur()) v = "list";
+  if (v === "list" || v === "ck") backTo = v;
   view = v;
   document.body.dataset.view = v;
   $("#menu").open = false;
   document.querySelectorAll("[data-views]").forEach(x => x.hidden = !x.dataset.views.split(" ").includes(v));
   document.querySelectorAll("#vtabs button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.go === v)));
   menuState();
+  $("#btnBack").textContent = backTo === "ck" ? "← Checklist" : "← Pacientes";
+  $("#btnBack").hidden = v === "ck" || !$("#btnBack").dataset.views.split(" ").includes(v);
   if (v === "list"){
     $("#vtitle").textContent = "Meus pacientes";
     document.title = "Anamnesia · Pacientes";
     renderList();
+  } else if (v === "ck"){
+    $("#vtitle").textContent = "Checklist do CTI";
+    document.title = "Anamnesia · Checklist";
+    renderCk();
   } else {
     const p = cur();
     $("#vtitle").textContent = TPL[p.tpl].title;
@@ -2581,6 +2624,94 @@ function renderList(){
         el("button", { class: "btn", type: "button", "data-open": "rx", text: "Prescrição" }),
         el("button", { class: "btn icon", type: "button", "data-open": "edit", "aria-label": "Editar dados do paciente", title: "Editar", text: "✎" })));
   }));
+}
+
+/* ---------------- checklist do CTI ----------------
+   Pedido do autor (03/11/2026): os 10 leitos do CTI em ordem (1 → 10), cada paciente com
+   - itens fixos do dia: Evolução, Prescrição, Solicitação de exames (voltam desmarcados na virada do dia);
+   - itens adicionais: cada conduta (cdl) e cada pendência (pend) escrita no R do ISBAR.
+   Alerta vermelho no canto superior direito com o número de itens ainda não marcados
+   (em cada paciente e, com o total, no cartão do menu).
+   Estado em data.ck = { d: dia dos fixos, f: { evol, presc, exam }, a: { chave: texto marcado } }.
+   Um item adicional conta como feito enquanto o texto for o mesmo de quando foi marcado. */
+const CK_FIXOS = [["evol","Evolução"],["presc","Prescrição"],["exam","Solicitação de exames"]];
+const CK_LEITOS = Array.from({ length: 10 }, (_, i) => String(i + 1));
+function ckState(p){
+  const c = p.data.ck && typeof p.data.ck === "object" ? p.data.ck : {};
+  return { d: c.d || "", f: c.d === todayISO() && c.f ? c.f : {}, a: c.a && typeof c.a === "object" ? c.a : {} };
+}
+function ckItems(p){
+  const d = p.data || {}, st = ckState(p), out = [];
+  CK_FIXOS.forEach(([k, l]) => out.push({ key: "f:" + k, t: l, subs: [], kind: "", done: !!st.f[k] }));
+  [["cdl", "Conduta"], ["pend", "Pendência"]].forEach(([fk, kind]) => {
+    for (let i = 1; i <= 20; i++){
+      let t = String(d[`${fk}_${i}`] || "").trim();
+      const subs = Array.from({ length: 8 }, (_, j) => String(d[`${fk}_${i}_${j + 1}`] || "").trim()).filter(Boolean);
+      if (!t && !subs.length) continue;
+      if (!t) t = subs.shift();
+      const sig = [t, ...subs].join("\n"), key = `${fk}_${i}`;
+      out.push({ key: "a:" + key, t, subs, kind, sig, done: st.a[key] === sig });
+    }
+  });
+  return out;
+}
+const ckPend = p => ckItems(p).filter(x => !x.done).length;
+const ctiPatients = () => Object.entries(store.patients).filter(([, p]) => p.tpl === "cti");
+function ckTotal(){ return ctiPatients().reduce((n, [, p]) => n + ckPend(p), 0); }
+function ckToggle(id, key){
+  const p = store.patients[id]; if (!p) return;
+  const st = ckState(p), it = ckItems(p).find(x => x.key === key); if (!it) return;
+  const c = { d: todayISO(), f: { ...st.f }, a: { ...st.a } };
+  if (key.startsWith("f:")){ const k = key.slice(2); if (it.done) delete c.f[k]; else c.f[k] = 1; }
+  else { const k = key.slice(2); if (it.done) delete c.a[k]; else c.a[k] = it.sig; }
+  // limpa marcações de condutas/pendências que já saíram do prontuário
+  const vivos = new Set(ckItems(p).filter(x => x.key.startsWith("a:")).map(x => x.key.slice(2)));
+  Object.keys(c.a).forEach(k => { if (!vivos.has(k)) delete c.a[k]; });
+  p.data.ck = c;
+  changed(id);
+  renderCk();
+}
+function ckAlert(n){ return el("span", { class: "ck-alert", hidden: !n, "aria-label": `${n} pendente${n === 1 ? "" : "s"}`, text: String(n) }); }
+const CK_TICK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function ckPatientCard(id, p, bedLabel){
+  const d = p.data || {}, items = ckItems(p), n = items.filter(x => !x.done).length, dd = CALC.dcti(d);
+  return el("article", { class: "ck-pt", "data-id": id },
+    ckAlert(n),
+    el("button", { class: "ck-h", type: "button", "data-ck-open": id, title: "Abrir o prontuário" },
+      el("span", { class: "ck-bed", text: bedLabel }),
+      el("span", { class: "ck-name", text: d.nome || "Paciente sem nome" }),
+      dd ? el("span", { class: "ck-d", text: "D" + dd + " de CTI" }) : null),
+    el("ul", { class: "ck-list" }, ...items.map(x => {
+      const box = el("button", { class: "ck-box", type: "button", "data-ck": x.key, role: "checkbox", "aria-checked": String(x.done), "aria-label": x.t });
+      box.innerHTML = CK_TICK;
+      return el("li", { class: "ck-it" + (x.done ? " done" : "") }, box,
+        el("div", { class: "ck-tx" },
+          el("div", { class: "ck-row" }, el("span", { class: "ck-t", "data-ck": x.key, text: x.t }), x.kind ? el("span", { class: "ck-kind", text: x.kind }) : null),
+          x.subs.length ? el("ul", { class: "ck-subs" }, ...x.subs.map(s => el("li", { text: s }))) : null));
+    })));
+}
+function renderCk(){
+  const box = $("#ck"); if (!box) return;
+  const pts = ctiPatients();
+  const byBed = {};
+  pts.forEach(([id, p]) => { const b = String(p.data.leito || "").trim(); (byBed[b] = byBed[b] || []).push([id, p]); });
+  const kids = [el("div", { class: "ck-top" },
+    el("h2", { text: "Hoje" }),
+    el("span", { class: "sub", text: brDate(todayISO()) + " · " + (ckTotal() === 1 ? "1 item pendente" : ckTotal() + " itens pendentes") }))];
+  CK_LEITOS.forEach(b => {
+    const here = (byBed[b] || []).sort((x, y) => (y[1].updated || 0) - (x[1].updated || 0));
+    if (!here.length){
+      kids.push(el("article", { class: "ck-pt vago" }, el("div", { class: "ck-h" }, el("span", { class: "ck-bed", text: "Leito " + b }), el("span", { class: "ck-name", text: "vago" }))));
+      return;
+    }
+    here.forEach(([id, p]) => kids.push(ckPatientCard(id, p, "Leito " + b)));
+  });
+  const outros = pts.filter(([, p]) => !CK_LEITOS.includes(String(p.data.leito || "").trim()));
+  if (outros.length){
+    kids.push(el("p", { class: "ck-sec", text: "Pacientes do CTI sem leito de 1 a 10" }));
+    outros.forEach(([id, p]) => kids.push(ckPatientCard(id, p, p.data.leito ? "Leito " + p.data.leito : "Sem leito")));
+  }
+  box.replaceChildren(...kids);
 }
 
 /* ---------------- adicionar / editar paciente ---------------- */
@@ -3019,6 +3150,7 @@ function cleanPresc(x){
 function onRemoteChange(changedCurrent){
   ensureCurrent(); refreshSelect();
   if (view === "list"){ renderList(); return; }
+  if (view === "ck"){ renderCk(); return; }
   if (!changedCurrent) return;
   const id = store.currentBy[store.mode];
   if (!cur() || !id){ setView("list"); toast("Este paciente foi alterado em outro aparelho"); return; }
@@ -3636,8 +3768,14 @@ $("#btnTxt").addEventListener("click", () => {
 /* telas */
 $("#rxFreqList").replaceChildren(...RX_FREQ.map(v => el("option", { value: v })));
 $("#btnAdd").addEventListener("click", () => openPtDialog(null));
-$("#btnBack").addEventListener("click", () => { saveNow(); setView("list"); });
+$("#btnBack").addEventListener("click", () => { saveNow(); setView(backTo); });
 $("#vtabs").addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b && cur()) setView(b.dataset.go); });
+$("#ck").addEventListener("click", e => {
+  const t = e.target.closest("[data-ck]");
+  if (t){ ckToggle(t.closest(".ck-pt").dataset.id, t.dataset.ck); return; }
+  const o = e.target.closest("[data-ck-open]");
+  if (o){ backTo = "ck"; openPatient(o.dataset.ckOpen); }
+});
 $("#filters").addEventListener("click", e => { const b = e.target.closest("[data-filter]"); if (b){ listFilter = b.dataset.filter; renderList(); } });
 $("#search").addEventListener("input", e => { listQuery = e.target.value; renderList(); });
 $("#cards").addEventListener("click", e => {
@@ -3674,6 +3812,9 @@ function homeStep(step){
     const all = Object.values(store.patients || {}), n = { all: all.length, cti: 0, enf: 0, nota: 0 };
     all.forEach(p => { if (n[p.tpl] != null) n[p.tpl]++; });
     document.querySelectorAll("[data-hm-n]").forEach(x => { const c = n[x.dataset.hmN]; x.textContent = c === 1 ? "1 paciente" : c + " pacientes"; });
+    const tot = ckTotal();
+    $("#hmCkN").textContent = tot ? (tot === 1 ? "1 item pendente" : tot + " itens pendentes") : (n.cti ? "Tudo marcado" : "Nenhum paciente no CTI");
+    $("#hmCkAlert").textContent = String(tot); $("#hmCkAlert").hidden = !tot;
     setTimeout(() => $(".h-card").focus({ preventScroll: true }), 50);
   }
 }
@@ -3705,6 +3846,7 @@ $("#homeAcct").addEventListener("click", openAccountEntry);
 $("#homeCode2").addEventListener("click", openCodeDlg);
 $("#homeMenuStep").addEventListener("click", e => {
   const b = e.target.closest("[data-hm]"); if (!b) return;
+  if (b.dataset.hm === "ck"){ hideHome(); setView("ck"); return; }
   listFilter = b.dataset.hm; listQuery = ""; $("#search").value = "";
   hideHome(); setView("list");
 });
