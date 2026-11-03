@@ -10,6 +10,7 @@ Prontuário eletrônico pessoal ("o prontuário eletrônico que te lembra do que
 
 ## Arquitetura
 - **Um único arquivo `index.html`** (HTML + CSS + JS inline, sem dependências externas nem CDN). Precisa continuar funcionando offline e aberto direto do disco (`file://`), porque a rede do hospital bloqueia alguns sites.
+- **Instalação como aplicativo (PWA, pedido de 03/11/2026):** `manifest.webmanifest` (nome, cores, `display: standalone`), ícones PNG em `icons/` (192 e 512, 512 *maskable* e 180 para iOS, mesmo desenho do logotipo) e `sw.js` (página em rede primeiro com cópia para uso sem internet; pedidos a outros endereços, como o Supabase, passam direto). O registro do service worker só acontece em `https:` ou `localhost`; aberto do disco (`file://`) o `index.html` continua funcionando sozinho. Com isso o Chrome do Android instala como aplicativo (WebAPK), sem o selo do Chrome no ícone. Ao mudar arquivos guardados em `ASSETS`, trocar o nome do `CACHE` em `sw.js`.
 - **Publicação:** GitHub Pages (usuário `geradorevolucao`, branch `main`, pasta raiz), com domínio próprio `anamnesia.net.br`.
 - **`supabase-setup.sql`:** cria as tabelas `records` e `user_keys` com Row Level Security, e um gatilho que recusa gravações mais antigas (comparando `updated_at`) e carimba `server_ts`. Pode ser rodado de novo sem perder dados. `user_keys` só aceita leitura e criação (sem update/delete).
 
