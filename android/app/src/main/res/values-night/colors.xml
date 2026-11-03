@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="w_bg">#F21C2128</color>
+    <color name="w_ink">#E8EDF2</color>
+    <color name="w_muted">#9AA7B4</color>
+    <color name="w_line">#2E3640</color>
+    <color name="w_accent">#E09AA8</color>
+    <color name="app_bg">#12161B</color>
+</resources>
