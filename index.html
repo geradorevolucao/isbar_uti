@@ -265,7 +265,8 @@ body[data-view="ck"] .bottom{display:none}
 /* ---------- checklist do CTI (inspirado no widget de lembretes do autor) ---------- */
 #ck{max-width:760px;margin:0 auto}
 .ck-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:4px 2px 14px}
-.ck-top h2{margin:0;font-size:1.35rem;color:var(--ink)}
+.ck-top{flex-wrap:wrap}
+.ck-top h2{margin:0;font-size:1.15rem;color:var(--ink)}
 .ck-top .sub{color:var(--muted);font-size:.9rem}
 .ck-pt{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px 6px;margin:0 0 18px}
 .ck-pt.vago{padding-bottom:14px;background:transparent;border-style:dashed}
@@ -2628,17 +2629,26 @@ function renderList(){
 
 /* ---------------- checklist do CTI ----------------
    Pedido do autor (03/11/2026): os 10 leitos do CTI em ordem (1 → 10), cada paciente com
-   - itens fixos do dia: Evolução, Prescrição, Solicitação de exames (voltam desmarcados na virada do dia);
+   - itens fixos do plantão: Evolução, Prescrição, Solicitação de exames (voltam desmarcados nas trocas
+     de plantão, às 7h e às 19h; escolha do autor, 03/11/2026);
    - itens adicionais: cada conduta (cdl) e cada pendência (pend) escrita no R do ISBAR.
    Alerta vermelho no canto superior direito com o número de itens ainda não marcados
    (em cada paciente e, com o total, no cartão do menu).
-   Estado em data.ck = { d: dia dos fixos, f: { evol, presc, exam }, a: { chave: texto marcado } }.
+   Estado em data.ck = { d: plantão dos fixos, f: { evol, presc, exam }, a: { chave: texto marcado } }.
    Um item adicional conta como feito enquanto o texto for o mesmo de quando foi marcado. */
 const CK_FIXOS = [["evol","Evolução"],["presc","Prescrição"],["exam","Solicitação de exames"]];
 const CK_LEITOS = Array.from({ length: 10 }, (_, i) => String(i + 1));
+// plantão atual: diurno 7h–19h ("aaaa-mm-ddD"); noturno 19h–7h, com a data do dia em que começou ("aaaa-mm-ddN")
+function ckShift(now = new Date()){
+  const h = now.getHours(), d = new Date(now);
+  if (h < 7) d.setDate(d.getDate() - 1);
+  const iso = d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  return iso + (h >= 7 && h < 19 ? "D" : "N");
+}
+const ckShiftLabel = id => (id.endsWith("D") ? "Plantão diurno (7h–19h)" : "Plantão noturno (19h–7h)") + " · " + brDate(id.slice(0, 10));
 function ckState(p){
   const c = p.data.ck && typeof p.data.ck === "object" ? p.data.ck : {};
-  return { d: c.d || "", f: c.d === todayISO() && c.f ? c.f : {}, a: c.a && typeof c.a === "object" ? c.a : {} };
+  return { d: c.d || "", f: c.d === ckShift() && c.f ? c.f : {}, a: c.a && typeof c.a === "object" ? c.a : {} };
 }
 function ckItems(p){
   const d = p.data || {}, st = ckState(p), out = [];
@@ -2661,7 +2671,7 @@ function ckTotal(){ return ctiPatients().reduce((n, [, p]) => n + ckPend(p), 0);
 function ckToggle(id, key){
   const p = store.patients[id]; if (!p) return;
   const st = ckState(p), it = ckItems(p).find(x => x.key === key); if (!it) return;
-  const c = { d: todayISO(), f: { ...st.f }, a: { ...st.a } };
+  const c = { d: ckShift(), f: { ...st.f }, a: { ...st.a } };
   if (key.startsWith("f:")){ const k = key.slice(2); if (it.done) delete c.f[k]; else c.f[k] = 1; }
   else { const k = key.slice(2); if (it.done) delete c.a[k]; else c.a[k] = it.sig; }
   // limpa marcações de condutas/pendências que já saíram do prontuário
@@ -2690,14 +2700,20 @@ function ckPatientCard(id, p, bedLabel){
           x.subs.length ? el("ul", { class: "ck-subs" }, ...x.subs.map(s => el("li", { text: s }))) : null));
     })));
 }
+let ckShown = "";
+// com a tela aberta na troca de plantão (7h/19h), os fixos voltam desmarcados sem precisar tocar em nada
+setInterval(() => { if (view === "ck" && ckShown !== ckShift()) renderCk(); }, 30000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && view === "ck") renderCk(); });
 function renderCk(){
   const box = $("#ck"); if (!box) return;
   const pts = ctiPatients();
   const byBed = {};
   pts.forEach(([id, p]) => { const b = String(p.data.leito || "").trim(); (byBed[b] = byBed[b] || []).push([id, p]); });
+  const tot = ckTotal();
+  ckShown = ckShift();
   const kids = [el("div", { class: "ck-top" },
-    el("h2", { text: "Hoje" }),
-    el("span", { class: "sub", text: brDate(todayISO()) + " · " + (ckTotal() === 1 ? "1 item pendente" : ckTotal() + " itens pendentes") }))];
+    el("h2", { text: ckShiftLabel(ckShown) }),
+    el("span", { class: "sub", text: tot === 1 ? "1 item pendente" : tot + " itens pendentes" }))];
   CK_LEITOS.forEach(b => {
     const here = (byBed[b] || []).sort((x, y) => (y[1].updated || 0) - (x[1].updated || 0));
     if (!here.length){
