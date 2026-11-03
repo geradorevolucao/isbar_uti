@@ -71,6 +71,7 @@ details.menu .menu-list button:hover{background:var(--band)}
 .ol-sub .n{width:1rem;text-align:center;color:var(--muted);flex:0 0 auto}
 .ol-sub .inp{flex:1}
 .ol-item[hidden],.ol-sub[hidden],.ol-addsub[hidden]{display:none!important}
+.ol-delsub{height:36px;width:36px;flex:0 0 36px!important;font-size:1.2rem;line-height:1;color:var(--muted)}
 .ol-addsub{height:34px;padding:0 10px;font-size:.8rem;flex:0 0 auto;align-self:center}
 .listrow .n{width:1.6rem;text-align:right;color:var(--muted);font-weight:600;font-size:.9rem;flex:0 0 auto}
 .listrow .inp{flex:1}
@@ -1383,7 +1384,8 @@ function renderField(f){
         const subs = el("div", { class: "ol-subs" });
         for (let j = 1; j <= f.ns; j++) subs.append(el("div", { class: "ol-sub", "data-j": String(j) },
           el("span", { class: "n", text: "–" }),
-          el("div", { class: "inp" }, inputFor(`${f.k}_${i}_${j}`, { autocapitalize: "sentences", placeholder: "Subtópico", "aria-label": `${item} ${i}, subtópico ${j}` }))));
+          el("div", { class: "inp" }, inputFor(`${f.k}_${i}_${j}`, { autocapitalize: "sentences", placeholder: "Subtópico", "aria-label": `${item} ${i}, subtópico ${j}` })),
+          el("button", { class: "btn icon ol-delsub", type: "button", "data-del-sub": `${f.k}|${i}|${j}`, title: "Apagar subtópico", "aria-label": `Apagar subtópico ${j} da ${item.toLowerCase()} ${i}`, text: "×" })));
         box.append(el("div", { class: "ol-item", "data-i": String(i) },
           el("div", { class: "listrow" },
             el("span", { class: "n", text: i + "." }),
@@ -1621,7 +1623,21 @@ function onAddDiary(e){
   fillForm(); changed();
   const ta = document.getElementById(`f_${k}_${i}`); if (ta) ta.focus();
 }
+/* apagar um subtópico (pedido do autor, 03/11/2026): os seguintes sobem uma posição */
+function onDelSub(e){
+  const b = e.target.closest("[data-del-sub]"); if (!b || !cur()) return;
+  const d = cur().data, [k, i, j] = b.dataset.delSub.split("|"), jn = Number(j);
+  const box = b.closest("[data-ol]"), maxs = Number(box.dataset.maxs);
+  const key = x => `${k}_${i}_${x}`;
+  if (String(d[key(jn)] || "").trim() && !confirm("Apagar este subtópico?")) return;
+  const ss = b.closest(".ol-item").querySelectorAll(".ol-sub:not([hidden])").length;
+  for (let x = jn; x < maxs; x++){ if (d[key(x + 1)] != null) d[key(x)] = d[key(x + 1)]; else delete d[key(x)]; }
+  delete d[key(maxs)];
+  d[`${k}_${i}_n`] = String(Math.max(0, ss - 1));
+  fillForm(); changed();
+}
 function onAddOutline(e){
+  if (e.target.closest("[data-del-sub]")) return onDelSub(e);
   const p = cur(); if (!p) return;
   const bi = e.target.closest("[data-add-ol]"), bs = e.target.closest("[data-add-sub]");
   if (!bi && !bs) return;
