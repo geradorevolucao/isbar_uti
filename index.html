@@ -210,7 +210,27 @@ body[data-view="list"] header.top,body[data-view="rx"] header.top{padding-bottom
 .h-card-t{font-weight:700;font-size:clamp(1.2rem,2.2vw,1.6rem);color:var(--accent)}
 .h-card-s{font-size:clamp(.95rem,1.4vw,1.08rem);color:var(--muted)}
 .h-card-n{margin-top:auto;font-size:.95rem;color:var(--muted)}
-body[data-view="ck"] .bottom{display:none}
+body[data-view="ck"] .bottom,body[data-view="sc"] .bottom{display:none}
+#sc{max-width:900px;margin:0 auto}
+.sc-cat h3{margin:18px 2px 8px;font-size:.95rem;color:var(--muted);font-weight:600}
+.sc-chips{display:flex;flex-wrap:wrap;gap:8px}
+.sc-chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:10px 16px;font:inherit;cursor:pointer;min-height:44px}
+.sc-chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.sc-painel{margin-top:22px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;scroll-margin-top:120px}
+.sc-painel h2{margin:0;color:var(--accent);font-size:1.3rem}
+.sc-painel .sub{margin:4px 0 14px;color:var(--muted)}
+.sc-chk{flex:1 1 100%;display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--radius);cursor:pointer}
+.sc-chk input{width:22px;height:22px;flex:0 0 auto;accent-color:var(--accent)}
+.sc-chk span:nth-child(2){flex:1}
+.sc-pts{font-weight:700;color:var(--accent);white-space:nowrap}
+.sc-res{margin:16px 0 0;padding:14px 16px;border-radius:var(--radius);background:var(--band)}
+.sc-res-v{font-size:1.25rem;font-weight:700;color:var(--accent)}
+.sc-res-d{margin-top:4px;color:var(--ink);font-size:.92rem}
+.sc-res-d[hidden],#scIns[hidden],#scAlvo[hidden]{display:none}
+.sc-res-i{margin-top:6px;color:var(--ink)}
+.sc-acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.sc-acts select{flex:1 1 14rem;min-width:0;min-height:44px;border:1px solid var(--line);border-radius:var(--radius);background:var(--field);color:var(--ink);padding:0 10px;font:inherit}
+.sc-ref{margin:14px 0 0;font-size:.82rem;color:var(--muted)}
 .ck-alert{position:absolute;top:-9px;right:-9px;min-width:28px;height:28px;padding:0 8px;border-radius:999px;background:#C62828;color:#fff;font:700 .9rem/28px Verdana,sans-serif;text-align:center;box-shadow:0 0 0 3px var(--bg)}
 .ck-alert[hidden]{display:none}
 .h-links{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 24px;margin-top:28px}
@@ -467,6 +487,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <button class="h-card" type="button" data-hm="cti"><span class="h-card-t">Evolução CTI</span><span class="h-card-s">ISBAR</span><span class="h-card-n" data-hm-n="cti"></span></button>
       <button class="h-card" type="button" data-hm="enf"><span class="h-card-t">Evolução enfermaria</span><span class="h-card-s">Clínica médica</span><span class="h-card-n" data-hm-n="enf"></span></button>
       <button class="h-card" type="button" data-hm="nota"><span class="h-card-t">Notas</span><span class="h-card-s">Bloco de notas por paciente</span><span class="h-card-n" data-hm-n="nota"></span></button>
+      <button class="h-card" type="button" data-hm="sc"><span class="h-card-t">Escores e calculadoras</span><span class="h-card-s">SOFA, APACHE II, NEWS2, gasometria, Wells, CKD-EPI e outros</span><span class="h-card-n">20 calculadoras</span></button>
       <button class="h-card" type="button" data-hm="all"><span class="h-card-t">Meus pacientes</span><span class="h-card-s">Todos os prontuários</span><span class="h-card-n" data-hm-n="all"></span></button>
     </div>
     <div class="h-links">
@@ -531,6 +552,23 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <div id="form" data-views="chart"></div>
   <div id="rx" data-views="rx"></div>
   <section id="ck" data-views="ck" aria-label="Checklist do CTI"></section>
+  <section id="sc" data-views="sc" aria-label="Escores e calculadoras">
+    <div class="sc-top">
+      <div class="fld w-full"><label for="scPac">Paciente (os dados da ficha entram preenchidos)</label><div class="inp"><select id="scPac"></select></div></div>
+    </div>
+    <div id="scLista"></div>
+    <div class="sc-painel" id="scPainel" hidden>
+      <h2 id="scNome"></h2><p class="sub" id="scDesc"></p>
+      <div class="row" id="scCampos"></div>
+      <div class="sc-res" id="scRes" hidden aria-live="polite"><div class="sc-res-v" id="scResV"></div><div class="sc-res-d" id="scResD"></div><div class="sc-res-i" id="scResI"></div></div>
+      <div class="sc-acts">
+        <button class="btn" type="button" id="scCopy">Copiar resultado</button>
+        <select id="scAlvo" aria-label="Campo da ficha"></select>
+        <button class="btn primary" type="button" id="scIns">Inserir na ficha</button>
+      </div>
+      <p class="sc-ref" id="scRef"></p>
+    </div>
+  </section>
 </main>
 <div id="rxPrint"></div>
 <datalist id="rxFreqList"></datalist>
@@ -2790,7 +2828,7 @@ function cleanupBlankPatients(){
 }
 
 function setView(v){
-  if (v !== "list" && v !== "ck" && !cur()) v = "list";
+  if (v !== "list" && v !== "ck" && v !== "sc" && !cur()) v = "list";
   if (v === "list" || v === "ck") backTo = v;
   view = v;
   document.body.dataset.view = v;
@@ -2799,11 +2837,15 @@ function setView(v){
   document.querySelectorAll("#vtabs button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.go === v)));
   menuState();
   $("#btnBack").textContent = backTo === "ck" ? "← Checklist" : "← Pacientes";
-  $("#btnBack").hidden = v === "ck" || !$("#btnBack").dataset.views.split(" ").includes(v);
+  $("#btnBack").hidden = v === "ck" || v === "sc" || !$("#btnBack").dataset.views.split(" ").includes(v);
   if (v === "list"){
     $("#vtitle").textContent = "Meus pacientes";
     document.title = "Anamnesia · Pacientes";
     renderList();
+  } else if (v === "sc"){
+    $("#vtitle").textContent = "Escores e calculadoras";
+    document.title = "Anamnesia · Escores";
+    renderSc();
   } else if (v === "ck"){
     $("#vtitle").textContent = "Checklist do CTI";
     document.title = "Anamnesia · Checklist";
@@ -3047,6 +3089,348 @@ if (APP){
   if (APP.print) window.print = () => { window.dispatchEvent(new Event("beforeprint")); APP.print(); };
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") widgetSync(true); });
 }
+
+/* =====================================================================
+   ESCORES E CALCULADORAS (pedido do autor, 09/11/2026)
+   Cada escore: critérios e pontos da publicação original (referência em "ref").
+   Com um paciente escolhido, os dados da ficha (idade, sexo, peso, sinais vitais, FiO2,
+   Glasgow, diurese, vasoativas) entram preenchidos; tudo pode ser editado.
+   O resultado pode ser copiado ou inserido num campo de texto da ficha.
+   ===================================================================== */
+const SC_CATS = [["uti", "Terapia intensiva"], ["tev", "Tromboembolismo venoso"], ["card", "Cardiologia"], ["rf", "Rim e fígado"], ["hem", "Hematologia e oncologia"], ["pneu", "Pneumonia"]];
+const scN = (k, l, u, o = {}) => ({ t: "n", k, l, u, ...o });
+const scS = (k, l, opts, o = {}) => ({ t: "s", k, l, opts, ...o });
+const scC = (k, l, pts, o = {}) => ({ t: "c", k, l, pts, ...o });
+const SEXO = [["M", "Masculino"], ["F", "Feminino"]];
+const SIMNAO = [["1", "Sim"], ["0", "Não"]];
+const gcsNum = d => { const g = CALC.gcs(d); return /^\d+$/.test(g) ? g : ""; };
+const mv = d => ["VCV", "PCV", "PSV"].includes(d.vent_modo) ? "1" : (d.vent_modo ? "0" : "");
+const o2 = d => d.vent_modo ? (d.vent_modo === "AA" ? "0" : "1") : "";
+// maiores doses das vasoativas da ficha (lista de infusões), em mcg/kg/min, pela vazão ao passar (ou ao receber)
+function scDva(d){
+  const r = { noradrenalina: 0, adrenalina: 0, dopamina: 0, dobutamina: 0 };
+  for (let i = 1; i <= 15; i++){
+    const id = d[`inf_${i}_droga`]; if (!(id in r)) continue;
+    const v = String(d[`inf_${i}_vf`] || d[`inf_${i}_vi`] || "").trim(); if (!v) continue;
+    const ds = num(String(infDose(d, "inf", i, v)).split(" ")[0]); if (isFinite(ds)) r[id] = Math.max(r[id], ds);
+  }
+  return r;
+}
+function scVasoPadrao(d){
+  const r = scDva(d);
+  if (r.dopamina > 15 || r.adrenalina > 0.1 || r.noradrenalina > 0.1) return "4";
+  if (r.dopamina > 5 || r.adrenalina > 0 || r.noradrenalina > 0) return "3";
+  if (r.dopamina > 0 || r.dobutamina > 0) return "2";
+  return d.inf_1_droga ? "0" : "";   // com infusões lançadas e nenhuma vasoativa: "Nenhum"; sem lista: deixa para escolher
+}
+// faixas: [[limite, pontos], ...] em ordem; "ge" = valor ≥ limite
+const faixa = (v, tab) => { for (const [lim, p] of tab) if (v >= lim) return p; return tab[tab.length - 1][1]; };
+const somaC = (v, campos) => campos.filter(c => c.t === "c" && v[c.k]).reduce((s, c) => s + c.pts, 0);
+const ptsTxt = n => n === 1 ? "1 ponto" : `${String(n).replace(".", ",")} pontos`;
+
+const SC = {
+  sofa: { cat: "uti", nome: "SOFA", desc: "Disfunção orgânica",
+    ref: "Vincent JL, et al. The SOFA (Sepsis-related Organ Failure Assessment) score to describe organ dysfunction/failure. Intensive Care Med. 1996;22:707-10.",
+    campos: [scN("pao2", "PaO2", "mmHg"), scN("fio2", "FiO2", "%", { from: d => d.fio2 }), scS("vm", "Em ventilação mecânica (invasiva ou não invasiva)", SIMNAO, { from: mv }),
+      scN("plaq", "Plaquetas", "mil/mm³"), scN("bili", "Bilirrubina total", "mg/dL"),
+      scN("pam", "PAM", "mmHg", { from: d => CALC.pam(d) }),
+      scS("vaso", "Vasoativos (doses em mcg/kg/min, por pelo menos 1 h)", [["0", "Nenhum"], ["2", "Dopamina ≤ 5 ou dobutamina (qualquer dose)"], ["3", "Dopamina > 5 ou adrenalina ≤ 0,1 ou noradrenalina ≤ 0,1"], ["4", "Dopamina > 15 ou adrenalina > 0,1 ou noradrenalina > 0,1"]], { from: scVasoPadrao }),
+      scN("gcs", "Glasgow", "", { from: gcsNum }), scN("cr", "Creatinina", "mg/dL"), scN("diu", "Diurese em 24 h", "mL", { from: d => d.bh_per === "12h" ? "" : d.diurese })],
+    calc(v){
+      const c = {}, falta = [];
+      if (isFinite(v.pao2) && v.fio2 > 0){ const pf = v.pao2 / (v.fio2 / 100); c["Respiratório"] = pf < 100 && v.vm === "1" ? 4 : pf < 200 && v.vm === "1" ? 3 : pf < 300 ? 2 : pf < 400 ? 1 : 0; } else falta.push("respiratório");
+      if (isFinite(v.plaq)) c["Coagulação"] = v.plaq < 20 ? 4 : v.plaq < 50 ? 3 : v.plaq < 100 ? 2 : v.plaq < 150 ? 1 : 0; else falta.push("coagulação");
+      if (isFinite(v.bili)) c["Fígado"] = faixa(v.bili, [[12, 4], [6, 3], [2, 2], [1.2, 1], [-Infinity, 0]]); else falta.push("fígado");
+      if (v.vaso && v.vaso !== "0") c["Cardiovascular"] = Number(v.vaso); else if (isFinite(v.pam)) c["Cardiovascular"] = v.pam < 70 ? 1 : 0; else falta.push("cardiovascular");
+      if (isFinite(v.gcs)) c["Neurológico"] = faixa(v.gcs, [[15, 0], [13, 1], [10, 2], [6, 3], [-Infinity, 4]]); else falta.push("neurológico");
+      const rc = isFinite(v.cr) ? faixa(v.cr, [[5, 4], [3.5, 3], [2, 2], [1.2, 1], [-Infinity, 0]]) : null;
+      const ru = isFinite(v.diu) ? (v.diu < 200 ? 4 : v.diu < 500 ? 3 : 0) : null;
+      if (rc != null || ru != null) c["Renal"] = Math.max(rc || 0, ru || 0); else falta.push("renal");
+      const nomes = Object.keys(c); if (!nomes.length) return null;
+      const tot = nomes.reduce((s, k) => s + c[k], 0);
+      return { r: ptsTxt(tot), det: nomes.map(k => `${k} ${c[k]}`).join(" | "), int: falta.length ? "Sem dados de: " + falta.join(", ") + " (contados como 0 ponto)." : "Pontuação de 0 a 24; quanto maior, maior a disfunção orgânica." };
+    } },
+  apache: { cat: "uti", nome: "APACHE II", desc: "Gravidade nas primeiras 24 h de CTI (piores valores)",
+    ref: "Knaus WA, et al. APACHE II: a severity of disease classification system. Crit Care Med. 1985;13:818-29.",
+    campos: [scN("temp", "Temperatura", "°C", { from: d => d.tmax }), scN("pam", "PAM", "mmHg", { from: d => CALC.pam(d) }), scN("fc", "FC", "bpm", { from: d => d.fc }), scN("fr", "FR", "irpm", { from: d => d.fr_pac }),
+      scN("fio2", "FiO2", "%", { from: d => d.fio2 }), scN("pao2", "PaO2", "mmHg"), scN("paco2", "PaCO2", "mmHg"), scN("ph", "pH arterial", ""), scN("hco3", "HCO3 sérico (só se não houver gasometria)", "mEq/L"),
+      scN("na", "Sódio", "mEq/L"), scN("k", "Potássio", "mEq/L"), scN("cr", "Creatinina", "mg/dL"), scS("ira", "Insuficiência renal aguda", SIMNAO),
+      scN("ht", "Hematócrito", "%"), scN("leuco", "Leucócitos", "mil/mm³"), scN("gcs", "Glasgow", "", { from: gcsNum }), scN("idade", "Idade", "anos", { from: d => d.idade }),
+      scS("cronica", "Insuficiência orgânica grave ou imunossupressão", [["0", "Não"], ["5", "Sim – não operado ou pós-operatório de urgência"], ["2", "Sim – pós-operatório eletivo"]])],
+    calc(v){
+      const c = {}, falta = [];
+      const add = (nome, ok, fn) => { if (ok) c[nome] = fn(); else falta.push(nome.toLowerCase()); };
+      add("Temperatura", isFinite(v.temp), () => faixa(v.temp, [[41, 4], [39, 3], [38.5, 1], [36, 0], [34, 1], [32, 2], [30, 3], [-Infinity, 4]]));
+      add("PAM", isFinite(v.pam), () => faixa(v.pam, [[160, 4], [130, 3], [110, 2], [70, 0], [50, 2], [-Infinity, 4]]));
+      add("FC", isFinite(v.fc), () => faixa(v.fc, [[180, 4], [140, 3], [110, 2], [70, 0], [55, 2], [40, 3], [-Infinity, 4]]));
+      add("FR", isFinite(v.fr), () => faixa(v.fr, [[50, 4], [35, 3], [25, 1], [12, 0], [10, 1], [6, 2], [-Infinity, 4]]));
+      if (v.fio2 >= 50 && isFinite(v.pao2) && isFinite(v.paco2)){ const aa = (v.fio2 / 100) * 713 - v.paco2 / 0.8 - v.pao2; c["Oxigenação (A-aDO2 " + Math.round(aa) + ")"] = faixa(aa, [[500, 4], [350, 3], [200, 2], [-Infinity, 0]]); }
+      else if (isFinite(v.fio2) && v.fio2 < 50 && isFinite(v.pao2)) c["Oxigenação"] = v.pao2 > 70 ? 0 : v.pao2 >= 61 ? 1 : v.pao2 >= 55 ? 3 : 4;
+      else falta.push("oxigenação");
+      if (isFinite(v.ph)) c["pH"] = faixa(v.ph, [[7.7, 4], [7.6, 3], [7.5, 1], [7.33, 0], [7.25, 2], [7.15, 3], [-Infinity, 4]]);
+      else if (isFinite(v.hco3)) c["HCO3"] = faixa(v.hco3, [[52, 4], [41, 3], [32, 1], [22, 0], [18, 2], [15, 3], [-Infinity, 4]]);
+      else falta.push("pH/HCO3");
+      add("Sódio", isFinite(v.na), () => faixa(v.na, [[180, 4], [160, 3], [155, 2], [150, 1], [130, 0], [120, 2], [111, 3], [-Infinity, 4]]));
+      add("Potássio", isFinite(v.k), () => faixa(v.k, [[7, 4], [6, 3], [5.5, 1], [3.5, 0], [3, 1], [2.5, 2], [-Infinity, 4]]));
+      add("Creatinina", isFinite(v.cr), () => faixa(v.cr, [[3.5, 4], [2, 3], [1.5, 2], [0.6, 0], [-Infinity, 2]]) * (v.ira === "1" ? 2 : 1));
+      add("Hematócrito", isFinite(v.ht), () => faixa(v.ht, [[60, 4], [50, 2], [46, 1], [30, 0], [20, 2], [-Infinity, 4]]));
+      add("Leucócitos", isFinite(v.leuco), () => faixa(v.leuco, [[40, 4], [20, 2], [15, 1], [3, 0], [1, 2], [-Infinity, 4]]));
+      add("Glasgow", isFinite(v.gcs), () => 15 - v.gcs);
+      add("Idade", isFinite(v.idade), () => faixa(v.idade, [[75, 6], [65, 5], [55, 3], [45, 2], [-Infinity, 0]]));
+      if (v.cronica) c["Doença crônica"] = Number(v.cronica); else falta.push("doença crônica");
+      const nomes = Object.keys(c); if (!nomes.length) return null;
+      const tot = nomes.reduce((s, k) => s + c[k], 0);
+      return { r: ptsTxt(tot), det: nomes.map(k => `${k} ${c[k]}`).join(" | "), int: (falta.length ? "Sem dados de: " + falta.join(", ") + " (contados como 0 ponto). " : "") + "Pontuação de 0 a 71. A mortalidade prevista depende também da categoria diagnóstica (Knaus, 1985)." };
+    } },
+  news2: { cat: "uti", nome: "NEWS2", desc: "Deterioração clínica",
+    ref: "Royal College of Physicians. National Early Warning Score (NEWS) 2. London: RCP, 2017.",
+    campos: [scN("fr", "FR", "irpm", { from: d => d.fr_pac }), scN("spo2", "SpO2", "%", { from: d => d.spo2 }),
+      scS("escala", "Escala de SpO2", [["1", "Escala 1 (padrão)"], ["2", "Escala 2 (insuficiência respiratória hipercápnica, alvo de 88–92%)"]], { def: "1" }),
+      scS("o2", "Oxigênio suplementar", SIMNAO, { from: o2 }), scN("pas", "PA sistólica", "mmHg", { from: d => d.pas }), scN("fc", "FC", "bpm", { from: d => d.fc }),
+      scS("cons", "Nível de consciência", [["0", "Alerta"], ["3", "Confusão nova, responde à voz, à dor ou sem resposta"]]), scN("temp", "Temperatura", "°C", { from: d => d.tmax })],
+    calc(v){
+      const c = {}, falta = [];
+      const add = (nome, ok, fn) => { if (ok) c[nome] = fn(); else falta.push(nome.toLowerCase()); };
+      add("FR", isFinite(v.fr), () => v.fr <= 8 ? 3 : v.fr <= 11 ? 1 : v.fr <= 20 ? 0 : v.fr <= 24 ? 2 : 3);
+      add("SpO2", isFinite(v.spo2), () => {
+        if (v.escala !== "2") return v.spo2 <= 91 ? 3 : v.spo2 <= 93 ? 2 : v.spo2 <= 95 ? 1 : 0;
+        if (v.spo2 <= 83) return 3; if (v.spo2 <= 85) return 2; if (v.spo2 <= 87) return 1; if (v.spo2 <= 92 || v.o2 !== "1") return 0;
+        return v.spo2 <= 94 ? 1 : v.spo2 <= 96 ? 2 : 3;
+      });
+      add("Oxigênio", !!v.o2, () => v.o2 === "1" ? 2 : 0);
+      add("PA sistólica", isFinite(v.pas), () => v.pas <= 90 ? 3 : v.pas <= 100 ? 2 : v.pas <= 110 ? 1 : v.pas <= 219 ? 0 : 3);
+      add("FC", isFinite(v.fc), () => v.fc <= 40 ? 3 : v.fc <= 50 ? 1 : v.fc <= 90 ? 0 : v.fc <= 110 ? 1 : v.fc <= 130 ? 2 : 3);
+      add("Consciência", !!v.cons, () => Number(v.cons));
+      add("Temperatura", isFinite(v.temp), () => v.temp <= 35 ? 3 : v.temp <= 36 ? 1 : v.temp <= 38 ? 0 : v.temp <= 39 ? 1 : 2);
+      const nomes = Object.keys(c); if (!nomes.length) return null;
+      const tot = nomes.reduce((s, k) => s + c[k], 0), tres = nomes.some(k => c[k] === 3);
+      const risco = tot >= 7 ? "risco alto: avaliação de emergência" : tot >= 5 ? "risco médio: avaliação urgente" : tres ? "risco baixo-médio (um parâmetro com 3 pontos): avaliação urgente pela equipe" : "risco baixo";
+      return { r: ptsTxt(tot), det: nomes.map(k => `${k} ${c[k]}`).join(" | "), int: (falta.length ? "Sem dados de: " + falta.join(", ") + ". " : "") + "Classificação: " + risco + "." };
+    } },
+  gaso: { cat: "uti", nome: "Gasometria arterial", desc: "Distúrbio primário, compensação, ânion gap, relação P/F",
+    ref: "Berend K, de Vries AP, Gans RO. Physiological approach to assessment of acid-base disturbances. N Engl J Med. 2014;371:1434-45.",
+    campos: [scN("ph", "pH", ""), scN("pco2", "PaCO2", "mmHg"), scN("hco3", "HCO3", "mEq/L"), scN("na", "Sódio", "mEq/L"), scN("cl", "Cloro", "mEq/L"), scN("alb", "Albumina", "g/dL"),
+      scN("pao2", "PaO2", "mmHg"), scN("fio2", "FiO2", "%", { from: d => d.fio2 }), scS("tempo", "Distúrbio respiratório", [["agudo", "Agudo"], ["cronico", "Crônico"]], { def: "agudo" })],
+    calc(v){
+      const out = [];
+      if (isFinite(v.ph) && isFinite(v.pco2) && isFinite(v.hco3)){
+        let prim = "";
+        if (v.ph < 7.35) prim = v.hco3 < 22 ? "acidose metabólica" : v.pco2 > 45 ? "acidose respiratória" : "acidemia";
+        else if (v.ph > 7.45) prim = v.hco3 > 26 ? "alcalose metabólica" : v.pco2 < 35 ? "alcalose respiratória" : "alcalemia";
+        else prim = (v.hco3 < 22 || v.hco3 > 26 || v.pco2 < 35 || v.pco2 > 45) ? "pH normal com PaCO2/HCO3 alterados: considerar distúrbio misto" : "sem distúrbio ácido-base";
+        out.push((v.ph < 7.35 ? "Acidemia" : v.ph > 7.45 ? "Alcalemia" : "pH normal") + (prim.startsWith("pH") || prim.startsWith("sem") ? ": " + prim : ", " + prim + " como distúrbio primário"));
+        const f = x => String(Math.round(x * 10) / 10).replace(".", ",");
+        if (prim === "acidose metabólica"){ const e = 1.5 * v.hco3 + 8; out.push(`PaCO2 esperada (Winter): ${f(e - 2)} a ${f(e + 2)} mmHg` + (v.pco2 > e + 2 ? " → acidose respiratória associada" : v.pco2 < e - 2 ? " → alcalose respiratória associada" : " → compensação adequada")); }
+        if (prim === "alcalose metabólica"){ const e = 40 + 0.7 * (v.hco3 - 24); out.push(`PaCO2 esperada: cerca de ${f(e)} mmHg (± 2)` + (v.pco2 > e + 2 ? " → acidose respiratória associada" : v.pco2 < e - 2 ? " → alcalose respiratória associada" : " → compensação adequada")); }
+        if (prim === "acidose respiratória"){ const e = 24 + (v.tempo === "cronico" ? 0.4 : 0.1) * (v.pco2 - 40); out.push(`HCO3 esperado (${v.tempo === "cronico" ? "crônica" : "aguda"}): cerca de ${f(e)} mEq/L` + (v.hco3 > e + 2 ? " → alcalose metabólica associada" : v.hco3 < e - 2 ? " → acidose metabólica associada" : " → compensação adequada")); }
+        if (prim === "alcalose respiratória"){ const e = 24 - (v.tempo === "cronico" ? 0.4 : 0.2) * (40 - v.pco2); out.push(`HCO3 esperado (${v.tempo === "cronico" ? "crônica" : "aguda"}): cerca de ${f(e)} mEq/L` + (v.hco3 > e + 2 ? " → alcalose metabólica associada" : v.hco3 < e - 2 ? " → acidose metabólica associada" : " → compensação adequada")); }
+      }
+      if (isFinite(v.na) && isFinite(v.cl) && isFinite(v.hco3)){
+        const ag = v.na - v.cl - v.hco3, agc = isFinite(v.alb) ? ag + 2.5 * (4 - v.alb) : ag;
+        out.push(`Ânion gap: ${String(Math.round(ag * 10) / 10).replace(".", ",")} mEq/L` + (isFinite(v.alb) ? ` (corrigido pela albumina: ${String(Math.round(agc * 10) / 10).replace(".", ",")})` : "") + (agc > 12 ? " → aumentado" : " → normal (até 12)"));
+        if (agc > 12 && v.hco3 < 24){ const dd = (agc - 12) / (24 - v.hco3); out.push(`Delta/delta: ${String(Math.round(dd * 10) / 10).replace(".", ",")}` + (dd < 1 ? " → acidose metabólica sem ânion gap associada" : dd > 2 ? " → alcalose metabólica associada" : " → acidose com ânion gap aumentado isolada")); }
+      }
+      if (isFinite(v.pao2) && v.fio2 > 0) out.push(`Relação P/F: ${Math.round(v.pao2 / (v.fio2 / 100))}`);
+      if (!out.length) return null;
+      return { r: out[0], det: out.slice(1).join(" | "), int: "Faixas de referência: pH 7,35–7,45; PaCO2 35–45 mmHg; HCO3 22–26 mEq/L. Interpretação de apoio: confira com o quadro clínico." };
+    } },
+  wellsTep: { cat: "tev", nome: "Wells para TEP", desc: "Probabilidade clínica de TEP",
+    ref: "Wells PS, et al. Derivation of a simple clinical model to categorize patients probability of pulmonary embolism. Thromb Haemost. 2000;83:416-20.",
+    campos: [scC("tvp", "Sinais clínicos de TVP", 3), scC("alt", "TEP é o diagnóstico mais provável", 3), scC("fc", "FC > 100 bpm", 1.5), scC("imob", "Imobilização ≥ 3 dias ou cirurgia nas últimas 4 semanas", 1.5), scC("prev", "TVP ou TEP prévios", 1.5), scC("hemop", "Hemoptise", 1), scC("cancer", "Câncer ativo", 1)],
+    calc(v, campos){ const s = somaC(v, campos); return { r: ptsTxt(s), int: (s > 4 ? "TEP provável (> 4)" : "TEP improvável (≤ 4)") + "; em 3 níveis: " + (s > 6 ? "alta (> 6)" : s >= 2 ? "moderada (2 a 6)" : "baixa (< 2)") + "." }; } },
+  wellsTvp: { cat: "tev", nome: "Wells para TVP", desc: "Probabilidade clínica de TVP",
+    ref: "Wells PS, et al. Evaluation of D-dimer in the diagnosis of suspected deep-vein thrombosis. N Engl J Med. 2003;349:1227-35.",
+    campos: [scC("cancer", "Câncer ativo", 1), scC("paral", "Paralisia, paresia ou imobilização gessada recente de membro inferior", 1), scC("acam", "Acamado > 3 dias ou cirurgia maior nas últimas 12 semanas", 1), scC("dor", "Dor à palpação no trajeto venoso profundo", 1), scC("edema", "Edema de todo o membro", 1), scC("pant", "Panturrilha > 3 cm maior que a contralateral", 1), scC("cacifo", "Edema com cacifo no membro sintomático", 1), scC("colat", "Veias superficiais colaterais (não varicosas)", 1), scC("prev", "TVP prévia documentada", 1), scC("alt", "Diagnóstico alternativo tão ou mais provável", -2)],
+    calc(v, campos){ const s = somaC(v, campos); return { r: ptsTxt(s), int: s >= 2 ? "TVP provável (≥ 2)." : "TVP improvável (< 2)." }; } },
+  perc: { cat: "tev", nome: "PERC", desc: "Exclusão de TEP em baixa probabilidade",
+    ref: "Kline JA, et al. Clinical criteria to prevent unnecessary diagnostic testing in emergency department patients with suspected pulmonary embolism. J Thromb Haemost. 2004;2:1247-55.",
+    campos: [scC("idade", "Idade ≥ 50 anos", 1, { from: d => num(d.idade) >= 50 }), scC("fc", "FC ≥ 100 bpm", 1, { from: d => num(d.fc) >= 100 }), scC("sat", "SpO2 < 95% em ar ambiente", 1, { from: d => num(d.spo2) < 95 && d.vent_modo === "AA" }), scC("hemop", "Hemoptise", 1), scC("estro", "Uso de estrogênio", 1), scC("prev", "TVP ou TEP prévios", 1), scC("edema", "Edema unilateral de membro inferior", 1), scC("cir", "Cirurgia ou trauma com internação nas últimas 4 semanas", 1)],
+    calc(v, campos){ const s = somaC(v, campos); return { r: s ? `${s} critério(s) presente(s)` : "Nenhum critério", int: s ? "PERC positivo: o TEP não pode ser excluído só pela clínica." : "PERC negativo: em paciente de baixa probabilidade clínica, dispensa investigação adicional." }; } },
+  years: { cat: "tev", nome: "YEARS", desc: "Algoritmo de TEP com D-dímero ajustado",
+    ref: "van der Hulle T, et al. Simplified diagnostic management of suspected pulmonary embolism (the YEARS study). Lancet. 2017;390:289-97.",
+    campos: [scC("tvp", "Sinais clínicos de TVP", 1), scC("hemop", "Hemoptise", 1), scC("alt", "TEP é o diagnóstico mais provável", 1), scN("dd", "D-dímero", "ng/mL (FEU)")],
+    calc(v){
+      const n = ["tvp", "hemop", "alt"].filter(k => v[k]).length, corte = n ? 500 : 1000;
+      if (!isFinite(v.dd)) return { r: `${n} critério(s) YEARS`, int: `Corte do D-dímero: ${corte} ng/mL. Informe o D-dímero para a conclusão.` };
+      return { r: `${n} critério(s) YEARS; D-dímero ${v.dd} ng/mL`, int: v.dd < corte ? `D-dímero abaixo de ${corte} ng/mL: TEP excluído pelo algoritmo, sem angiotomografia.` : `D-dímero ≥ ${corte} ng/mL: indicada angiotomografia de tórax.` };
+    } },
+  pesi: { cat: "tev", nome: "PESI e sPESI", desc: "Prognóstico do TEP",
+    ref: "Aujesky D, et al. Derivation and validation of a prognostic model for pulmonary embolism. Am J Respir Crit Care Med. 2005;172:1041-6. Jiménez D, et al. Simplification of the PESI. Arch Intern Med. 2010;170:1383-9.",
+    campos: [scN("idade", "Idade", "anos", { from: d => d.idade }), scS("sexo", "Sexo", SEXO, { from: d => d.sexo }), scC("cancer", "Câncer", 30), scC("ic", "Insuficiência cardíaca crônica", 10), scC("pulm", "Doença pulmonar crônica", 10),
+      scC("fc", "FC ≥ 110 bpm", 20, { from: d => num(d.fc) >= 110 }), scC("pas", "PA sistólica < 100 mmHg", 30, { from: d => num(d.pas) < 100 }), scC("fr", "FR ≥ 30 irpm", 20, { from: d => num(d.fr_pac) >= 30 }), scC("temp", "Temperatura < 36 °C", 20, { from: d => num(d.tmax) < 36 }), scC("mental", "Alteração do estado mental", 60), scC("sat", "SpO2 < 90%", 20, { from: d => num(d.spo2) < 90 })],
+    calc(v, campos){
+      if (!isFinite(v.idade)) return null;
+      const s = v.idade + (v.sexo === "M" ? 10 : 0) + somaC(v, campos);
+      const cl = s <= 65 ? "I (muito baixo risco)" : s <= 85 ? "II (baixo risco)" : s <= 105 ? "III (risco intermediário)" : s <= 125 ? "IV (alto risco)" : "V (muito alto risco)";
+      const sp = (v.idade > 80 ? 1 : 0) + (v.cancer ? 1 : 0) + ((v.ic || v.pulm) ? 1 : 0) + (v.fc ? 1 : 0) + (v.pas ? 1 : 0) + (v.sat ? 1 : 0);
+      return { r: `PESI ${s} pontos, classe ${cl}`, det: `sPESI ${sp}`, int: `sPESI ${sp ? "≥ 1: não é baixo risco" : "= 0: baixo risco"} (mortalidade em 30 dias).` };
+    } },
+  padua: { cat: "tev", nome: "Padua", desc: "Risco de TEV em pacientes clínicos internados",
+    ref: "Barbar S, et al. A risk assessment model for the identification of hospitalized medical patients at risk for venous thromboembolism: the Padua Prediction Score. J Thromb Haemost. 2010;8:2450-7.",
+    campos: [scC("cancer", "Câncer ativo", 3), scC("tev", "TEV prévio (exceto trombose venosa superficial)", 3), scC("mob", "Mobilidade reduzida (≥ 3 dias)", 3), scC("trombo", "Trombofilia conhecida", 3), scC("trauma", "Trauma ou cirurgia recentes (≤ 1 mês)", 2), scC("idade", "Idade ≥ 70 anos", 1, { from: d => num(d.idade) >= 70 }), scC("icir", "Insuficiência cardíaca ou respiratória", 1), scC("iam", "IAM ou AVC isquêmico", 1), scC("infec", "Infecção aguda ou doença reumatológica", 1), scC("obes", "Obesidade (IMC ≥ 30)", 1, { from: d => { const p = num(d.peso), a = num(d.altura) / 100; return p > 0 && a > 0 && p / (a * a) >= 30; } }), scC("horm", "Tratamento hormonal", 1)],
+    calc(v, campos){ const s = somaC(v, campos); return { r: ptsTxt(s), int: s >= 4 ? "Alto risco de TEV (≥ 4)." : "Baixo risco de TEV (< 4)." }; } },
+  heart: { cat: "card", nome: "HEART", desc: "Dor torácica na emergência",
+    ref: "Six AJ, Backus BE, Kelder JC. Chest pain in the emergency room: value of the HEART score. Neth Heart J. 2008;16:191-6.",
+    campos: [scS("h", "História", [["0", "Pouco suspeita"], ["1", "Moderadamente suspeita"], ["2", "Muito suspeita"]]), scS("e", "ECG", [["0", "Normal"], ["1", "Alteração inespecífica da repolarização"], ["2", "Infradesnivelamento de ST significativo"]]),
+      scS("a", "Idade", [["0", "< 45 anos"], ["1", "45 a 64 anos"], ["2", "≥ 65 anos"]], { from: d => { const i = num(d.idade); return isFinite(i) ? (i >= 65 ? "2" : i >= 45 ? "1" : "0") : ""; } }),
+      scS("r", "Fatores de risco", [["0", "Nenhum conhecido"], ["1", "1 ou 2 fatores"], ["2", "≥ 3 fatores ou doença aterosclerótica conhecida"]]), scS("t", "Troponina", [["0", "≤ limite da normalidade"], ["1", "1 a 3 vezes o limite"], ["2", "> 3 vezes o limite"]])],
+    calc(v){ if (!["h", "e", "a", "r", "t"].every(k => v[k])) return null; const s = ["h", "e", "a", "r", "t"].reduce((x, k) => x + Number(v[k]), 0); return { r: ptsTxt(s), int: s >= 7 ? "Alto risco (7 a 10)." : s >= 4 ? "Risco moderado (4 a 6)." : "Baixo risco (0 a 3)." }; } },
+  h2fpef: { cat: "card", nome: "H2FPEF", desc: "Probabilidade de IC com fração de ejeção preservada",
+    ref: "Reddy YNV, et al. A simple, evidence-based approach to help guide diagnosis of heart failure with preserved ejection fraction. Circulation. 2018;138:861-70.",
+    campos: [scC("imc", "IMC > 30 kg/m²", 2, { from: d => { const p = num(d.peso), a = num(d.altura) / 100; return p > 0 && a > 0 && p / (a * a) > 30; } }), scC("has", "Uso de 2 ou mais anti-hipertensivos", 1), scC("fa", "Fibrilação atrial (paroxística ou persistente)", 3), scC("hp", "PSAP > 35 mmHg ao ecocardiograma", 1), scC("idade", "Idade > 60 anos", 1, { from: d => num(d.idade) > 60 }), scC("ee", "E/e' > 9", 1)],
+    calc(v, campos){ const s = somaC(v, campos); return { r: ptsTxt(s), int: s >= 6 ? "Alta probabilidade de ICFEp (6 a 9)." : s >= 2 ? "Probabilidade intermediária (2 a 5): considerar investigação adicional." : "Baixa probabilidade (0 a 1)." }; } },
+  ckdepi: { cat: "rf", nome: "CKD-EPI 2021", desc: "Taxa de filtração glomerular estimada (sem raça)",
+    ref: "Inker LA, et al. New creatinine- and cystatin C-based equations to estimate GFR without race. N Engl J Med. 2021;385:1737-49. Estágios: KDIGO 2012.",
+    campos: [scN("cr", "Creatinina", "mg/dL"), scN("idade", "Idade", "anos", { from: d => d.idade }), scS("sexo", "Sexo", SEXO, { from: d => d.sexo })],
+    calc(v){
+      if (!(v.cr > 0 && v.idade > 0 && v.sexo)) return null;
+      const f = v.sexo === "F", k = f ? 0.7 : 0.9, a = f ? -0.241 : -0.302;
+      const tfg = 142 * Math.pow(Math.min(v.cr / k, 1), a) * Math.pow(Math.max(v.cr / k, 1), -1.2) * Math.pow(0.9938, v.idade) * (f ? 1.012 : 1);
+      const g = tfg >= 90 ? "G1" : tfg >= 60 ? "G2" : tfg >= 45 ? "G3a" : tfg >= 30 ? "G3b" : tfg >= 15 ? "G4" : "G5";
+      return { r: `${Math.round(tfg)} mL/min/1,73 m²`, int: `Categoria ${g} (KDIGO). A equação vale para creatinina estável; não usar em lesão renal aguda.` };
+    } },
+  childpugh: { cat: "rf", nome: "Child-Pugh", desc: "Gravidade da cirrose",
+    ref: "Pugh RN, et al. Transection of the oesophagus for bleeding oesophageal varices. Br J Surg. 1973;60:646-9.",
+    campos: [scN("bili", "Bilirrubina total", "mg/dL"), scN("alb", "Albumina", "g/dL"), scN("inr", "INR", ""), scS("asc", "Ascite", [["1", "Ausente"], ["2", "Leve"], ["3", "Moderada a grave"]]), scS("ence", "Encefalopatia", [["1", "Ausente"], ["2", "Graus 1 e 2"], ["3", "Graus 3 e 4"]])],
+    calc(v){
+      if (![v.bili, v.alb, v.inr].every(isFinite) || !v.asc || !v.ence) return null;
+      const s = (v.bili < 2 ? 1 : v.bili <= 3 ? 2 : 3) + (v.alb > 3.5 ? 1 : v.alb >= 2.8 ? 2 : 3) + (v.inr < 1.7 ? 1 : v.inr <= 2.3 ? 2 : 3) + Number(v.asc) + Number(v.ence);
+      return { r: `${s} pontos, classe ${s <= 6 ? "A" : s <= 9 ? "B" : "C"}`, int: "Classe A: 5–6; B: 7–9; C: 10–15." };
+    } },
+  meldna: { cat: "rf", nome: "MELD-Na", desc: "Gravidade da doença hepática",
+    ref: "Kim WR, et al. Hyponatremia and mortality among patients on the liver-transplant waiting list. N Engl J Med. 2008;359:1018-26 (fórmula adotada pela UNOS/OPTN em 2016).",
+    campos: [scN("cr", "Creatinina", "mg/dL"), scN("bili", "Bilirrubina total", "mg/dL"), scN("inr", "INR", ""), scN("na", "Sódio", "mEq/L"), scS("dial", "Diálise 2 ou mais vezes na última semana", SIMNAO)],
+    calc(v){
+      if (![v.cr, v.bili, v.inr, v.na].every(isFinite)) return null;
+      const lim = (x, lo, hi) => Math.min(Math.max(x, lo), hi);
+      const cr = v.dial === "1" ? 4 : lim(v.cr, 1, 4), bi = Math.max(v.bili, 1), inr = Math.max(v.inr, 1), na = lim(v.na, 125, 137);
+      let meld = Math.round((0.957 * Math.log(cr) + 0.378 * Math.log(bi) + 1.120 * Math.log(inr) + 0.643) * 10 * 10) / 10;
+      const final = meld > 11 ? meld + 1.32 * (137 - na) - 0.033 * meld * (137 - na) : meld;
+      return { r: `MELD-Na ${Math.round(final)}`, det: `MELD ${Math.round(meld)}`, int: "Valores abaixo de 1 contam como 1; creatinina limitada a 4 mg/dL (ou 4 com diálise); sódio limitado entre 125 e 137 mEq/L." };
+    } },
+  hscore: { cat: "hem", nome: "HScore", desc: "Síndrome hemofagocítica reativa",
+    ref: "Fardet L, et al. Development and validation of the HScore, a score for the diagnosis of reactive hemophagocytic syndrome. Arthritis Rheumatol. 2014;66:2613-20.",
+    campos: [scS("imuno", "Imunossupressão conhecida (HIV ou imunossupressores)", [["0", "Não"], ["18", "Sim"]]), scN("temp", "Temperatura máxima", "°C", { from: d => d.tmax }),
+      scS("org", "Organomegalia", [["0", "Nenhuma"], ["23", "Hepatomegalia ou esplenomegalia"], ["38", "Hepatomegalia e esplenomegalia"]]),
+      scS("cito", "Citopenias (Hb ≤ 9,2 g/dL; leucócitos ≤ 5.000/mm³; plaquetas ≤ 110.000/mm³)", [["0", "Uma linhagem"], ["24", "Duas linhagens"], ["34", "Três linhagens"]]),
+      scN("ferr", "Ferritina", "ng/mL"), scN("tg", "Triglicerídeos", "mg/dL"), scN("fib", "Fibrinogênio", "mg/dL"), scN("tgo", "TGO (AST)", "U/L"), scS("medula", "Hemofagocitose no aspirado de medula", [["0", "Não"], ["35", "Sim"]])],
+    calc(v){
+      if (!isFinite(v.temp) || !isFinite(v.ferr) || !isFinite(v.tg) || !isFinite(v.fib) || !isFinite(v.tgo) || !v.org || !v.cito) return null;
+      const s = Number(v.imuno || 0) + (v.temp > 39.4 ? 49 : v.temp >= 38.4 ? 33 : 0) + Number(v.org) + Number(v.cito) + (v.ferr > 6000 ? 50 : v.ferr >= 2000 ? 35 : 0)
+        + (v.tg > 354 ? 64 : v.tg >= 132.7 ? 44 : 0) + (v.fib <= 250 ? 30 : 0) + (v.tgo >= 30 ? 19 : 0) + Number(v.medula || 0);
+      return { r: ptsTxt(s), int: s > 169 ? "Acima de 169: síndrome hemofagocítica provável (sensibilidade de 93% e especificidade de 86% no estudo original)." : "Até 169: síndrome hemofagocítica pouco provável pelo escore." };
+    } },
+  plasmic: { cat: "hem", nome: "PLASMIC", desc: "Probabilidade de PTT (deficiência grave de ADAMTS13)",
+    ref: "Bendapudi PK, et al. Derivation and external validation of the PLASMIC score for rapid assessment of adults with thrombotic microangiopathies. Lancet Haematol. 2017;4:e157-64.",
+    campos: [scC("plaq", "Plaquetas < 30.000/mm³", 1), scC("hemo", "Hemólise (reticulócitos > 2,5%, haptoglobina indetectável ou bilirrubina indireta > 2 mg/dL)", 1), scC("cancer", "Sem câncer ativo", 1), scC("tx", "Sem transplante de órgão sólido ou de células-tronco", 1), scC("vcm", "VCM < 90 fL", 1), scC("inr", "INR < 1,5", 1), scC("cr", "Creatinina < 2 mg/dL", 1)],
+    calc(v, campos){ const s = somaC(v, campos); return { r: ptsTxt(s), int: s >= 6 ? "Alto risco de PTT (6 a 7)." : s === 5 ? "Risco intermediário (5)." : "Baixo risco (0 a 4)." }; } },
+  mascc: { cat: "hem", nome: "MASCC", desc: "Neutropenia febril: risco de complicações",
+    ref: "Klastersky J, et al. The Multinational Association for Supportive Care in Cancer risk index. J Clin Oncol. 2000;18:3038-51.",
+    campos: [scS("carga", "Carga de doença (sintomas)", [["5", "Nenhum ou leves"], ["3", "Moderados"], ["0", "Graves"]]), scC("pa", "Sem hipotensão (PA sistólica > 90 mmHg)", 5, { from: d => num(d.pas) > 90 }), scC("dpoc", "Sem DPOC", 4), scC("tumor", "Tumor sólido, ou neoplasia hematológica sem infecção fúngica prévia", 4), scC("desid", "Sem desidratação que exija hidratação venosa", 3), scC("amb", "Paciente ambulatorial no início da febre", 3), scC("idade", "Idade < 60 anos", 2, { from: d => num(d.idade) < 60 })],
+    calc(v, campos){ if (!v.carga) return null; const s = Number(v.carga) + somaC(v, campos); return { r: ptsTxt(s), int: s >= 21 ? "Baixo risco de complicações (≥ 21)." : "Alto risco de complicações (< 21)." }; } },
+  cisne: { cat: "hem", nome: "CISNE", desc: "Neutropenia febril em tumor sólido, paciente estável",
+    ref: "Carmona-Bayonas A, et al. Prediction of serious complications in patients with seemingly stable febrile neutropenia: validation of the CISNE. J Clin Oncol. 2015;33:465-71.",
+    campos: [scC("ecog", "ECOG ≥ 2", 2), scC("hiper", "Hiperglicemia de estresse", 2), scC("dpoc", "DPOC", 1), scC("cv", "Doença cardiovascular crônica", 1), scC("mucosite", "Mucosite grau ≥ 2 (NCI)", 1), scC("mono", "Monócitos < 200/mm³", 1)],
+    calc(v, campos){ const s = somaC(v, campos); return { r: ptsTxt(s), int: s >= 3 ? "Classe III: alto risco (≥ 3)." : s >= 1 ? "Classe II: risco intermediário (1 a 2)." : "Classe I: baixo risco (0)." }; } },
+  psi: { cat: "pneu", nome: "PSI / PORT", desc: "Gravidade da pneumonia adquirida na comunidade",
+    ref: "Fine MJ, et al. A prediction rule to identify low-risk patients with community-acquired pneumonia. N Engl J Med. 1997;336:243-50.",
+    campos: [scN("idade", "Idade", "anos", { from: d => d.idade }), scS("sexo", "Sexo", SEXO, { from: d => d.sexo }), scC("asilo", "Morador de instituição de longa permanência", 10),
+      scC("neo", "Neoplasia", 30), scC("hep", "Doença hepática", 20), scC("ic", "Insuficiência cardíaca", 10), scC("avc", "Doença cerebrovascular", 10), scC("renal", "Doença renal", 10),
+      scC("mental", "Alteração do estado mental", 20), scC("fr", "FR ≥ 30 irpm", 20, { from: d => num(d.fr_pac) >= 30 }), scC("pas", "PA sistólica < 90 mmHg", 20, { from: d => num(d.pas) < 90 }), scC("temp", "Temperatura < 35 °C ou ≥ 40 °C", 15, { from: d => { const t = num(d.tmax); return t < 35 || t >= 40; } }), scC("fc", "FC ≥ 125 bpm", 10, { from: d => num(d.fc) >= 125 }),
+      scC("ph", "pH arterial < 7,35", 30), scC("ureia", "Ureia ≥ 64 mg/dL (BUN ≥ 30 mg/dL)", 20), scC("na", "Sódio < 130 mEq/L", 20), scC("glic", "Glicose ≥ 250 mg/dL", 10), scC("ht", "Hematócrito < 30%", 10), scC("o2", "PaO2 < 60 mmHg ou SpO2 < 90%", 10, { from: d => num(d.spo2) < 90 }), scC("derrame", "Derrame pleural", 10)],
+    calc(v, campos){
+      if (!isFinite(v.idade) || !v.sexo) return null;
+      const extras = somaC(v, campos), s = (v.sexo === "F" ? v.idade - 10 : v.idade) + extras;
+      const semFatores = !["asilo", "neo", "hep", "ic", "avc", "renal", "mental", "fr", "pas", "temp", "fc"].some(k => v[k]);
+      if (v.idade <= 50 && semFatores) return { r: "Classe I", int: "Classe I: idade ≤ 50 anos sem comorbidades nem alterações do exame (mortalidade de 0,1% no estudo original); tratamento ambulatorial." };
+      const cl = s <= 70 ? "II" : s <= 90 ? "III" : s <= 130 ? "IV" : "V";
+      return { r: `${s} pontos, classe ${cl}`, int: { II: "Classe II (≤ 70): tratamento ambulatorial.", III: "Classe III (71 a 90): ambulatorial ou internação breve.", IV: "Classe IV (91 a 130): internação.", V: "Classe V (> 130): internação; considerar CTI." }[cl] };
+    } }
+};
+
+/* ---------- tela ---------- */
+let scAtual = null, scPac = "";
+function scVals(){
+  const v = {};
+  if (!scAtual) return v;
+  SC[scAtual].campos.forEach(c => {
+    const e = document.getElementById("sc_" + c.k); if (!e) return;
+    if (c.t === "n") v[c.k] = e.value.trim() === "" ? NaN : num(e.value);
+    else if (c.t === "s") v[c.k] = e.value;
+    else v[c.k] = e.checked;
+  });
+  return v;
+}
+function scPreenche(){
+  if (!scAtual) return;
+  const p = store.patients[scPac], d = p ? p.data : null;
+  SC[scAtual].campos.forEach(c => {
+    const e = document.getElementById("sc_" + c.k); if (!e) return;
+    const val = d && c.from ? c.from(d) : (c.def != null && c.t === "s" ? c.def : (c.t === "c" ? false : ""));
+    if (c.t === "c") e.checked = !!val; else e.value = val == null ? "" : String(val);
+  });
+}
+function scCalcula(){
+  if (!scAtual) return;
+  const m = SC[scAtual], r = m.calc(scVals(), m.campos), box = $("#scRes");
+  box.hidden = !r;
+  if (!r) return;
+  $("#scResV").textContent = r.r;
+  $("#scResD").textContent = r.det || ""; $("#scResD").hidden = !r.det;
+  $("#scResI").textContent = r.int || "";
+}
+function scLinha(){
+  const m = SC[scAtual], r = m.calc(scVals(), m.campos); if (!r) return "";
+  return `${m.nome} (${brDate(todayISO())}): ${r.r}` + (r.det ? ` – ${r.det}` : "") + (r.int ? `. ${r.int}` : "");
+}
+function scAlvos(p){
+  const out = [];
+  eachField(modelOf(TPL[p.tpl], p.data), (f, sec, g) => { if (f.t === "area" && sec.id !== "EF") out.push({ k: f.k, l: `${sec.title} › ${f.tl || f.l || g.title || f.k}` }); });
+  const pref = ["ec_outros", "ec_lab", "ext_lab", "evolucao"];
+  return out.sort((a, b) => (pref.indexOf(a.k) + 1 || 99) - (pref.indexOf(b.k) + 1 || 99));
+}
+function scAbre(id){
+  scAtual = id;
+  const m = SC[id];
+  document.querySelectorAll("#scLista [data-sc]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.sc === id)));
+  $("#scNome").textContent = m.nome; $("#scDesc").textContent = m.desc;
+  $("#scCampos").replaceChildren(...m.campos.map(c => {
+    if (c.t === "c") return el("label", { class: "sc-chk" }, el("input", { type: "checkbox", id: "sc_" + c.k }), el("span", { text: c.l }), el("span", { class: "sc-pts", text: (c.pts > 0 ? "+" : "") + String(c.pts).replace(".", ",") }));
+    const ctl = c.t === "n"
+      ? el("div", { class: "inp" }, el("input", { id: "sc_" + c.k, type: "text", inputmode: "decimal", autocomplete: "off" }), c.u ? el("span", { class: "u", text: c.u }) : null)
+      : el("div", { class: "inp" }, el("select", { id: "sc_" + c.k }, el("option", { value: "", text: "—" }), ...c.opts.map(([val, l]) => el("option", { value: val, text: l }))));
+    return el("div", { class: "fld " + (c.t === "s" ? "w-full" : "w-s") }, el("label", { for: "sc_" + c.k, text: c.l }), ctl);
+  }));
+  $("#scRef").textContent = "Referência: " + m.ref;
+  $("#scPainel").hidden = false;
+  scPreenche(); scCalcula();
+  setTimeout(() => $("#scPainel").scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+}
+function renderSc(){
+  const pts = Object.entries(store.patients).filter(([, p]) => p.tpl !== "nota")
+    .sort((a, b) => String(a[1].data.leito || "~").localeCompare(String(b[1].data.leito || "~"), "pt-BR", { numeric: true }));
+  if (scPac && !store.patients[scPac]) scPac = "";
+  $("#scPac").replaceChildren(el("option", { value: "", text: "Nenhum (preencher à mão)" }), ...pts.map(([id, p]) => el("option", { value: id, text: `${ptLabel(p)} · ${TPL_LABEL[p.tpl]}` })));
+  $("#scPac").value = scPac;
+  $("#scLista").replaceChildren(...SC_CATS.map(([cat, nome]) => el("div", { class: "sc-cat" }, el("h3", { text: nome }),
+    el("div", { class: "sc-chips" }, ...Object.entries(SC).filter(([, m]) => m.cat === cat).map(([id, m]) =>
+      el("button", { class: "sc-chip", type: "button", "data-sc": id, "aria-pressed": String(id === scAtual), title: m.desc, text: m.nome }))))));
+  const p = store.patients[scPac];
+  $("#scIns").hidden = !p; $("#scAlvo").hidden = !p;
+  if (p) $("#scAlvo").replaceChildren(...scAlvos(p).map(a => el("option", { value: a.k, text: a.l })));
+  if (scAtual) scAbre(scAtual); else $("#scPainel").hidden = true;
+}
+$("#sc").addEventListener("click", e => {
+  const b = e.target.closest("[data-sc]"); if (b){ scAbre(b.dataset.sc); return; }
+  if (e.target.closest("#scCopy")){ const t = scLinha(); if (t) copyText(t).then(ok => toast(ok ? "Resultado copiado" : "Não foi possível copiar")); return; }
+  if (e.target.closest("#scIns")){
+    const p = store.patients[scPac], k = $("#scAlvo").value, t = scLinha(); if (!p || !k || !t) return;
+    const atual = String(p.data[k] || "").trim(); p.data[k] = atual ? atual + "\n" + t : t;
+    changed(scPac); toast("Inserido na ficha de " + ptLabel(p));
+  }
+});
+$("#sc").addEventListener("input", e => { if (e.target.id === "scPac"){ scPac = e.target.value; renderSc(); return; } if (e.target.closest("#scCampos")) scCalcula(); });
+$("#sc").addEventListener("change", e => { if (e.target.id === "scPac"){ scPac = e.target.value; renderSc(); return; } if (e.target.closest("#scCampos")) scCalcula(); });
 
 /* ---------------- adicionar / editar paciente ---------------- */
 let editingId = null;
@@ -4179,6 +4563,7 @@ $("#homeAcct").addEventListener("click", openAccountEntry);
 $("#homeCode2").addEventListener("click", openCodeDlg);
 $("#homeMenuStep").addEventListener("click", e => {
   const b = e.target.closest("[data-hm]"); if (!b) return;
+  if (b.dataset.hm === "sc"){ hideHome(); setView("sc"); return; }
   listFilter = b.dataset.hm; listQuery = ""; $("#search").value = "";
   hideHome(); setView("list");
 });
