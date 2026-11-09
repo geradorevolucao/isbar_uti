@@ -88,12 +88,16 @@ details.menu .menu-list button:hover{background:var(--band)}
 .diary-d{flex:0 0 10.5rem}
 .rep-item{border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px}
 .rep-item[hidden]{display:none}
-.rep-h{font-weight:700;color:var(--accent);margin-bottom:6px}
+.rep-h{font-weight:700;color:var(--accent);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.rep-d{align-self:flex-end;padding:0 0 14px;font-weight:700;color:var(--accent)}
 fieldset.inf{border:0;padding:0;margin:0 0 6px}
 fieldset.inf>legend{font-weight:700;color:var(--ink);margin-bottom:6px}
 .inf-item .row{align-items:flex-start}
 .inf-dose{font-size:.85rem;font-weight:700;color:var(--accent);min-height:1.2em}
-.inf-outra[hidden],.inf-item[hidden],.inf-info[hidden]{display:none}
+.inf-outra[hidden],.inf-item[hidden],.inf-info[hidden],.inf-dil[hidden],.inf-pre[hidden]{display:none}
+.inf-conc{gap:2px}
+.inf-conc .lbl{font-size:.8rem;color:var(--muted)}
+.inf-conc-v{font-weight:700;color:var(--accent);min-height:1.4em;padding-top:6px}
 .inf-info summary{cursor:pointer;color:var(--accent);font-size:.9rem}
 .inf-txt{white-space:pre-line;font-size:.88rem;color:var(--ink);margin:6px 0 0;background:var(--band);border-radius:var(--radius);padding:10px 12px}
 .inp select{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;padding:14px;outline:none}
@@ -737,42 +741,100 @@ const VENT = {
   PCV:  [F("vm_pins","Pressão inspiratória","num",{w:"s",u:"cmH2O"}), F("vm_tins","Tempo inspiratório","num",{w:"s",u:"s"}), F("fr","FR programada","num",{w:"s",u:"irpm"}), F("peep","PEEP","num",{w:"s",u:"cmH2O"}), F("fio2","FiO2","num",{w:"s",u:"%"}), F("vc","Volume corrente","num",{w:"s",u:"mL"})],
   PSV:  [F("vm_ps","Pressão de suporte","num",{w:"s",u:"cmH2O"}), F("peep","PEEP","num",{w:"s",u:"cmH2O"}), F("fio2","FiO2","num",{w:"s",u:"%"}), F("vc","Volume corrente","num",{w:"s",u:"mL"}), F("vm_frp","FR do paciente","num",{w:"s",u:"irpm"})]
 };
-/* medicações em infusão contínua (pedido do autor, 01/11/2026; diluições e doses conferidas pelo autor).
-   conc: concentração da solução; un: unidade da dose calculada; peso: dose por kg (peso real, campo "Peso");
-   sem conc: só droga e vazão, com o texto informativo de doses usuais.
-   Doses: Overgaard e Džavík 2008 (vasoativas), Surviving Sepsis 2021 (vasopressina), ACC/AHA 2017 (nitroprussiato e
-   nitroglicerina), Barr 2013 e PADIS 2018 (sedação e analgesia). Apresentações: bulas registradas na ANVISA. */
+/* medicações em infusão contínua (pedidos do autor de 01/11 e 09/11/2026; diluições e doses conferidas pelo autor).
+   Cada droga: quantidade (qtd, em qun) em volume total (vol, mL) = diluição padrão, que pode ser personalizada em cada item;
+   un = unidade da dose calculada (com /kg: peso real, campo "Peso"); dec = casas decimais; pre = diluições alternativas.
+   Dose = vazão (mL/h) × concentração, convertida para a unidade da dose (÷ 60 quando é por minuto; ÷ peso quando é por kg).
+   Fontes das doses: Barr 2013 e PADIS 2018 (sedoanalgesia); Overgaard e Džavík 2008 (vasoativas, inotrópicos);
+   Surviving Sepsis 2021 (vasopressina); ACC/AHA 2017 (nitroprussiato e nitroglicerina); AASLD 2017 (octreotide);
+   AHA 2020 (amiodarona, lidocaína, procainamida); ACC/AHA/HRS 2015 (esmolol); SCCM 2016 (bloqueadores neuromusculares);
+   ADA 2024 (insulina). Apresentações: bulas registradas na ANVISA e o que existe na Santa Casa (autor). */
+const INF_CATS = [["sed", "Sedoanalgesia"], ["dva", "Drogas vasoativas"], ["cv", "Cardiovasculares / antiarrítmicos"], ["bnm", "Bloqueadores neuromusculares"], ["glic", "Controle glicêmico"]];
 const INF = {
-  noradrenalina:  { nome: "Noradrenalina", conc: 100, un: "mcg/kg/min", peso: true, dec: 2,
+  midazolam:      { cat: "sed", nome: "Midazolam", qtd: 200, qun: "mg", vol: 200, un: "mg/kg/h", dec: 3,
+    dil: "4 ampolas (50 mg/10 mL) + 160 mL de SF 0,9% = 200 mg em 200 mL (1 mg/mL)", doses: "0,02 a 0,1 mg/kg/h", ref: "Barr et al., 2013" },
+  propofol:       { cat: "sed", nome: "Propofol 1%", qtd: 500, qun: "mg", vol: 50, un: "mcg/kg/min", dec: 1,
+    dil: "puro, sem diluir (10 mg/mL)", doses: "5 a 50 mcg/kg/min", ref: "Barr et al., 2013" },
+  cetamina:       { cat: "sed", nome: "Cetamina", qtd: 500, qun: "mg", vol: 250, un: "mcg/kg/min", dec: 2,
+    dil: "1 frasco (500 mg/10 mL) + 240 mL de SF 0,9% = 500 mg em 250 mL (2 mg/mL)", doses: "como adjuvante analgésico: bolus de 0,5 mg/kg e depois 1 a 2 mcg/kg/min", ref: "PADIS, 2018" },
+  dexmedetomidina:{ cat: "sed", nome: "Dexmedetomidina", qtd: 400, qun: "mcg", vol: 100, un: "mcg/kg/h", dec: 2,
+    dil: "2 ampolas (200 mcg/2 mL) + 96 mL de SF 0,9% = 400 mcg em 100 mL (4 mcg/mL)", doses: "0,2 a 0,7 mcg/kg/h", ref: "Barr et al., 2013" },
+  fentanil:       { cat: "sed", nome: "Fentanil", qtd: 1000, qun: "mcg", vol: 100, un: "mcg/kg/h", dec: 2,
+    dil: "2 frascos (500 mcg/10 mL) + 80 mL de SF 0,9% = 1.000 mcg em 100 mL (10 mcg/mL)", doses: "0,7 a 10 mcg/kg/h", ref: "Barr et al., 2013" },
+  morfina:        { cat: "sed", nome: "Morfina", qtd: 100, qun: "mg", vol: 100, un: "mg/h", dec: 1,
+    dil: "10 ampolas (10 mg/1 mL) + 90 mL de SF 0,9% = 100 mg em 100 mL (1 mg/mL)", doses: "2 a 30 mg/h", ref: "Barr et al., 2013" },
+  noradrenalina:  { cat: "dva", nome: "Noradrenalina", qtd: 20, qun: "mg", vol: 200, un: "mcg/kg/min", dec: 2,
     dil: "5 ampolas (4 mg/4 mL de norepinefrina base cada) + 180 mL de SF 0,9% ou SG 5% = 20 mg em 200 mL (100 mcg/mL)", doses: "0,01 a 3 mcg/kg/min", ref: "Overgaard e Džavík, 2008" },
-  adrenalina:     { nome: "Adrenalina", conc: 60, un: "mcg/kg/min", peso: true, dec: 2,
+  adrenalina:     { cat: "dva", nome: "Adrenalina", qtd: 6, qun: "mg", vol: 100, un: "mcg/kg/min", dec: 2,
     dil: "6 ampolas (1 mg/1 mL) + 94 mL de SF 0,9% = 6 mg em 100 mL (60 mcg/mL)", doses: "0,01 a 0,1 mcg/kg/min", ref: "Overgaard e Džavík, 2008" },
-  vasopressina:   { nome: "Vasopressina", conc: 0.2, un: "UI/min", peso: false, dec: 3,
+  vasopressina:   { cat: "dva", nome: "Vasopressina", qtd: 20, qun: "UI", vol: 100, un: "UI/min", dec: 3,
     dil: "1 ampola (20 UI/1 mL) + 99 mL de SF 0,9% = 20 UI em 100 mL (0,2 UI/mL)", doses: "até 0,03 UI/min, associada à noradrenalina (dose não ajustada pelo peso)", ref: "Surviving Sepsis Campaign, 2021" },
-  dobutamina:     { nome: "Dobutamina", conc: 4000, un: "mcg/kg/min", peso: true, dec: 1,
-    dil: "4 ampolas (250 mg/20 mL) + 170 mL de SF 0,9% = 1.000 mg em 250 mL (4 mg/mL)", doses: "2 a 20 mcg/kg/min", ref: "Overgaard e Džavík, 2008" },
-  dopamina:       { nome: "Dopamina", conc: 1000, un: "mcg/kg/min", peso: true, dec: 1,
+  dobutamina:     { cat: "dva", nome: "Dobutamina", qtd: 250, qun: "mg", vol: 250, un: "mcg/kg/min", dec: 1,
+    pre: [["Normal (1 ampola)", 250, 250], ["Dobrada (2 ampolas)", 500, 250], ["Quadruplicada (4 ampolas)", 1000, 250]],
+    dil: "normal: 1 ampola (250 mg/20 mL) + 230 mL de SF 0,9% = 250 mg em 250 mL (1 mg/mL); dobrada: 2 ampolas + 210 mL (2 mg/mL); quadruplicada: 4 ampolas + 170 mL (4 mg/mL) (padrão da Santa Casa, informado pelo autor)", doses: "2 a 20 mcg/kg/min", ref: "Overgaard e Džavík, 2008" },
+  dopamina:       { cat: "dva", nome: "Dopamina", qtd: 250, qun: "mg", vol: 250, un: "mcg/kg/min", dec: 1,
     dil: "5 ampolas (50 mg/10 mL) + 200 mL de SF 0,9% = 250 mg em 250 mL (1 mg/mL)", doses: "2 a 20 mcg/kg/min", ref: "Overgaard e Džavík, 2008" },
-  nitroprussiato: { nome: "Nitroprussiato de sódio", conc: 200, un: "mcg/kg/min", peso: true, dec: 2,
+  nitroprussiato: { cat: "dva", nome: "Nitroprussiato de sódio", qtd: 50, qun: "mg", vol: 250, un: "mcg/kg/min", dec: 2,
     dil: "1 ampola (50 mg/2 mL) + 248 mL de SG 5% = 50 mg em 250 mL (200 mcg/mL); proteger da luz", doses: "início com 0,3 a 0,5 mcg/kg/min; máximo de 10 mcg/kg/min", ref: "ACC/AHA, 2017" },
-  nitroglicerina: { nome: "Nitroglicerina", conc: 200, un: "mcg/min", peso: false, dec: 0,
-    dil: "1 ampola (50 mg/10 mL) + 240 mL de SG 5% = 50 mg em 250 mL (200 mcg/mL)", doses: "início com 5 mcg/min, aumentos de 5 mcg/min a cada 3 a 5 min, até 20 mcg/min (dose não ajustada pelo peso)", ref: "ACC/AHA, 2017" },
-  midazolam:      { nome: "Midazolam", doses: "0,02 a 0,1 mg/kg/h", ref: "Barr et al., 2013" },
-  propofol:       { nome: "Propofol", doses: "5 a 50 mcg/kg/min (0,3 a 3 mg/kg/h)", ref: "Barr et al., 2013" },
-  dexmedetomidina:{ nome: "Dexmedetomidina", doses: "0,2 a 0,7 mcg/kg/h", ref: "Barr et al., 2013" },
-  cetamina:       { nome: "Cetamina", doses: "como adjuvante analgésico: bolus de 0,5 mg/kg e depois 1 a 2 mcg/kg/min", ref: "PADIS, 2018" },
-  fentanil:       { nome: "Fentanil", doses: "0,7 a 10 mcg/kg/h", ref: "Barr et al., 2013" },
-  morfina:        { nome: "Morfina", doses: "2 a 30 mg/h", ref: "Barr et al., 2013" }
+  nitroglicerina: { cat: "dva", nome: "Nitroglicerina (Tridil)", qtd: 25, qun: "mg", vol: 245, un: "mcg/min", dec: 0,
+    dil: "1 ampola (5 mg/mL, 5 mL = 25 mg) + 240 mL de SG 5% = 25 mg em 245 mL (cerca de 102 mcg/mL) (apresentação da Santa Casa, informada pelo autor)", doses: "início com 5 mcg/min, aumentos de 5 mcg/min a cada 3 a 5 min, até 20 mcg/min (dose não ajustada pelo peso)", ref: "ACC/AHA, 2017" },
+  octreotide:     { cat: "dva", nome: "Octreotide", qtd: 500, qun: "mcg", vol: 100, un: "mcg/h", dec: 0,
+    dil: "5 ampolas (0,1 mg/1 mL) + 95 mL de SF 0,9% = 500 mcg em 100 mL (5 mcg/mL)", doses: "50 mcg/h após bolus de 50 mcg, por 2 a 5 dias", ref: "AASLD, 2017 (Garcia-Tsao et al.)" },
+  fenilefrina:    { cat: "dva", nome: "Fenilefrina", qtd: 10, qun: "mg", vol: 100, un: "mcg/min", dec: 0,
+    dil: "1 ampola (10 mg/1 mL) + 99 mL de SF 0,9% = 10 mg em 100 mL (100 mcg/mL)", doses: "40 a 180 mcg/min", ref: "Overgaard e Džavík, 2008" },
+  milrinona:      { cat: "dva", nome: "Milrinona", qtd: 20, qun: "mg", vol: 100, un: "mcg/kg/min", dec: 3,
+    dil: "1 ampola (20 mg/20 mL) + 80 mL de SG 5% = 20 mg em 100 mL (200 mcg/mL)", doses: "0,375 a 0,75 mcg/kg/min", ref: "Overgaard e Džavík, 2008" },
+  levosimendana:  { cat: "dva", nome: "Levosimendana", qtd: 12.5, qun: "mg", vol: 500, un: "mcg/kg/min", dec: 3,
+    dil: "1 ampola (12,5 mg/5 mL) + 495 mL de SG 5% = 12,5 mg em 500 mL (25 mcg/mL)", doses: "0,05 a 0,2 mcg/kg/min, por 24 h", ref: "Overgaard e Džavík, 2008; bula" },
+  amiodarona:     { cat: "cv", nome: "Amiodarona", qtd: 900, qun: "mg", vol: 500, un: "mg/min", dec: 2,
+    dil: "6 ampolas (150 mg/3 mL) + 482 mL de SG 5% (só em SG) = 900 mg em 500 mL (1,8 mg/mL)", doses: "1 mg/min por 6 h, depois 0,5 mg/min por 18 h", ref: "AHA, 2020 (Panchal et al.)" },
+  lidocaina:      { cat: "cv", nome: "Lidocaína 2%", qtd: 800, qun: "mg", vol: 200, un: "mg/min", dec: 2,
+    dil: "2 frascos (400 mg/20 mL) + 160 mL de SG 5% = 800 mg em 200 mL (4 mg/mL)", doses: "1 a 4 mg/min", ref: "AHA, 2020 (Panchal et al.)" },
+  procainamida:   { cat: "cv", nome: "Procainamida", qtd: 1000, qun: "mg", vol: 250, un: "mg/min", dec: 2,
+    dil: "1 g + SG 5% até 250 mL (4 mg/mL)", doses: "1 a 4 mg/min (manutenção)", ref: "AHA, 2020 (Panchal et al.)" },
+  esmolol:        { cat: "cv", nome: "Esmolol", qtd: 2500, qun: "mg", vol: 250, un: "mcg/kg/min", dec: 0,
+    dil: "1 ampola (2.500 mg/10 mL) + 240 mL de SF 0,9% = 2.500 mg em 250 mL (10 mg/mL)", doses: "50 a 300 mcg/kg/min, após bolus de 500 mcg/kg", ref: "ACC/AHA/HRS, 2015 (Page et al.)" },
+  cisatracurio:   { cat: "bnm", nome: "Cisatracúrio", qtd: 100, qun: "mg", vol: 100, un: "mcg/kg/min", dec: 2,
+    dil: "100 mg (50 mL de 2 mg/mL) + 50 mL de SF 0,9% = 100 mg em 100 mL (1 mg/mL)", doses: "1 a 3 mcg/kg/min", ref: "SCCM, 2016 (Murray et al.)" },
+  rocuronio:      { cat: "bnm", nome: "Rocurônio", qtd: 500, qun: "mg", vol: 100, un: "mcg/kg/min", dec: 1,
+    dil: "10 frascos (50 mg/5 mL) + 50 mL de SF 0,9% = 500 mg em 100 mL (5 mg/mL)", doses: "8 a 12 mcg/kg/min", ref: "SCCM, 2016 (Murray et al.)" },
+  insulina:       { cat: "glic", nome: "Insulina regular", qtd: 100, qun: "UI", vol: 100, un: "UI/h", dec: 1,
+    dil: "100 UI (1 mL de 100 UI/mL) + 99 mL de SF 0,9% = 100 UI em 100 mL (1 UI/mL)", doses: "conforme o protocolo do serviço; na cetoacidose diabética, 0,1 UI/kg/h", ref: "ADA, 2024 (Umpierrez et al.)" },
+  glicose:        { cat: "glic", nome: "Glicose hipertônica (SG 50%)", qtd: 50, qun: "g", vol: 100, un: "mg/kg/min", dec: 2,
+    dil: "SG 50% sem diluir (500 mg/mL), por acesso central", doses: "sem faixa fixa: ajustar pela glicemia (dose em taxa de infusão de glicose)", ref: "conferido pelo autor" }
 };
-// dose a partir da vazão: mL/h × concentração ÷ 60 (÷ peso quando a dose é por kg)
-function infDose(id, vazao, peso){
-  const m = INF[id], v = num(vazao); if (!m || !m.conc || !(v >= 0) || String(vazao).trim() === "") return "";
-  if (m.peso){ const p = num(peso); if (!(p > 0)) return "informe o peso"; return fmt(v * m.conc / (p * 60), m.dec) + " " + m.un; }
-  return fmt(v * m.conc / 60, m.dec) + " " + m.un;
+const INF_EM_MCG = { mcg: 1, mg: 1e3, g: 1e6 };
+// concentração do item: a diluição escrita no item (quantidade e volume) ou a padrão da droga
+function infConc(d, k, i){
+  const m = INF[d[`${k}_${i}_droga`]]; if (!m) return null;
+  const q = num(d[`${k}_${i}_qtd`]), v = num(d[`${k}_${i}_vol`]);
+  const qtd = q > 0 ? q : m.qtd, vol = v > 0 ? v : m.vol;
+  return { m, qtd, vol, por_mL: qtd / vol, padrao: qtd === m.qtd && vol === m.vol };
+}
+// dose a partir da vazão (mL/h): converte a unidade da diluição para a da dose, por minuto (÷ 60) e por kg (÷ peso)
+function infDose(d, k, i, vazao){
+  const c = infConc(d, k, i), v = num(vazao);
+  if (!c || !(v >= 0) || String(vazao).trim() === "") return "";
+  const [nu, ...rest] = c.m.un.split("/"), porKg = rest.includes("kg"), porMin = rest.includes("min");
+  let por_h = v * c.por_mL;                                  // unidades da diluição por hora
+  if (c.m.qun === "UI"){ if (nu !== "UI") return ""; }
+  else por_h = por_h * INF_EM_MCG[c.m.qun] / INF_EM_MCG[nu];
+  if (porMin) por_h /= 60;
+  if (porKg){ const p = num(d.peso); if (!(p > 0)) return "informe o peso"; por_h /= p; }
+  return fmt(por_h, c.m.dec) + " " + c.m.un;
+}
+const fmtNum = n => String(Math.round(n * 1000) / 1000).replace(".", ",");
+function infConcTxt(c){
+  if (!c) return "";
+  let q = c.por_mL, u = c.m.qun;
+  if (u === "mg" && q < 1){ q *= 1000; u = "mcg"; } else if (u === "g"){ q *= 1000; u = "mg"; }
+  return `${fmtNum(c.qtd)} ${c.m.qun} em ${fmtNum(c.vol)} mL = ${fmtNum(Math.round(q * 100) / 100)} ${u}/mL`;
 }
 function infInfo(id){
   const m = INF[id]; if (!m) return "";
-  return [m.dil ? "Diluição padrão: " + m.dil + "." : "", "Doses usuais: " + m.doses + ".", m.conc ? "Dose = vazão (mL/h) × concentração ÷ 60" + (m.peso ? " ÷ peso real (kg)." : ".") : "", "Fonte: " + m.ref + "."].filter(Boolean).join("\n");
+  return ["Diluição padrão: " + m.dil + ".", "Doses usuais: " + m.doses + ".",
+    "Dose = vazão (mL/h) × concentração" + (m.un.includes("min") ? " ÷ 60" : "") + (m.un.includes("kg") ? " ÷ peso real (kg)" : "") + `, em ${m.un}.`,
+    "Fonte: " + m.ref + "."].join("\n");
 }
 /* sítios dos acessos (pedido do autor, 01/11/2026) */
 const CVC_SITIOS = ["Veia jugular interna direita", "Veia jugular interna esquerda", "Veia subclávia direita", "Veia subclávia esquerda", "Veia femoral direita", "Veia femoral esquerda", "Membro superior direito (PICC)", "Membro superior esquerdo (PICC)"];
@@ -817,14 +879,16 @@ const CTI = [
   { title: "Lista de problemas ativos", rows: [
    [F("prob","Problemas","problems",{n:12,subs:[],item:"Problema",tl:""})],
    [F("motivo","Contexto","area",{rows:5})],
-   [F("atb","Antimicrobianos em uso","text",{w:"l"}), F("atb_d1","D1","date")],
-   [F("atb_prev","Antimicrobianos prévios","text",{w:"l"}), F("atb_prev_ini","Início","date"), F("atb_prev_fim","Término","date")]
+   [F("atbs","Antimicrobianos em uso","repeat",{n:10,item:"antimicrobiano",hl:"Antimicrobiano",lista:true,cols:[
+     F("nome","Antimicrobiano","text",{w:"l",tl:""}), F("d1","D1","date",{w:"auto",dcalc:true})]})],
+   [F("atbp","Antimicrobianos prévios","repeat",{n:10,item:"antimicrobiano",hl:"Antimicrobiano prévio",lista:true,cols:[
+     F("nome","Antimicrobiano","text",{w:"l",tl:""}), F("ini","Início","date",{w:"auto"}), F("fim","Término","date",{w:"auto"})]})]
   ]},
   { title: "Evolução da internação", rows: [
    [F("evint","Registros por dia","diary",{n:40,tl:""})]
   ]}
  ]},
- { id: "B", title: "BACKGROUND (HISTÓRICO)", groups: [ { rows: [
+ { id: "B", title: "BACKGROUND (HISTÓRICO)", groups: [ { title: "Comorbidades, medicações, alergias e social", txtTitle: false, rows: [
    [F("comorb","Comorbidades","area",{rows:2})],
    [F("meds","Medicações de uso contínuo","area",{rows:2})],
    [F("alergias_sn","Alergias","cond",{opts:["Sim","Não"],sub:{ "Sim": [F("alergias","Quais","text",{w:"full"})] }})],
@@ -834,15 +898,14 @@ const CTI = [
   { title: "Dados vitais", rows: [
    [F("pa","PA","pair",{keys:["pas","pad"],sep:"/",u:"mmHg"}), F("pam","PAM","calc",{fn:"pam"}), F("fc","FC","num",{u:"bpm"}), F("fr_pac","FR","num",{u:"irpm"}), F("spo2","SpO2","num",{u:"%"}), F("tmax","Tmáx","num",{u:"°C"})]
   ]},
-  { title: "Balanço hídrico", rows: [
+  { title: "Balanço hídrico", bhEvol: true, rows: [
+   [F("bh_per","Período","radio",{opts:["12h","24h"],optl:{"12h":"12 h (plantão noturno)","24h":"24 h (plantão diurno)"}})],
    [F("bh_ganhos","Ganhos","num",{w:"m",u:"mL"}), F("bh_perdas","Perdas","num",{w:"m",u:"mL"})],
-   [F("bh24","Balanço hídrico 24 h","num",{w:"m",u:"mL"}), F("bh_acum","BH acumulado","num",{w:"m",u:"mL"})],
-   [F("diurese","Diurese","num",{w:"s",u:"mL/24 h"}), F("dkgh","Diurese/kg/h","calc",{w:"m",u:"mL/kg/h",fn:"dkgh"})]
+   [F("bh24","Balanço hídrico","num",{w:"m",u:"mL"}), F("bh_acum","BH acumulado","num",{w:"m",u:"mL"})],
+   [F("diurese","Diurese","num",{w:"s",u:"mL"}), F("dkgh","Diurese/kg/h","calc",{w:"m",u:"mL/kg/h",fn:"dkgh"})]
   ]},
   { title: "Medicações em infusão contínua", rows: [
-   [F("inf_sed","Sedação","infusao",{n:6,item:"sedativo",drogas:["midazolam","propofol","dexmedetomidina","cetamina"]})],
-   [F("inf_anal","Analgesia","infusao",{n:6,item:"analgésico",drogas:["fentanil","morfina"]})],
-   [F("inf_dva","Drogas vasoativas","infusao",{n:8,item:"droga",drogas:["noradrenalina","adrenalina","vasopressina","dobutamina","dopamina","nitroprussiato","nitroglicerina"]})]
+   [F("inf","Medicações em infusão contínua","infusao",{n:15,tl:""})]
   ]},
   { title: "Dispositivos", rows: [
    [F("cvcs","CVC","repeat",{n:6,item:"Cateter",cols:[
@@ -1053,7 +1116,7 @@ const REFS_ENF = [
 ];
 
 const TPL = {
-  cti: { tab: "CTI", title: "ISBAR · CTI", textTitle: "ISBAR – CTI", btn: "Gerar texto ISBAR", model: CTI, refs: REFS_CTI, grpWord: "sistemas" },
+  cti: { recolher: true, limparAR: true, tab: "CTI", title: "ISBAR · CTI", textTitle: "ISBAR – CTI", btn: "Gerar texto ISBAR", model: CTI, refs: REFS_CTI, grpWord: "sistemas" },
   enf: { tab: "Enfermaria", title: "Clínica Médica", textTitle: "EVOLUÇÃO – CLÍNICA MÉDICA", btn: "Gerar texto", model: ENF, build: enfModel, sig: enfMom, text: admText, refs: REFS_ENF,
          newDay: "Nova evolução do dia", newDayMsg: "Os campos de Evolução diária, Dados vitais e Exame físico serão apagados, a data passa para hoje e o DIH aumenta em 1. Se a ficha estiver em Admissão, passa para Evolução e as situações viram a lista de problemas. Problemas, contexto, HPP, MUC, exames e condutas são mantidos." },
   nota: { tab: "Notas", title: "Notas", textTitle: "NOTA", btn: "Copiar / enviar", dlg: "Nota", model: NOTA, text: d => String(d.nota || ""), refs: [] }
@@ -1162,6 +1225,36 @@ function normalizeStore(st){
     });
     if (mud) d.cti_v5 = 1;
   }
+  // CTI, 09/11/2026: sedação, analgesia e vasoativas passam a uma lista só (inf), com a diluição de cada droga
+  for (const p of Object.values(st.patients)){
+    const d = p.data;
+    if (p.tpl !== "cti" || !d || d.cti_v7) continue;
+    let n = 0;
+    ["inf_sed", "inf_anal", "inf_dva"].forEach(kf => {
+      for (let i = 1; i <= 8; i++){
+        const g = c => d[`${kf}_${i}_${c}`];
+        if (!["droga", "outra", "vi", "vf"].some(c => String(g(c) || "").trim())) continue;
+        if (++n > 15) return;
+        ["droga", "outra", "vi", "vf"].forEach(c => { if (g(c) != null) d[`inf_${n}_${c}`] = g(c); });
+        // dobutamina antiga era calculada com 4 ampolas em 250 mL: continua assim (quadruplicada)
+        if (g("droga") === "dobutamina"){ d[`inf_${n}_qtd`] = "1000"; d[`inf_${n}_vol`] = "250"; d[`inf_${n}_pre`] = "Quadruplicada (4 ampolas)"; }
+        else if (INF[g("droga")]){ d[`inf_${n}_qtd`] = String(INF[g("droga")].qtd).replace(".", ","); d[`inf_${n}_vol`] = String(INF[g("droga")].vol).replace(".", ","); }
+      }
+    });
+    if (n) d.inf_n = String(Math.min(n, 15));
+    d.cti_v7 = 1;
+  }
+  // CTI, 09/11/2026: antimicrobianos em uso e prévios passam a ser listas (o texto antigo vira o 1º item)
+  for (const p of Object.values(st.patients)){
+    const d = p.data;
+    if (p.tpl !== "cti" || !d || d.cti_v6) continue;
+    const t = k => String(d[k] || "").trim();
+    if ((t("atb") || t("atb_d1")) && !t("atbs_1_nome") && !t("atbs_1_d1")){ if (t("atb")) d.atbs_1_nome = t("atb"); if (t("atb_d1")) d.atbs_1_d1 = d.atb_d1; }
+    if ((t("atb_prev") || t("atb_prev_ini") || t("atb_prev_fim")) && !t("atbp_1_nome")){
+      if (t("atb_prev")) d.atbp_1_nome = t("atb_prev"); if (t("atb_prev_ini")) d.atbp_1_ini = d.atb_prev_ini; if (t("atb_prev_fim")) d.atbp_1_fim = d.atb_prev_fim;
+    }
+    d.cti_v6 = 1;
+  }
   if (!TPL[st.mode]) st.mode = "cti";
   if (!st.settings || typeof st.settings !== "object") st.settings = {};
   for (const p of Object.values(st.patients)){
@@ -1251,7 +1344,7 @@ const probFilled = (f, d, i) => probKeysOne(f, i).some(k => d[k] != null && Stri
 const diaryKeys = f => Array.from({ length: f.n }, (_, i) => [`${f.k}_${i + 1}_d`, `${f.k}_${i + 1}`]).flat();
 const repKeys = f => Array.from({ length: f.n }, (_, i) => f.cols.map(c => `${f.k}_${i + 1}_${c.k}`)).flat();
 const repCol = (f, i, c) => Object.assign({}, c, { k: `${f.k}_${i}_${c.k}` });
-const INF_COLS = ["droga", "outra", "vi", "vf"];
+const INF_COLS = ["droga", "outra", "pre", "qtd", "vol", "vi", "vf"];
 const infKeys = f => Array.from({ length: f.n }, (_, i) => INF_COLS.map(c => `${f.k}_${i + 1}_${c}`)).flat();
 const condKeys = f => [f.k, ...new Set(Object.values(f.sub || {}).flat().flatMap(keysOf))];
 function keysOf(f){
@@ -1295,7 +1388,7 @@ const CALC = {
   dp(d){ if (d.vent_modo && d.vent_modo !== "VCV") return ""; const pl = num(d.pplato), pe = num(d.peep); return (isFinite(pl) && isFinite(pe)) ? fmt(pl - pe, 0) : ""; },
   cst(d){ if (d.vent_modo && d.vent_modo !== "VCV") return ""; const vc = num(d.vc), dp = num(d.pplato) - num(d.peep); return (vc > 0 && dp > 0) ? fmt(vc/dp, 1) : ""; },
   pf(d){ const po = num(d.pao2); let fi = num(d.fio2); if (!(fi > 0)) fi = num(d.cnaf_fio2); if (!(po > 0 && fi > 0)) return ""; if (fi > 1) fi = fi/100; return fi <= 1 ? fmt(po/fi, 0) : ""; },
-  dkgh(d){ const u = num(d.diurese), p = num(d.peso); return (u >= 0 && p > 0) ? fmt(u/p/24, 2) : ""; },
+  dkgh(d){ const u = num(d.diurese), p = num(d.peso), h = d.bh_per === "12h" ? 12 : 24; return (u >= 0 && p > 0) ? fmt(u/p/h, 2) : ""; },
   ag(d){ const na = num(d.na), cl = num(d.cl), hc = num(d.hco3); return [na,cl,hc].every(isFinite) ? fmt(na - cl - hc, 1) : ""; },
   dcti(d){   // dia da admissão no CTI = D1 (definido pelo autor)
     if (!d.adm_cti) return "";
@@ -1432,30 +1525,47 @@ function renderField(f){
       for (let i = 1; i <= f.n; i++){
         const row = el("div", { class: "row" });
         f.cols.forEach(c => row.append(renderField(repCol(f, i, c))));
-        box.append(el("div", { class: "rep-item", "data-i": String(i) }, el("div", { class: "rep-h", text: `${f.l} ${i}` }), row));
+        f.cols.forEach(c => { if (c.dcalc) row.append(el("span", { class: "rep-d", "data-rep-d": `${f.k}_${i}_${c.k}` })); });
+        box.append(el("div", { class: "rep-item", "data-i": String(i) },
+          el("div", { class: "rep-h" }, el("span", { text: `${f.hl || f.l} ${i}` }),
+            el("button", { class: "btn icon ol-delsub", type: "button", "data-del-rep": `${f.k}|${i}`, title: "Apagar", "aria-label": `Apagar ${(f.hl || f.l).toLowerCase()} ${i}`, text: "×" })),
+          row));
       }
       box.append(el("button", { class: "btn add-prob", type: "button", "data-add-rep": f.k, text: "+ Adicionar " + (f.item || "item").toLowerCase() }));
       return box;
     }
     case "infusao": {
-      // cada item: droga da lista (ou "Outra"), vazão ao receber e ao passar o plantão, dose calculada e texto informativo
-      const box = el("fieldset", { class: "fld inf " + w, "data-inf": f.k, "data-max": String(f.n) }, el("legend", { text: f.l }));
+      // lista que começa vazia: "+ Adicionar medicação"; cada item com droga (por grupo, ou "Outra"), diluição
+      // (padrão, editável), vazão ao receber e ao passar o plantão, dose calculada, texto informativo e "×"
+      const box = el("div", { class: "fld inf " + w, "data-inf": f.k, "data-max": String(f.n), role: "group", "aria-label": f.l });
       for (let i = 1; i <= f.n; i++){
         const kk = c => `${f.k}_${i}_${c}`;
         const vaz = (c, l) => el("div", { class: "fld w-s" }, el("label", { for: "f_" + kk(c), text: l }),
           el("div", { class: "inp" }, inputFor(kk(c), { inputmode: "decimal" }), el("span", { class: "u", text: "mL/h" })),
           el("span", { class: "inf-dose", "data-inf-dose": `${f.k}|${i}|${c}`, "aria-live": "polite" }));
+        const sel = el("select", { id: "f_" + kk("droga"), "data-k": kk("droga") }, el("option", { value: "", text: "—" }),
+          ...INF_CATS.map(([cat, nome]) => el("optgroup", { label: nome }, ...Object.entries(INF).filter(([, m]) => m.cat === cat).map(([id, m]) => el("option", { value: id, text: m.nome })))),
+          el("optgroup", { label: "Outras" }, el("option", { value: "outra", text: "Outra" })));
         box.append(el("div", { class: "rep-item inf-item", "data-i": String(i) },
+          el("div", { class: "rep-h" }, el("span", { text: `Medicação ${i}` }),
+            el("button", { class: "btn icon ol-delsub", type: "button", "data-del-inf": `${f.k}|${i}`, title: "Apagar", "aria-label": `Apagar a medicação ${i}`, text: "×" })),
           el("div", { class: "row" },
-            el("div", { class: "fld w-m" }, el("label", { for: "f_" + kk("droga"), text: `${(f.item || "droga").replace(/^./, c => c.toUpperCase())} ${i}` }),
-              el("div", { class: "inp" }, el("select", { id: "f_" + kk("droga"), "data-k": kk("droga") }, el("option", { value: "", text: "—" }),
-                ...f.drogas.map(id => el("option", { value: id, text: INF[id].nome })), el("option", { value: "outra", text: "Outra" })))),
+            el("div", { class: "fld w-m" }, el("label", { for: "f_" + kk("droga"), text: "Droga" }), el("div", { class: "inp" }, sel)),
             el("div", { class: "fld w-m inf-outra", "data-inf-outra": `${f.k}|${i}` }, el("label", { for: "f_" + kk("outra"), text: "Qual" }),
-              el("div", { class: "inp" }, inputFor(kk("outra"), { autocapitalize: "sentences" }))),
-            vaz("vi", "Ao receber o plantão"), vaz("vf", "Ao passar o plantão")),
+              el("div", { class: "inp" }, inputFor(kk("outra"), { autocapitalize: "sentences" })))),
+          el("div", { class: "row inf-dil", "data-inf-dil": `${f.k}|${i}` },
+            el("div", { class: "fld w-m inf-pre", "data-inf-pre": `${f.k}|${i}` }, el("label", { for: "f_" + kk("pre"), text: "Diluição" }),
+              el("div", { class: "inp" }, el("select", { id: "f_" + kk("pre"), "data-k": kk("pre") }))),
+            el("div", { class: "fld w-s" }, el("label", { for: "f_" + kk("qtd"), text: "Quantidade da droga" }),
+              el("div", { class: "inp" }, inputFor(kk("qtd"), { inputmode: "decimal" }), el("span", { class: "u", "data-inf-qun": `${f.k}|${i}` }))),
+            el("div", { class: "fld w-s" }, el("label", { for: "f_" + kk("vol"), text: "Volume total" }),
+              el("div", { class: "inp" }, inputFor(kk("vol"), { inputmode: "decimal" }), el("span", { class: "u", text: "mL" }))),
+            el("div", { class: "fld w-m inf-conc" }, el("span", { class: "lbl", text: "Concentração" }), el("span", { class: "inf-conc-v", "data-inf-conc": `${f.k}|${i}` }),
+              el("button", { class: "linkbtn", type: "button", "data-inf-padrao": `${f.k}|${i}`, text: "Voltar à diluição padrão" }))),
+          el("div", { class: "row" }, vaz("vi", "Ao receber o plantão"), vaz("vf", "Ao passar o plantão")),
           el("details", { class: "inf-info", "data-inf-info": `${f.k}|${i}` }, el("summary", { text: "ⓘ Diluição e doses" }), el("p", { class: "inf-txt" }))));
       }
-      box.append(el("button", { class: "btn add-prob", type: "button", "data-add-inf": f.k, text: "+ Adicionar " + (f.item || "droga") }));
+      box.append(el("button", { class: "btn add-prob", type: "button", "data-add-inf": f.k, text: "+ Adicionar medicação" }));
       return box;
     }
     case "diary": {
@@ -1490,6 +1600,9 @@ function renderForm(){
   const root = $("#form");
   const model = modelOf(t, D());
   renderedSig = store.mode + "|" + sigOf(t, D());
+  const abertos = new Set([...root.querySelectorAll("details.grp[open]")].map(x => x.dataset.gid));
+  const manter = root.dataset.mode === store.mode && root.childElementCount > 0;
+  root.dataset.mode = store.mode;
   root.replaceChildren();
   fieldsIndex = [];
   model.forEach(sec => {
@@ -1508,8 +1621,9 @@ function renderForm(){
         content.append(row);
       });
       if (g.hint) content.append(el("p", { class: "hint", text: g.hint }));
+      if (g.bhEvol) content.append(el("button", { class: "btn add-prob", type: "button", "data-bh-evol": "1", text: "+ Inserir na evolução da internação" }));
       if (g.title){
-        body.append(el("details", { class: "grp", open: true },
+        body.append(el("details", { class: "grp", "data-gid": gid, open: t.recolher ? (manter && abertos.has(gid)) : true },
           el("summary", {}, el("span", { class: "t", text: g.title }), el("span", { class: "badge", "data-badge": gid })),
           content));
       } else {
@@ -1586,8 +1700,64 @@ function updateRepeat(){
     box.querySelectorAll(".rep-item").forEach(r => r.hidden = Number(r.dataset.i) > shown);
     box.querySelector("[data-add-rep]").hidden = shown >= max;
   });
+  document.querySelectorAll("#form [data-rep-d]").forEach(x => { const n = diaDe(d[x.dataset.repD]); x.textContent = n ? "D" + n : ""; });
+}
+// dia do tratamento: a data de início conta como D1 (como os Dias de CTI)
+function diaDe(iso){
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || "")) return "";
+  const n = Math.round((new Date(todayISO() + "T12:00") - new Date(iso + "T12:00")) / 864e5) + 1;
+  return n >= 1 ? String(n) : "";
+}
+/* balanço hídrico → "Evolução da internação" do dia (pedido do autor, 09/11/2026; formato e faixas do autor):
+   "DE 12h: Balanço hídrico: ___ mL | Ganhos: ___ mL | Perdas: ___ mL | Diurese: ___ mL (___ mL/kg/h) | Afebril | Euglicêmico"
+   Tmáx: até 37,1 °C afebril; 37,2 a 38,0 °C subfebril; acima de 38,0 °C febril.
+   Controle glicêmico: adequado = euglicêmico; inadequado = disglicêmico. Campos vazios ficam de fora. */
+function febreDe(t){ const v = num(t); if (!isFinite(v)) return ""; return v > 38 ? "Febril" : v >= 37.2 ? "Subfebril" : "Afebril"; }
+function bhTexto(d){
+  const ml = v => String(v == null ? "" : v).trim();
+  const partes = [];
+  if (ml(d.bh24)) partes.push(`Balanço hídrico: ${ml(d.bh24)} mL`);
+  if (ml(d.bh_ganhos)) partes.push(`Ganhos: ${ml(d.bh_ganhos)} mL`);
+  if (ml(d.bh_perdas)) partes.push(`Perdas: ${ml(d.bh_perdas)} mL`);
+  if (ml(d.diurese)){ const k = CALC.dkgh(d); partes.push(`Diurese: ${ml(d.diurese)} mL` + (k ? ` (${k} mL/kg/h)` : "")); }
+  const f = febreDe(d.tmax); if (f) partes.push(f);
+  if (d.glic_ctrl === "Adequado") partes.push("Euglicêmico"); else if (d.glic_ctrl === "Inadequado") partes.push("Disglicêmico");
+  return partes.length ? `DE ${d.bh_per}: ` + partes.join(" | ") : "";
+}
+function bhParaEvolucao(){
+  const p = cur(); if (!p) return;
+  const d = p.data;
+  if (!d.bh_per){ toast("Escolha o período do balanço: 12 h ou 24 h"); return; }
+  const linha = bhTexto(d);
+  if (!linha){ toast("Preencha os dados do balanço hídrico"); return; }
+  const k = "evint", max = 40, hoje = todayISO();
+  let i = 0;
+  for (let x = 1; x <= max; x++) if (d[`${k}_${x}_d`] === hoje){ i = x; break; }
+  if (i){ const t = String(d[`${k}_${i}`] || "").trim(); d[`${k}_${i}`] = t ? t + "\n" + linha : linha; }
+  else {
+    let last = 0; for (let x = 1; x <= max; x++) if (String(d[`${k}_${x}`] || "").trim() || d[`${k}_${x}_d`]) last = x;
+    i = Math.max(last, Number(d[k + "_n"]) || 0) + 1;
+    if (i > max){ toast("A evolução da internação já tem o máximo de registros"); return; }
+    d[`${k}_${i}_d`] = hoje; d[`${k}_${i}`] = linha; d[k + "_n"] = String(i);
+  }
+  fillForm(); changed();
+  toast("Inserido na evolução da internação de " + brDate(hoje));
+}
+// apagar um item de um campo repetido: os seguintes sobem uma posição (pedido do autor, 09/11/2026)
+function onDelRep(e){
+  const b = e.target.closest("[data-del-rep]"); if (!b || !cur()) return;
+  const d = cur().data, [k, i] = b.dataset.delRep.split("|"), box = b.closest("[data-rep]");
+  const fi = fieldsIndex.find(x => x.f.k === k && x.f.t === "repeat"); if (!fi) return;
+  const cols = fi.f.cols.map(c => c.k), max = Number(box.dataset.max), at = Number(i);
+  if (cols.some(c => String(d[`${k}_${at}_${c}`] || "").trim()) && !confirm("Apagar este item?")) return;
+  const shown = box.querySelectorAll(".rep-item:not([hidden])").length;
+  for (let x = at; x <= max; x++) cols.forEach(c => { const nx = d[`${k}_${x + 1}_${c}`]; if (x < max && nx != null) d[`${k}_${x}_${c}`] = nx; else delete d[`${k}_${x}_${c}`]; });
+  d[k + "_n"] = String(Math.max(0, shown - 1));
+  fillForm(); changed();
 }
 function onAddRep(e){
+  if (e.target.closest("[data-del-rep]")) return onDelRep(e);
+  if (e.target.closest("[data-bh-evol]")) return bhParaEvolucao();
   const b = e.target.closest("[data-add-rep]"); if (!b || !cur()) return;
   const k = b.dataset.addRep, i = b.closest("[data-rep]").querySelectorAll(".rep-item:not([hidden])").length + 1;
   cur().data[k + "_n"] = String(i);
@@ -1599,15 +1769,51 @@ function updateInf(){
   document.querySelectorAll("#form [data-inf]").forEach(box => {
     const k = box.dataset.inf, max = Number(box.dataset.max);
     let last = 0; for (let i = 1; i <= max; i++) if (INF_COLS.some(c => cheio(`${k}_${i}_${c}`))) last = i;
-    const shown = Math.min(max, Math.max(1, last, Number(d[k + "_n"]) || 0));
+    const shown = Math.min(max, Math.max(0, last, Number(d[k + "_n"]) || 0));   // começa sem nenhum item
     box.querySelectorAll(".inf-item").forEach(r => r.hidden = Number(r.dataset.i) > shown);
     box.querySelector("[data-add-inf]").hidden = shown >= max;
   });
-  document.querySelectorAll("#form [data-inf-outra]").forEach(x => { const [k, i] = x.dataset.infOutra.split("|"); x.hidden = d[`${k}_${i}_droga`] !== "outra"; });
-  document.querySelectorAll("#form [data-inf-dose]").forEach(x => { const [k, i, c] = x.dataset.infDose.split("|"); const v = infDose(d[`${k}_${i}_droga`], d[`${k}_${i}_${c}`], d.peso); x.textContent = v ? "= " + v : ""; });
-  document.querySelectorAll("#form [data-inf-info]").forEach(x => { const [k, i] = x.dataset.infInfo.split("|"); const t = infInfo(d[`${k}_${i}_droga`]); x.hidden = !t; x.querySelector(".inf-txt").textContent = t; });
+  const par = x => x.split("|");
+  document.querySelectorAll("#form [data-inf-outra]").forEach(x => { const [k, i] = par(x.dataset.infOutra); x.hidden = d[`${k}_${i}_droga`] !== "outra"; });
+  document.querySelectorAll("#form [data-inf-dil]").forEach(x => { const [k, i] = par(x.dataset.infDil); x.hidden = !INF[d[`${k}_${i}_droga`]]; });
+  document.querySelectorAll("#form [data-inf-pre]").forEach(x => {
+    const [k, i] = par(x.dataset.infPre), m = INF[d[`${k}_${i}_droga`]], sel = x.querySelector("select");
+    x.hidden = !(m && m.pre);
+    if (!m || !m.pre) return;
+    const c = infConc(d, k, i), atual = (m.pre.find(([, q, v]) => q === c.qtd && v === c.vol) || [""])[0];
+    sel.replaceChildren(...m.pre.map(([l]) => el("option", { value: l, text: l })), el("option", { value: "", text: "Personalizada" }));
+    sel.value = atual;
+  });
+  document.querySelectorAll("#form [data-inf-qun]").forEach(x => { const [k, i] = par(x.dataset.infQun), m = INF[d[`${k}_${i}_droga`]]; x.textContent = m ? m.qun : ""; });
+  document.querySelectorAll("#form [data-inf-conc]").forEach(x => {
+    const [k, i] = par(x.dataset.infConc), c = infConc(d, k, i);
+    x.textContent = c ? infConcTxt(c) : "";
+    const btn = x.parentNode.querySelector("[data-inf-padrao]"); if (btn) btn.hidden = !c || (c.padrao && !(INF[d[`${k}_${i}_droga`]] || {}).pre);
+  });
+  document.querySelectorAll("#form [data-inf-dose]").forEach(x => { const [k, i, c] = par(x.dataset.infDose); const v = infDose(d, k, i, d[`${k}_${i}_${c}`]); x.textContent = v ? "= " + v : ""; });
+  document.querySelectorAll("#form [data-inf-info]").forEach(x => { const [k, i] = par(x.dataset.infInfo); const t = infInfo(d[`${k}_${i}_droga`]); x.hidden = !t; x.querySelector(".inf-txt").textContent = t; });
+}
+// ao escolher a droga (ou uma diluição pronta, como a dobutamina dobrada), a diluição padrão entra no item
+function infAplicaPadrao(d, k, i, preLabel){
+  const m = INF[d[`${k}_${i}_droga`]];
+  delete d[`${k}_${i}_qtd`]; delete d[`${k}_${i}_vol`]; delete d[`${k}_${i}_pre`];
+  if (!m) return;
+  const pr = m.pre && (m.pre.find(([l]) => l === preLabel) || m.pre[0]);
+  d[`${k}_${i}_qtd`] = String(pr ? pr[1] : m.qtd).replace(".", ",");
+  d[`${k}_${i}_vol`] = String(pr ? pr[2] : m.vol).replace(".", ",");
 }
 function onAddInf(e){
+  const del = e.target.closest("[data-del-inf]"), pad = e.target.closest("[data-inf-padrao]");
+  if ((del || pad) && cur()){
+    const d = cur().data, [k, i] = (del || pad).dataset[del ? "delInf" : "infPadrao"].split("|"), at = Number(i);
+    if (pad){ infAplicaPadrao(d, k, at); fillForm(); changed(); return; }
+    const box = del.closest("[data-inf]"), max = Number(box.dataset.max);
+    if (INF_COLS.some(c => String(d[`${k}_${at}_${c}`] || "").trim()) && !confirm("Apagar esta medicação?")) return;
+    const shown = box.querySelectorAll(".inf-item:not([hidden])").length;
+    for (let x = at; x <= max; x++) INF_COLS.forEach(c => { const nx = d[`${k}_${x + 1}_${c}`]; if (x < max && nx != null) d[`${k}_${x}_${c}`] = nx; else delete d[`${k}_${x}_${c}`]; });
+    d[k + "_n"] = String(Math.max(0, shown - 1));
+    fillForm(); changed(); return;
+  }
   const b = e.target.closest("[data-add-inf]"); if (!b || !cur()) return;
   const k = b.dataset.addInf, i = b.closest("[data-inf]").querySelectorAll(".inf-item:not([hidden])").length + 1;
   cur().data[k + "_n"] = String(i);
@@ -1695,6 +1901,12 @@ function onInput(e){
     if (inp.value === "") delete d[k]; else d[k] = inp.value;
   }
   if (JSON.stringify(d[k] == null ? null : d[k]) === before) return;   // nada mudou (ex.: evento "change" ao sair do campo)
+  const mi = /^(.+)_(\d+)_(droga|pre)$/.exec(k);
+  if (mi && document.querySelector(`#form [data-inf="${mi[1]}"]`)){
+    // "Personalizada" mantém a diluição escrita; as outras opções e a troca de droga trazem a diluição padrão
+    if (!(mi[3] === "pre" && !inp.value)){ infAplicaPadrao(d, mi[1], mi[2], mi[3] === "pre" ? inp.value : null); if (mi[3] === "pre") d[k] = inp.value; }
+    fillForm();
+  }
   if (k === "sexo"){ swapStdSexo(TPL[store.mode], d, sexoAntes); fillForm(); }
   if (inp.dataset.condKey) fillForm();   // abre os campos da opção escolhida, já com os valores atuais
   if (renderedSig !== store.mode + "|" + sigOf(TPL[store.mode], d)){ fillStd(TPL[store.mode], d); fillForm(); }   // ex.: Admissão → Evolução
@@ -1839,19 +2051,23 @@ function buildText(){
             for (let i = 1; i <= f.n; i++){
               const kk = c => d[`${f.k}_${i}_${c}`], id = kk("droga");
               const nome = id === "outra" ? String(kk("outra") || "").trim() || "Outra" : (INF[id] ? INF[id].nome : "");
-              const vz = (c, l) => { const v = String(kk(c) || "").trim(); if (!v) return ""; const ds = infDose(id, v, d.peso); return `${l} ${v} mL/h` + (ds && ds !== "informe o peso" ? ` (${ds})` : ""); };
+              const c = infConc(d, f.k, i);
+              const dil = c ? (INF[id].pre ? ` (${(INF[id].pre.find(([, q, v]) => q === c.qtd && v === c.vol) || ["diluição: " + infConcTxt(c)])[0].replace(/ \(.*\)$/, "").toLowerCase()})` : c.padrao ? "" : ` (diluição: ${infConcTxt(c)})`) : "";
+              const vz = (cc, l) => { const v = String(kk(cc) || "").trim(); if (!v) return ""; const ds = infDose(d, f.k, i, v); return `${l} ${v} mL/h` + (ds && ds !== "informe o peso" ? ` (${ds})` : ""); };
               const p = [vz("vi", "ao receber"), vz("vf", "ao passar")].filter(Boolean);
-              if (nome || p.length) it.push(`- ${nome || "(droga não informada)"}` + (p.length ? ": " + p.join(" | ") : ""));
+              if (nome || p.length) it.push(`- ${nome || "(droga não informada)"}${dil}` + (p.length ? ": " + p.join(" | ") : ""));
             }
-            if (it.length){ gLines.push(f.l + ":"); gLines.push(...it); }
+            if (it.length){ gLines.push(...it); }
             return;
           }
           if (f.t === "repeat"){
-            let idx = 0;
+            let idx = 0; const it = [];
             for (let i = 1; i <= f.n; i++){
-              const vals = f.cols.map(c => { const cc = repCol(f, i, c), v = valueText(cc, d); if (!v) return ""; const l = c.tl != null ? c.tl : c.l; return l ? `${l}: ${v}` : v; }).filter(Boolean);
-              if (vals.length) gLines.push(`${f.l} ${++idx}: ${vals.join(" | ")}`);
+              const vals = f.cols.map(c => { const cc = repCol(f, i, c); let v = valueText(cc, d); if (!v) return ""; if (c.dcalc){ const n = diaDe(d[cc.k]); if (n) v += ` (D${n})`; } const l = c.tl != null ? c.tl : c.l; return l ? `${l}: ${v}` : v; }).filter(Boolean);
+              if (vals.length) it.push(f.lista ? "- " + vals.join(" | ") : `${f.l} ${++idx}: ${vals.join(" | ")}`);
             }
+            if (it.length && f.lista) gLines.push(f.l + ":");
+            gLines.push(...it);
             return;
           }
           if (f.t === "cond" && f.subtxt && f.subtxt[d[f.k]]){
@@ -1883,7 +2099,7 @@ function buildText(){
         if (inline.length) gLines.push(inline.join(" | "));
       });
       if (gLines.length){
-        if (g.title) secLines.push(`[${g.title}]`);
+        if (g.title && g.txtTitle !== false) secLines.push(`[${g.title}]`);
         secLines.push(...gLines);
       }
     });
@@ -1914,7 +2130,8 @@ function fileSafe(s){ return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g
    AÇÕES
    ===================================================================== */
 function showCurrent(){ renderForm(); fillForm(); refreshSelect(); }
-function switchTo(id){ store.currentBy[store.mode] = id; fillForm(); refreshSelect(); saveSoon(); window.scrollTo({ top: 0 }); }
+function recolherGrupos(){ if (TPL[store.mode] && TPL[store.mode].recolher) document.querySelectorAll("#form details.grp").forEach(x => x.open = false); }
+function switchTo(id){ store.currentBy[store.mode] = id; fillForm(); recolherGrupos(); refreshSelect(); saveSoon(); window.scrollTo({ top: 0 }); }
 function switchMode(mode){
   if (!TPL[mode] || mode === store.mode) return;
   saveNow();
@@ -2013,7 +2230,18 @@ function onMenu(act){
       break;
     case "import": $("#importFile").click(); break;
     case "clear":
-      if (p && confirm(`Limpar todos os campos de “${ptLabel(p)}”?`)){
+      if (p && TPL[p.tpl].limparAR){
+        if (!confirm(`Limpar a Avaliação (A) e as Recomendações (R) de “${ptLabel(p)}”?\n\nIdentificação, Situação e Background ficam como estão.`)) break;
+        const apagar = new Set();
+        eachField(modelOf(TPL[p.tpl], p.data).filter(sec => sec.id === "A" || sec.id === "R"), f => {
+          keysOf(f).forEach(k => apagar.add(k));
+          apagar.add(f.k + "_n");                                                     // quantos itens estavam abertos
+          if (f.t === "outline") for (let i = 1; i <= f.n; i++) apagar.add(`${f.k}_${i}_n`);
+        });
+        apagar.forEach(k => delete p.data[k]);
+        fillForm(); changed(); saveNow(); toast("Avaliação e recomendações limpas");
+      }
+      else if (p && confirm(`Limpar todos os campos de “${ptLabel(p)}”?`)){
         const keep = {}; ["nome","leito","idade","sexo","enf_mom"].forEach(k => { if (p.data[k]) keep[k] = p.data[k]; });
         p.data = { ...keep, data_aval: todayISO() }; fillForm(); refreshSelect(); changed(); saveNow(); toast("Campos limpos");
       }
@@ -2593,7 +2821,7 @@ function setView(v){
 function openPatient(id, v = "chart"){
   const p = store.patients[id]; if (!p) return;
   store.mode = p.tpl; store.currentBy[p.tpl] = id;
-  showCurrent();
+  showCurrent(); recolherGrupos();
   setView(v);
   saveSoon();
 }
@@ -3272,6 +3500,7 @@ function menuState(){
   const nd = $('[data-act="newday"]');
   nd.hidden = !(view === "chart" && t && t.newDay); if (t && t.newDay) nd.textContent = t.newDay;
   $('[data-act="std"]').hidden = !(view === "chart" && t && hasStd(t, p.data));
+  $('[data-act="clear"]').textContent = t && t.limparAR ? "Limpar avaliação e recomendações (A e R)" : "Limpar campos do prontuário (mantém nome e leito)";
   const hasGroups = !!(t && modelOf(t, p.data).some(s => s.groups.some(g => g.title)));
   $('[data-act="expand"]').hidden = $('[data-act="collapse"]').hidden = !(view === "chart" && hasGroups);
 }
