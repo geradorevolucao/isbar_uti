@@ -4,13 +4,14 @@
 // com referências. Uso restrito: só as contas cujo e-mail está no segredo ANAMNESIA_IA_EMAILS
 // (separados por vírgula). A chave da API fica no segredo ANTHROPIC_API_KEY, nunca no site.
 //
-// Modelos (cenário misto escolhido pelo autor):
-//   contexto  → Claude Haiku 5.5  (resumir/atualizar o contexto a partir das evoluções)
-//   escrita   → Claude Sonnet 5.5 (revisar a escrita da evolução do dia, sem mudar o conteúdo)
-//   condutas  → Claude Opus 5.5   (propostas com busca em PubMed, Cochrane e diretrizes AHA/ESC/KDIGO)
+// Modelos (escolha do autor; revisão de 09/11/2026: contexto e condutas passaram para o Sonnet):
+//   contexto   → Claude Sonnet 5.5 (interpretar a evolução e a avaliação para atualizar o contexto)
+//   escrita    → Claude Sonnet 5.5 (revisar a escrita da evolução do dia, sem mudar o conteúdo)
+//   condutas   → Claude Sonnet 5.5 (recomendações com busca em PubMed, Cochrane e diretrizes AHA/ESC/KDIGO)
+//   pendencias → Claude Haiku 5.5  (na troca de plantão: condutas de plantões anteriores sem registro no prontuário)
 //
 // O site envia o prontuário já sem nome (pseudonimizado no aparelho). Nada é gravado aqui.
-// Corpo: { tarefa: "ping" | "contexto" | "escrita" | "condutas", texto?: string, campo?: string }
+// Corpo: { tarefa: "ping" | "contexto" | "escrita" | "condutas" | "pendencias", texto?: string }
 // Resposta: { ok, permitido?, texto?, fontes?, uso?: { modelo, entrada, saida, buscas, custo_usd } }
 
 import Anthropic from "npm:@anthropic-ai/sdk@1.6.0";
@@ -43,11 +44,15 @@ type Tarefa = {
 };
 const TAREFAS: Record<string, Tarefa> = {
   contexto: {
-    modelo: "claude-haiku-5-5", effort: "low", fallback: false,
-    system: BASE + " Tarefa: reescrever o campo \"Contexto\" incorporando, em ordem cronológica, os fatos relevantes " +
-      "registrados nas evoluções (evolução da internação ou evolução diária), mantendo o que já estava no contexto. " +
-      "Texto corrido, objetivo, com no máximo 200 palavras. Não sugira condutas nem interpretações que não estejam escritas. " +
-      "Responda apenas com o novo texto do contexto, sem título nem comentários.",
+    modelo: "claude-sonnet-5-5", effort: "medium", fallback: true,
+    system: BASE + " Tarefa: atualizar o campo \"Contexto\", que resume a internação. Leia o contexto atual, a evolução " +
+      "da internação (ou a evolução diária) e os dados da avaliação (sinais vitais, balanço hídrico, dispositivos, infusões, " +
+      "suporte ventilatório, antimicrobianos e exames) e reescreva o contexto interpretando o que mudou no quadro. " +
+      "Não copie as evoluções nem liste os dados brutos do dia: sintetize, em ordem cronológica, os fatos relevantes da " +
+      "internação (motivo da admissão, diagnósticos, procedimentos, intercorrências e resposta ao tratamento) e a tendência " +
+      "clínica atual. Mantenha do contexto atual o que continua relevante. A interpretação deve se apoiar só no que está " +
+      "escrito: não acrescente diagnósticos, valores nem fatos que não estejam no prontuário e não sugira condutas. " +
+      "Texto corrido, objetivo, com no máximo 200 palavras. Responda apenas com o novo texto do contexto, sem título nem comentários.",
   },
   escrita: {
     modelo: "claude-sonnet-5-5", effort: "medium", fallback: true,
@@ -57,14 +62,26 @@ const TAREFAS: Record<string, Tarefa> = {
       "O restante do prontuário serve só de contexto. Responda apenas com o texto revisado, sem comentários.",
   },
   condutas: {
-    modelo: "claude-opus-5-5", effort: "medium", busca: true, fallback: true,
-    system: BASE + " Tarefa: propor condutas para discussão com o preceptor, organizadas por problema ativo do prontuário. " +
-      "Para cada sugestão, escreva a conduta, o raciocínio em uma ou duas frases e a referência que a sustenta. " +
+    modelo: "claude-sonnet-5-5", effort: "medium", busca: true, fallback: true,
+    system: BASE + " Tarefa: propor recomendações de conduta para discussão com o preceptor, organizadas por problema ativo do prontuário. " +
       "Busque as referências em PubMed, Cochrane e nas diretrizes da AHA, ESC e KDIGO com a ferramenta de busca; " +
-      "cite só o que encontrou nas buscas, com o link, e diga quando a evidência é fraca ou quando não achou referência. " +
-      "Aponte os dados que faltam no prontuário para decidir. Seja conciso. Formato: texto simples, sem tabelas, " +
-      "com um título por problema e as sugestões em linhas começando com \"- \". " +
+      "cite só o que encontrou nas buscas, com o link, e diga quando a evidência é fraca ou quando não achou referência. Seja conciso. " +
+      "Formato obrigatório, em texto simples, sem tabelas, negrito nem outros marcadores: para cada problema, uma linha " +
+      "\"## <problema>\"; abaixo, uma linha por recomendação, exatamente assim: " +
+      "\"- <conduta, em uma frase> | Racional: <uma ou duas frases> | Referência: <autor ou sociedade, ano, título curto> <link>\" " +
+      "(sem referência encontrada: \"Referência: não encontrada nas buscas\"; evidência fraca: acrescente \"(evidência fraca)\" ao racional); " +
+      "e, quando faltar no prontuário um dado necessário para decidir, uma linha \"Falta: <dado>\". " +
       "Termine com a frase: \"Sugestões para discussão; a decisão é da equipe assistente.\"",
+  },
+  pendencias: {
+    modelo: "claude-haiku-5-5", effort: "low", fallback: false,
+    system: BASE + " Tarefa: conferir as condutas registradas em plantões anteriores (lista CONDUTAS A CONFERIR) contra o restante do prontuário. " +
+      "Para cada conduta que gera algo que deveria aparecer registrado no prontuário (resultado ou laudo de exame solicitado, cultura, " +
+      "parecer, procedimento, troca ou retirada de dispositivo) e que ainda não aparece registrado, escreva uma pendência curta e objetiva " +
+      "(exemplo: conduta \"Solicito ecocardiograma transtorácico\" sem laudo nos exames de imagem → \"Laudo do ecocardiograma transtorácico\"). " +
+      "Não crie pendência para conduta que já aparece realizada ou com resultado no prontuário, nem para o que já está em PENDÊNCIAS ATUAIS, " +
+      "mesmo com outras palavras, nem para nada que não decorra das condutas listadas. " +
+      "Responda só com as pendências, uma por linha começando com \"- \", ou apenas com a palavra NENHUMA.",
   },
 };
 

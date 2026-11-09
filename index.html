@@ -240,6 +240,11 @@ body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .
 .ia-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:700px){.ia-cols{grid-template-columns:1fr}}
 .ia-cols textarea{min-height:12em}
+.ia-recs{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:8px}
+.ia-rec{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);cursor:pointer}
+.ia-rec input{width:20px;height:20px;margin-top:2px;flex:none;accent-color:var(--accent)}
+.ia-rec span{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}
+.ia-rec small{color:var(--muted);font-size:13px}
 #iaAtualBox[hidden],#iaFontesBox[hidden]{display:none}
 #iaAtualBox[hidden] + .fld{grid-column:1/-1}
 #exGrafBox[hidden],#exLaudosBox[hidden],#exPendBox[hidden],#exAvisosBox[hidden],#exTabNota[hidden],#exCredForm[hidden],#exCredSaved[hidden]{display:none}
@@ -565,7 +570,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
         <button type="button" data-act="biomega" data-views="chart">Exames do Biomega</button>
         <button type="button" data-act="ia-contexto" hidden>IA: atualizar o contexto</button>
         <button type="button" data-act="ia-escrita" hidden>IA: melhorar a escrita da evolução do dia</button>
-        <button type="button" data-act="ia-condutas" hidden>IA: sugerir condutas (com referências)</button>
+        <button type="button" data-act="ia-condutas" hidden>IA: sugerir recomendações (com referências)</button>
         <button type="button" data-act="print" data-views="chart rx">Imprimir / salvar PDF</button>
         <button type="button" data-act="expand">Expandir todos os grupos</button>
         <button type="button" data-act="collapse">Recolher todos os grupos</button>
@@ -787,6 +792,11 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <p class="sub" id="iaSobre"></p>
       <p class="msg" id="iaMsg" role="status"></p>
       <div id="iaOut" hidden>
+        <div id="iaRecBox" hidden>
+          <p class="sub">Marque as recomendações que vão para “Recomendações” (R). Problema, racional e referência entram como subtópicos.</p>
+          <ul class="ia-recs" id="iaRecs"></ul>
+          <div class="acts"><button class="btn" type="button" id="iaRecTodas">Marcar todas</button><button class="btn primary" type="button" id="iaRecAdd">Adicionar às Recomendações</button></div>
+        </div>
         <div class="ia-cols">
           <div class="fld" id="iaAtualBox"><label for="iaAtual">Texto atual</label><div class="inp"><textarea id="iaAtual" rows="8" readonly></textarea></div></div>
           <div class="fld"><label for="iaNovo" id="iaNovoL">Proposta da IA (pode editar antes de aplicar)</label><div class="inp"><textarea id="iaNovo" rows="12"></textarea></div></div>
@@ -1094,6 +1104,10 @@ const CTI = [
   ]},
   { title: "Pendências e seguimento", rows: [
    [F("pend","Pendências","outline",{n:20,ns:8,min:3,item:"Pendência",tl:""})]
+  ]},
+  // recomendações da IA (pedido do autor, 09/11/2026): entram só quando o autor toca em "Adicionar às Recomendações"
+  { title: "Recomendações", rows: [
+   [F("rec","Recomendações","outline",{n:30,ns:8,min:1,item:"Recomendação",tl:""})]
   ]}
  ]}
 ];
@@ -1435,7 +1449,7 @@ function saveNow(){
 function changed(id){
   const pid = id || store.currentBy[store.mode];
   const p = store.patients[pid];
-  if (p){ p.updated = Date.now(); markDirty(pid); }
+  if (p){ cdlCarimbo(p); p.updated = Date.now(); markDirty(pid); }
   saveSoon();
   widgetSync();
 }
@@ -1474,7 +1488,7 @@ function todayISO(){ const d = new Date(); return d.getFullYear()+"-"+pad2(d.get
 function brDate(iso){ const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||""); return m ? `${m[3]}/${m[2]}/${m[1]}` : (iso||""); }
 function num(v){ if (v == null) return NaN; const s = String(v).trim().replace(",", "."); return s === "" ? NaN : Number(s); }
 function fmt(v, d){ if (!isFinite(v)) return ""; return v.toFixed(d).replace(".", ","); }
-function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 2000); }
+function toast(msg, ms = 2000){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), ms); }
 function setStatus(msg){ $("#status").textContent = msg; }
 const D = () => (cur() ? cur().data : {});
 /* campo "outline": itens (k_i) com subtópicos (k_i_j); k_n e k_i_n guardam quantos estão abertos */
@@ -2135,9 +2149,9 @@ function dataRef(d){
   let tem = false; eachField(modelOf(TPL[store.mode], d), f => { if (f.k === "data_aval") tem = true; });
   return tem ? (d.data_aval || "") : todayISO();
 }
-function buildText(){
-  const t = TPL[store.mode];
-  const d = D();
+function buildText(p = cur()){
+  const t = TPL[p ? p.tpl : store.mode];
+  const d = p ? p.data : {};
   if (t.text){ const r = t.text(d); if (r != null) return r; }
   const out = [];
   const head = [t.textTitle];
@@ -4539,8 +4553,11 @@ function bioInserir(){
    IA (CLAUDE) NO PRONTUÁRIO (pedido do autor, 09/11/2026)
    Função "ia" no Supabase (supabase/functions/ia). Só aparece para contas liberadas no servidor
    (segredo ANAMNESIA_IA_EMAILS; decisão do autor: por enquanto, só a conta dele).
-   Cenário misto: contexto com Haiku, escrita com Sonnet, condutas com Opus + busca em PubMed/Cochrane/AHA/ESC/KDIGO.
-   O prontuário sai do aparelho sem o nome do paciente (iaSemNome, em todo o texto enviado); nada é aplicado sem o autor tocar em "Aplicar".
+   Modelos (escolha do autor, revisão de 09/11/2026): contexto, escrita e recomendações com Sonnet (recomendações com busca
+   em PubMed/Cochrane/AHA/ESC/KDIGO); conferência das pendências na troca de plantão com Haiku.
+   O prontuário sai do aparelho sem o nome do paciente (iaSemNome, em todo o texto enviado). Contexto e escrita só mudam a ficha
+   quando o autor toca em "Aplicar"; recomendações só entram quando ele marca e toca em "Adicionar"; as pendências da troca de
+   plantão entram direto (decisão do autor), com aviso.
    ===================================================================== */
 let iaOk = false, iaTarefa = null, iaAlvo = null;
 async function iaPing(){
@@ -4549,6 +4566,7 @@ async function iaPing(){
     try { const r = await api("/functions/v1/ia", { method: "POST", body: { tarefa: "ping" } }); iaOk = !!(r && r.permitido); } catch(e){ iaOk = false; }
   }
   if (typeof view !== "undefined") menuState();
+  if (iaOk) iaPendCheck();
 }
 // campo da ficha que cada tarefa lê/atualiza
 function iaCampo(tarefa, p){
@@ -4578,19 +4596,65 @@ function iaSemNome(t, p){
   return t;
 }
 const IA_INFO = {
-  contexto: { titulo: "IA: atualizar o contexto", sobre: "Claude Haiku reescreve o Contexto incorporando as evoluções registradas, sem acrescentar condutas. Custo típico: menos de US$ 0,01.", aplica: true },
+  contexto: { titulo: "IA: atualizar o contexto", sobre: "Claude Sonnet interpreta a evolução e os dados da avaliação para reescrever o Contexto, sem acrescentar condutas. Custo típico: cerca de US$ 0,03.", aplica: true },
   escrita: { titulo: "IA: melhorar a escrita da evolução", sobre: "Claude Sonnet revisa ortografia, clareza e terminologia, sem mudar o conteúdo clínico. Custo típico: cerca de US$ 0,03.", aplica: true },
-  condutas: { titulo: "IA: sugerir condutas", sobre: "Claude Opus propõe condutas por problema, com busca em PubMed, Cochrane e diretrizes da AHA, ESC e KDIGO. Sugestões para discussão com a preceptoria. Custo típico: US$ 0,40 a 0,70; pode levar até 2 minutos.", aplica: false }
+  condutas: { titulo: "IA: sugerir recomendações", sobre: "Claude Sonnet propõe recomendações por problema, com busca em PubMed, Cochrane e diretrizes da AHA, ESC e KDIGO, para discussão com a preceptoria. Custo típico: US$ 0,10 a 0,25; pode levar até 2 minutos.", aplica: false }
 };
+let iaRecLista = [];
+// lê as linhas "## problema" e "- conduta | Racional: … | Referência: …" da resposta das recomendações
+function iaRecs(texto){
+  const out = []; let prob = "";
+  String(texto).split("\n").forEach(l => {
+    l = l.trim().replace(/\*\*/g, "");
+    let m = l.match(/^#{1,4}\s*(.+)$/); if (m){ prob = m[1].trim(); return; }
+    m = l.match(/^[-•]\s+(.+)$/); if (!m) return;
+    const partes = m[1].split(/\s+\|\s+/), r = { prob, conduta: partes.shift().trim(), racional: "", ref: "" };
+    partes.forEach(x => {
+      const mm = x.match(/^(Racional|Refer[êe]ncia)\s*:\s*(.*)$/i);
+      if (!mm) r.racional = (r.racional ? r.racional + " " : "") + x.trim();
+      else if (/^rac/i.test(mm[1])) r.racional = mm[2].trim(); else r.ref = mm[2].trim();
+    });
+    if (r.conduta) out.push(r);
+  });
+  return out;
+}
+const iaNorm = t => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+// itens de um campo outline: [{ i, t, subs }]
+function olItens(d, k, n = 20, ns = 8){
+  const out = [];
+  for (let i = 1; i <= n; i++){
+    const t = String(d[`${k}_${i}`] || "").trim();
+    const subs = Array.from({ length: ns }, (_, j) => String(d[`${k}_${i}_${j + 1}`] || "").trim()).filter(Boolean);
+    if (t || subs.length) out.push({ i, t, subs });
+  }
+  return out;
+}
+// acrescenta itens { t, subs } nos primeiros lugares vazios de um outline, sem repetir títulos que já estão lá
+function olAppend(d, k, n, ns, itens){
+  const ja = new Set(olItens(d, k, n, ns).flatMap(x => [x.t, ...x.subs]).map(iaNorm).filter(Boolean));
+  let q = 0;
+  itens.forEach(it => {
+    const sig = iaNorm(it.t); if (!sig || ja.has(sig)) return;
+    let i = 1;
+    while (i <= n && (String(d[`${k}_${i}`] || "").trim() || Array.from({ length: ns }, (_, j) => d[`${k}_${i}_${j + 1}`]).some(v => String(v || "").trim()))) i++;
+    if (i > n) return;
+    d[`${k}_${i}`] = it.t;
+    const subs = (it.subs || []).slice(0, ns);
+    for (let j = 1; j <= ns; j++){ if (subs[j - 1]) d[`${k}_${i}_${j}`] = subs[j - 1]; else delete d[`${k}_${i}_${j}`]; }
+    d[`${k}_${i}_n`] = String(subs.length);
+    ja.add(sig); q++;
+  });
+  return q;
+}
 async function iaAbrir(tarefa){
   const p = cur(); if (!p) return;
   const alvo = iaCampo(tarefa, p); if (!alvo) return;
   iaTarefa = tarefa; iaAlvo = alvo;
   const info = IA_INFO[tarefa];
   $("#iaDlgTitle").textContent = info.titulo; $("#iaSobre").textContent = info.sobre;
-  $("#iaOut").hidden = true; $("#iaApply").hidden = true; $("#iaCopy").hidden = true;
+  $("#iaOut").hidden = true; $("#iaApply").hidden = true; $("#iaCopy").hidden = true; $("#iaRecBox").hidden = true;
   $("#iaAtualBox").hidden = !info.aplica;
-  $("#iaNovoL").textContent = info.aplica ? `Proposta da IA para “${alvo.l}” (pode editar antes de aplicar)` : "Sugestões da IA";
+  $("#iaNovoL").textContent = info.aplica ? `Proposta da IA para “${alvo.l}” (pode editar antes de aplicar)` : "Texto completo da IA";
   $("#iaMsg").textContent = "Enviando o prontuário (sem o nome do paciente)…";
   $("#iaDlg").showModal();
   let texto = buildText();
@@ -4604,6 +4668,16 @@ async function iaAbrir(tarefa){
     $("#iaMsg").textContent = "";
     $("#iaAtual").value = alvo.k ? String(p.data[alvo.k] || "") : "";
     $("#iaNovo").value = r.texto;
+    // recomendações: lista para marcar e levar ao R (só no CTI, que tem o subgrupo "Recomendações")
+    iaRecLista = tarefa === "condutas" && p.tpl === "cti" ? iaRecs(r.texto) : [];
+    $("#iaRecs").replaceChildren(...iaRecLista.map((x, n) => el("li", {},
+      el("label", { class: "ia-rec" }, el("input", { type: "checkbox", value: String(n) }),
+        el("span", {},
+          el("strong", { text: x.conduta }),
+          x.prob ? el("small", { text: "Problema: " + x.prob }) : null,
+          x.racional ? el("small", { text: "Racional: " + x.racional }) : null,
+          x.ref ? el("small", { text: "Referência: " + x.ref }) : null)))));
+    $("#iaRecBox").hidden = !iaRecLista.length;
     const f = r.fontes || [];
     $("#iaFontesBox").hidden = !f.length;
     $("#iaFontes").replaceChildren(...f.map(x => el("li", {}, el("a", { href: x.url, target: "_blank", rel: "noopener", text: x.titulo || x.url }))));
@@ -4614,6 +4688,90 @@ async function iaAbrir(tarefa){
     $("#iaMsg").textContent = e.status === 404 ? "A função ia ainda não foi publicada no Supabase." : "Não foi possível: " + e.message;
   }
 }
+$("#iaRecTodas").addEventListener("click", () => {
+  const cx = [...document.querySelectorAll("#iaRecs input")], todas = cx.every(x => x.checked);
+  cx.forEach(x => x.checked = !todas);
+});
+$("#iaRecAdd").addEventListener("click", () => {
+  const p = cur(); if (!p || p.tpl !== "cti") return;
+  const sel = [...document.querySelectorAll("#iaRecs input:checked")].map(x => iaRecLista[Number(x.value)]).filter(Boolean);
+  if (!sel.length){ toast("Marque ao menos uma recomendação"); return; }
+  const q = olAppend(p.data, "rec", 30, 8, sel.map(r => ({ t: r.conduta,
+    subs: [r.prob && "Problema: " + r.prob, r.racional && "Racional: " + r.racional, r.ref && "Referência: " + r.ref].filter(Boolean) })));
+  fillForm(); changed(); saveNow();
+  $("#iaDlg").close();
+  const f = document.getElementById("f_rec_1"); if (f) f.scrollIntoView({ block: "center" });
+  toast(q ? `${q} recomendaç${q === 1 ? "ão adicionada" : "ões adicionadas"} em R` : "Essas recomendações já estavam em R");
+});
+
+/* Pendências automáticas (pedido do autor, 09/11/2026): na troca de plantão (7h/19h), com o site aberto na conta liberada,
+   o Haiku confere as condutas escritas em plantões anteriores e, quando o que elas pedem (ex.: laudo de um exame solicitado)
+   não aparece no prontuário, a pendência entra direto em "Pendências e seguimento", com aviso.
+   Cada linha de conduta guarda quando foi escrita (data.cdlTs, chave = texto normalizado); data.iaPend = plantão já conferido. */
+function cdlLinhas(d){
+  const out = [];
+  olItens(d, "cdl").forEach(x => {
+    if (x.t) out.push({ sig: iaNorm(x.t), txt: x.t });
+    x.subs.forEach(s => out.push({ sig: iaNorm(s), txt: (x.t ? x.t + " › " : "") + s }));
+  });
+  return out.filter(x => x.sig);
+}
+function cdlCarimbo(p){
+  if (!p || p.tpl !== "cti" || !p.data) return false;
+  const d = p.data, ts = d.cdlTs && typeof d.cdlTs === "object" ? d.cdlTs : {}, novo = {}, agora = Date.now();
+  let mudou = false;
+  cdlLinhas(d).forEach(x => { if (novo[x.sig]) return; novo[x.sig] = ts[x.sig] || agora; if (!ts[x.sig]) mudou = true; });
+  if (Object.keys(ts).some(k => !novo[k])) mudou = true;
+  if (mudou) d.cdlTs = novo;
+  return mudou;
+}
+function ckShiftIni(sh){
+  const [y, m, dd] = sh.slice(0, 10).split("-").map(Number);
+  return new Date(y, m - 1, dd, sh.endsWith("D") ? 7 : 19).getTime();
+}
+let iaPendRodando = false;
+const iaPendFalha = {};
+async function iaPendCheck(){
+  if (!iaOk || iaPendRodando || !session || !cryptoKey) return;
+  iaPendRodando = true;
+  const sh = ckShift(), ini = ckShiftIni(sh), onde = [], ids = new Set();
+  let total = 0;
+  try {
+    for (const [id, p] of ctiPatients()){
+      const d = p.data || {};
+      if (d.iaPend === sh) continue;
+      if (iaPendFalha[id] && Date.now() - iaPendFalha[id] < 30 * 60000) continue;
+      if (cdlCarimbo(p)) changed(id);
+      const ts = d.cdlTs || {}, velhas = cdlLinhas(d).filter(x => ts[x.sig] && ts[x.sig] < ini);
+      if (!velhas.length) continue;
+      const atuais = olItens(d, "pend").flatMap(x => x.t ? [x.t, ...x.subs.map(s => x.t + " › " + s)] : x.subs);
+      const texto = iaSemNome("CONDUTAS A CONFERIR (escritas antes do plantão atual):\n" + velhas.map(x => "- " + x.txt).join("\n") +
+        "\n\nPENDÊNCIAS ATUAIS:\n" + (atuais.length ? atuais.map(x => "- " + x).join("\n") : "(nenhuma)") +
+        "\n\nPRONTUÁRIO:\n" + buildText(p), p);
+      try {
+        const r = await api("/functions/v1/ia", { method: "POST", body: { tarefa: "pendencias", texto } });
+        if (!r || !r.ok) throw new Error((r && r.erro) || "Resposta inesperada.");
+        if (!store.patients[id]) continue;   // excluído enquanto esperava
+        if (r.uso) iaSomaDia(r.uso.custo_usd || 0);
+        const novas = String(r.texto || "").split("\n").map(l => l.trim()).filter(l => /^[-•]\s+/.test(l)).map(l => l.replace(/^[-•]\s+/, "").trim()).filter(Boolean);
+        const q = novas.length ? olAppend(p.data, "pend", 20, 8, novas.map(t => ({ t, subs: [] }))) : 0;
+        p.data.iaPend = sh; changed(id);
+        delete iaPendFalha[id];
+        if (q){ total += q; ids.add(id); onde.push(p.data.leito ? "leito " + p.data.leito : iniciais(p.data.nome) || "paciente"); }
+      } catch(e){
+        iaPendFalha[id] = Date.now();
+        if (e.status === 401 || e.status === 403) break;
+      }
+    }
+  } finally { iaPendRodando = false; }
+  if (!total) return;
+  saveNow();
+  if (view === "chart" && ids.has(store.currentBy[store.mode])) fillForm();
+  if (view === "ck") renderCk();
+  toast(`IA: ${total} pendência${total === 1 ? " adicionada" : "s adicionadas"} (${onde.join(", ")})`, 6000);
+}
+setInterval(() => { if (iaOk) iaPendCheck(); }, 5 * 60000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && iaOk) iaPendCheck(); });
 // gasto do dia neste aparelho (só para acompanhar; o valor oficial está no console da Anthropic)
 function iaSomaDia(v){
   store.settings = store.settings || {};
