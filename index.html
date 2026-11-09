@@ -237,6 +237,11 @@ body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .
 .ex-graf .pt.alt{fill:#C62828}
 .ex-list{margin:0;padding-left:20px}
 .ex-list li{margin:6px 0;white-space:pre-line}
+.ia-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:700px){.ia-cols{grid-template-columns:1fr}}
+.ia-cols textarea{min-height:12em}
+#iaAtualBox[hidden],#iaFontesBox[hidden]{display:none}
+#iaAtualBox[hidden] + .fld{grid-column:1/-1}
 #exGrafBox[hidden],#exLaudosBox[hidden],#exPendBox[hidden],#exAvisosBox[hidden],#exTabNota[hidden],#exCredForm[hidden],#exCredSaved[hidden]{display:none}
 @media print{
   body[data-view="ex"] .ex-form,body[data-view="ex"] .ex-bar,body[data-view="ex"] .ex-noprint,body[data-view="ex"] header.top{display:none!important}
@@ -558,6 +563,9 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
         <button type="button" data-act="std" hidden>Preencher com o texto padrão</button>
         <button type="button" data-act="rx-newday" data-views="rx">Nova proposta do dia</button>
         <button type="button" data-act="biomega" data-views="chart">Exames do Biomega</button>
+        <button type="button" data-act="ia-contexto" hidden>IA: atualizar o contexto</button>
+        <button type="button" data-act="ia-escrita" hidden>IA: melhorar a escrita da evolução do dia</button>
+        <button type="button" data-act="ia-condutas" hidden>IA: sugerir condutas (com referências)</button>
         <button type="button" data-act="print" data-views="chart rx">Imprimir / salvar PDF</button>
         <button type="button" data-act="expand">Expandir todos os grupos</button>
         <button type="button" data-act="collapse">Recolher todos os grupos</button>
@@ -765,6 +773,31 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <textarea id="codeText" readonly aria-label="Texto recebido" hidden></textarea>
     <div class="acts" id="codeActs" hidden>
       <button class="btn primary" type="button" id="codeCopy">Copiar texto</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="iaDlg" aria-labelledby="iaDlgTitle">
+  <div class="dlg">
+    <header>
+      <h3 id="iaDlgTitle">IA</h3>
+      <button class="btn" type="button" id="iaClose" aria-label="Fechar">✕</button>
+    </header>
+    <div class="acct-body acct ia">
+      <p class="sub" id="iaSobre"></p>
+      <p class="msg" id="iaMsg" role="status"></p>
+      <div id="iaOut" hidden>
+        <div class="ia-cols">
+          <div class="fld" id="iaAtualBox"><label for="iaAtual">Texto atual</label><div class="inp"><textarea id="iaAtual" rows="8" readonly></textarea></div></div>
+          <div class="fld"><label for="iaNovo" id="iaNovoL">Proposta da IA (pode editar antes de aplicar)</label><div class="inp"><textarea id="iaNovo" rows="12"></textarea></div></div>
+        </div>
+        <details class="bio-av" id="iaFontesBox"><summary>Fontes consultadas</summary><ul class="ex-list" id="iaFontes"></ul></details>
+        <p class="sub" id="iaCusto"></p>
+      </div>
+      <div class="acts">
+        <button class="btn" type="button" id="iaCopy" hidden>Copiar</button>
+        <button class="btn primary" type="button" id="iaApply" hidden>Aplicar na ficha</button>
+      </div>
     </div>
   </div>
 </dialog>
@@ -2325,6 +2358,9 @@ function onMenu(act){
     case "account": openAccountEntry(); break;
     case "opencode": openCodeDlg(); break;
     case "biomega": openBioDlg(); break;
+    case "ia-contexto": iaAbrir("contexto"); break;
+    case "ia-escrita": iaAbrir("escrita"); break;
+    case "ia-condutas": iaAbrir("condutas"); break;
     case "edit": if (p) openPtDialog(store.currentBy[store.mode]); break;
     case "rx-newday": rxNewDay(); break;
     case "rx-clear": rxClear(); break;
@@ -2438,7 +2474,7 @@ async function api(path, { method = "GET", body, auth = true, headers = {}, toke
   catch(e){ throw Object.assign(new Error("Sem conexão com o servidor"), { status: 0 }); }
   const txt = await r.text(); let j = null; try { j = txt ? JSON.parse(txt) : null; } catch(e){}
   if (!r.ok){
-    const m = (j && (j.msg || j.message || j.error_description || j.error)) || ("Erro " + r.status);
+    const m = (j && (j.erro || j.msg || j.message || j.error_description || j.error)) || ("Erro " + r.status);
     throw Object.assign(new Error(translateErr(m)), { status: r.status });
   }
   return j;
@@ -2617,6 +2653,7 @@ async function completeUnlock(key, remember){
   if (s) syncNow(false);
   setInterval(() => { if (document.visibilityState === "visible") syncNow(false); }, 60000);
   widgetSync(true);
+  iaPing();
   if (runPendingOpen()){ menuAfterUnlock = false; return; }
   if (menuAfterUnlock){ menuAfterUnlock = false; showMenu(); }
 }
@@ -3960,6 +3997,7 @@ function menuState(){
   const nd = $('[data-act="newday"]');
   nd.hidden = !(view === "chart" && t && t.newDay); if (t && t.newDay) nd.textContent = t.newDay;
   $('[data-act="std"]').hidden = !(view === "chart" && t && hasStd(t, p.data));
+  ["contexto", "escrita", "condutas"].forEach(k => { $(`[data-act="ia-${k}"]`).hidden = !(view === "chart" && iaOk && p && iaCampo(k, p)); });
   $('[data-act="clear"]').textContent = t && t.limparAR ? "Limpar avaliação e recomendações (A e R)" : "Limpar campos do prontuário (mantém nome e leito)";
   const hasGroups = !!(t && modelOf(t, p.data).some(s => s.groups.some(g => g.title)));
   $('[data-act="expand"]').hidden = $('[data-act="collapse"]').hidden = !(view === "chart" && hasGroups);
@@ -4496,6 +4534,101 @@ function bioInserir(){
   const f = document.getElementById("f_" + k); if (f) f.scrollIntoView({ block: "center" });
   toast("Exames inseridos no prontuário");
 }
+
+/* =====================================================================
+   IA (CLAUDE) NO PRONTUÁRIO (pedido do autor, 09/11/2026)
+   Função "ia" no Supabase (supabase/functions/ia). Só aparece para contas liberadas no servidor
+   (segredo ANAMNESIA_IA_EMAILS; decisão do autor: por enquanto, só a conta dele).
+   Cenário misto: contexto com Haiku, escrita com Sonnet, condutas com Opus + busca em PubMed/Cochrane/AHA/ESC/KDIGO.
+   O prontuário sai do aparelho sem o nome do paciente (iaSemNome, em todo o texto enviado); nada é aplicado sem o autor tocar em "Aplicar".
+   ===================================================================== */
+let iaOk = false, iaTarefa = null, iaAlvo = null;
+async function iaPing(){
+  iaOk = false;
+  if (session && cryptoKey && syncCfg()){
+    try { const r = await api("/functions/v1/ia", { method: "POST", body: { tarefa: "ping" } }); iaOk = !!(r && r.permitido); } catch(e){ iaOk = false; }
+  }
+  if (typeof view !== "undefined") menuState();
+}
+// campo da ficha que cada tarefa lê/atualiza
+function iaCampo(tarefa, p){
+  const d = p.data || {};
+  if (tarefa === "condutas") return p.tpl === "cti" || p.tpl === "enf" ? { k: null } : null;
+  if (tarefa === "contexto"){
+    if (p.tpl === "cti") return { k: "motivo", l: "Contexto" };
+    if (p.tpl === "enf") return { k: "contexto", l: "Contexto" };
+    return null;
+  }
+  if (tarefa === "escrita"){
+    if (p.tpl === "enf") return d.enf_mom === "adm" ? null : { k: "evol", l: "Evolução nas últimas 24 h" };
+    if (p.tpl === "cti"){
+      // registro de hoje na evolução da internação (ou o mais recente)
+      let i = 0, best = "";
+      for (let x = 1; x <= 40; x++){ const dt = d[`evint_${x}_d`] || "", tx = String(d[`evint_${x}`] || "").trim(); if (tx && dt >= best){ best = dt; i = x; } }
+      return i ? { k: `evint_${i}`, l: "Evolução da internação" + (best ? " de " + brDate(best) : "") } : null;
+    }
+  }
+  return null;
+}
+// tira o nome do paciente (e cada parte dele) de qualquer texto que vai para a IA
+function iaSemNome(t, p){
+  t = String(t).split("\n").filter(l => !/^Nome:/i.test(l.trim())).join("\n");
+  const partes = String(p.data.nome || "").split(/\s+/).filter(w => w.length >= 3 && !/^(da|de|do|das|dos)$/i.test(w));
+  partes.forEach(w => { t = t.replace(new RegExp("\\b" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "gi"), "[paciente]"); });
+  return t;
+}
+const IA_INFO = {
+  contexto: { titulo: "IA: atualizar o contexto", sobre: "Claude Haiku reescreve o Contexto incorporando as evoluções registradas, sem acrescentar condutas. Custo típico: menos de US$ 0,01.", aplica: true },
+  escrita: { titulo: "IA: melhorar a escrita da evolução", sobre: "Claude Sonnet revisa ortografia, clareza e terminologia, sem mudar o conteúdo clínico. Custo típico: cerca de US$ 0,03.", aplica: true },
+  condutas: { titulo: "IA: sugerir condutas", sobre: "Claude Opus propõe condutas por problema, com busca em PubMed, Cochrane e diretrizes da AHA, ESC e KDIGO. Sugestões para discussão com a preceptoria. Custo típico: US$ 0,40 a 0,70; pode levar até 2 minutos.", aplica: false }
+};
+async function iaAbrir(tarefa){
+  const p = cur(); if (!p) return;
+  const alvo = iaCampo(tarefa, p); if (!alvo) return;
+  iaTarefa = tarefa; iaAlvo = alvo;
+  const info = IA_INFO[tarefa];
+  $("#iaDlgTitle").textContent = info.titulo; $("#iaSobre").textContent = info.sobre;
+  $("#iaOut").hidden = true; $("#iaApply").hidden = true; $("#iaCopy").hidden = true;
+  $("#iaAtualBox").hidden = !info.aplica;
+  $("#iaNovoL").textContent = info.aplica ? `Proposta da IA para “${alvo.l}” (pode editar antes de aplicar)` : "Sugestões da IA";
+  $("#iaMsg").textContent = "Enviando o prontuário (sem o nome do paciente)…";
+  $("#iaDlg").showModal();
+  let texto = buildText();
+  if (tarefa === "escrita") texto = "TEXTO A REVISAR:\n" + String(p.data[alvo.k] || "") + "\n\nPRONTUÁRIO (só para contexto):\n" + texto;
+  texto = iaSemNome(texto, p);   // o nome nunca sai do aparelho, nem dentro da evolução
+  const pid = store.currentBy[store.mode];
+  try {
+    const r = await api("/functions/v1/ia", { method: "POST", body: { tarefa, texto } });
+    if (!r || !r.ok) throw new Error((r && r.erro) || "Resposta inesperada.");
+    if (store.currentBy[store.mode] !== pid || !$("#iaDlg").open) return;   // trocou de paciente ou fechou
+    $("#iaMsg").textContent = "";
+    $("#iaAtual").value = alvo.k ? String(p.data[alvo.k] || "") : "";
+    $("#iaNovo").value = r.texto;
+    const f = r.fontes || [];
+    $("#iaFontesBox").hidden = !f.length;
+    $("#iaFontes").replaceChildren(...f.map(x => el("li", {}, el("a", { href: x.url, target: "_blank", rel: "noopener", text: x.titulo || x.url }))));
+    const u = r.uso || {};
+    $("#iaCusto").textContent = `Modelo: ${u.modelo || "?"} · ${u.entrada || 0} tokens de entrada, ${u.saida || 0} de saída` + (u.buscas ? `, ${u.buscas} busca(s)` : "") + ` · custo estimado: US$ ${String((u.custo_usd || 0).toFixed(4)).replace(".", ",")}` + iaSomaDia(u.custo_usd || 0);
+    $("#iaOut").hidden = false; $("#iaCopy").hidden = false; $("#iaApply").hidden = !info.aplica;
+  } catch(e){
+    $("#iaMsg").textContent = e.status === 404 ? "A função ia ainda não foi publicada no Supabase." : "Não foi possível: " + e.message;
+  }
+}
+// gasto do dia neste aparelho (só para acompanhar; o valor oficial está no console da Anthropic)
+function iaSomaDia(v){
+  store.settings = store.settings || {};
+  const g = store.settings.iaGasto && store.settings.iaGasto.dia === todayISO() ? store.settings.iaGasto : { dia: todayISO(), usd: 0 };
+  g.usd = Math.round((g.usd + v) * 10000) / 10000; store.settings.iaGasto = g; saveSoon();
+  return ` · hoje neste aparelho: US$ ${g.usd.toFixed(2).replace(".", ",")}`;
+}
+$("#iaClose").addEventListener("click", () => $("#iaDlg").close());
+$("#iaCopy").addEventListener("click", () => copyText($("#iaNovo").value).then(ok => toast(ok ? "Copiado" : "Não foi possível copiar")));
+$("#iaApply").addEventListener("click", () => {
+  const p = cur(); if (!p || !iaAlvo || !iaAlvo.k) return;
+  p.data[iaAlvo.k] = $("#iaNovo").value.trim();
+  fillForm(); changed(); saveNow();
+  $("#iaDlg").close(); toast(iaAlvo.l + " atualizado pela IA");
+});
 
 /* =====================================================================
    EXTRAÇÃO E ANÁLISE DE EXAMES (pedido do autor, 09/11/2026)
