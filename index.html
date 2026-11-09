@@ -210,7 +210,41 @@ body[data-view="list"] header.top,body[data-view="rx"] header.top{padding-bottom
 .h-card-t{font-weight:700;font-size:clamp(1.2rem,2.2vw,1.6rem);color:var(--accent)}
 .h-card-s{font-size:clamp(.95rem,1.4vw,1.08rem);color:var(--muted)}
 .h-card-n{margin-top:auto;font-size:.95rem;color:var(--muted)}
-body[data-view="ck"] .bottom,body[data-view="sc"] .bottom{display:none}
+body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .bottom{display:none}
+#ex{max-width:1100px;margin:0 auto}
+.ex-form{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.ex-cab{margin:18px 2px 8px;font-weight:700;color:var(--accent)}
+.ex-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.ex-bar .fld{flex:1 1 12rem}
+.ex-h{margin:22px 2px 8px;font-size:1rem;color:var(--ink)}
+.ex-tabwrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--card)}
+.ex-tab{border-collapse:collapse;width:100%;font-size:.9rem}
+.ex-tab th,.ex-tab td{border-bottom:1px solid var(--line);padding:7px 10px;text-align:right;white-space:nowrap}
+.ex-tab thead th{background:var(--band);color:var(--accent);position:sticky;top:0}
+.ex-tab th[scope=row],.ex-tab thead th:first-child{text-align:left;position:sticky;left:0;background:var(--card)}
+.ex-tab thead th:first-child{background:var(--band)}
+.ex-tab .u{color:var(--muted);font-weight:400;font-size:.8rem}
+.ex-tab td.alt{font-weight:700;color:var(--accent)}
+.ex-grafs{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.ex-fig{margin:0;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;break-inside:avoid}
+.ex-fig figcaption{font-size:.9rem}
+.ex-fig .u,.ex-ult{color:var(--muted);font-size:.82rem}
+.ex-graf{width:100%;height:auto;display:block;margin-top:6px}
+.ex-graf .gl{stroke:var(--line);stroke-width:1}
+.ex-graf .ax{fill:var(--muted);font-size:10px}
+.ex-graf .ln{fill:none;stroke:var(--accent);stroke-width:2}
+.ex-graf .pt{fill:var(--accent)}
+.ex-graf .pt.alt{fill:#C62828}
+.ex-list{margin:0;padding-left:20px}
+.ex-list li{margin:6px 0;white-space:pre-line}
+#exGrafBox[hidden],#exLaudosBox[hidden],#exPendBox[hidden],#exAvisosBox[hidden],#exTabNota[hidden],#exCredForm[hidden],#exCredSaved[hidden]{display:none}
+@media print{
+  body[data-view="ex"] .ex-form,body[data-view="ex"] .ex-bar,body[data-view="ex"] .ex-noprint,body[data-view="ex"] header.top{display:none!important}
+  body[data-view="ex"] .ex-tabwrap{overflow:visible;border:0}
+  body[data-view="ex"] .ex-tab{font-size:9pt}
+  body[data-view="ex"] .ex-tab th,body[data-view="ex"] .ex-tab td{padding:3px 5px;border-bottom:1px solid #999}
+  body[data-view="ex"] .ex-grafs{grid-template-columns:repeat(3,1fr)}
+}
 #sc{max-width:900px;margin:0 auto}
 .sc-cat h3{margin:18px 2px 8px;font-size:.95rem;color:var(--muted);font-weight:600}
 .sc-chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -487,6 +521,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <button class="h-card" type="button" data-hm="cti"><span class="h-card-t">Evolução CTI</span><span class="h-card-s">ISBAR</span><span class="h-card-n" data-hm-n="cti"></span></button>
       <button class="h-card" type="button" data-hm="enf"><span class="h-card-t">Evolução enfermaria</span><span class="h-card-s">Clínica médica</span><span class="h-card-n" data-hm-n="enf"></span></button>
       <button class="h-card" type="button" data-hm="nota"><span class="h-card-t">Notas</span><span class="h-card-s">Bloco de notas por paciente</span><span class="h-card-n" data-hm-n="nota"></span></button>
+      <button class="h-card" type="button" data-hm="ex"><span class="h-card-t">Extração e análise de exames</span><span class="h-card-s">Biomega: tabela evolutiva, gráficos, culturas e pendentes</span><span class="h-card-n">Para imprimir</span></button>
       <button class="h-card" type="button" data-hm="sc"><span class="h-card-t">Escores e calculadoras</span><span class="h-card-s">SOFA, APACHE II, NEWS2, gasometria, Wells, CKD-EPI e outros</span><span class="h-card-n">20 calculadoras</span></button>
       <button class="h-card" type="button" data-hm="all"><span class="h-card-t">Meus pacientes</span><span class="h-card-s">Todos os prontuários</span><span class="h-card-n" data-hm-n="all"></span></button>
     </div>
@@ -552,6 +587,43 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <div id="form" data-views="chart"></div>
   <div id="rx" data-views="rx"></div>
   <section id="ck" data-views="ck" aria-label="Checklist do CTI"></section>
+  <section id="ex" data-views="ex" aria-label="Extração e análise de exames">
+    <div class="ex-form">
+      <div class="row">
+        <div class="fld w-l"><label for="exPac">Paciente</label><div class="inp"><select id="exPac"></select></div></div>
+        <div class="fld w-s"><label for="exPront">Prontuário</label><div class="inp"><input id="exPront" inputmode="numeric" autocomplete="off"></div></div>
+        <div class="fld w-s"><label for="exDias">Período</label><div class="inp"><select id="exDias">
+          <option value="7">7 dias</option><option value="15">15 dias</option><option value="30" selected>30 dias</option><option value="60">60 dias</option>
+          <option value="90">90 dias</option><option value="180">180 dias</option><option value="365">365 dias</option></select></div></div>
+        <div class="fld w-m"><label for="exUnid">Unidade</label><div class="inp"><select id="exUnid"></select></div></div>
+      </div>
+      <p class="sub" id="exCredSaved" hidden>Portal: usuário <strong id="exCredUser"></strong> lembrado neste aparelho.</p>
+      <div id="exCredForm" hidden>
+        <div class="row">
+          <div class="fld w-m"><label for="exUser">Usuário do portal</label><div class="inp"><input id="exUser" autocomplete="off" autocapitalize="none" spellcheck="false"></div></div>
+          <div class="fld w-m"><label for="exPass">Senha do portal</label><div class="inp"><input id="exPass" type="password" autocomplete="off"></div></div>
+        </div>
+        <label class="chk"><input type="checkbox" id="exRem"><span>Lembrar usuário e senha neste aparelho (cifrados com os prontuários)</span></label>
+      </div>
+      <div class="acts"><button class="btn primary" type="button" id="exGo">Buscar exames</button></div>
+      <p class="msg" id="exMsg" role="status"></p>
+    </div>
+    <div id="exOut" hidden>
+      <p class="ex-cab" id="exCab"></p>
+      <div class="ex-bar">
+        <div class="fld w-m"><label for="exCols">Datas na tabela</label><div class="inp"><select id="exCols"><option value="7" selected>Últimas 7 datas</option><option value="14">Últimas 14 datas</option><option value="0">Todas</option></select></div></div>
+        <button class="btn" type="button" id="exCopy">Copiar (formato prontuário)</button>
+        <button class="btn primary" type="button" id="exPrint">Imprimir</button>
+      </div>
+      <h3 class="ex-h">Tabela evolutiva</h3>
+      <div class="ex-tabwrap"><table class="ex-tab" id="exTab"></table></div>
+      <p class="sub" id="exTabNota" hidden>* resultado sinalizado pelo laboratório</p>
+      <div id="exGrafBox"><h3 class="ex-h">Gráficos</h3><div class="ex-grafs" id="exGraf"></div></div>
+      <div id="exLaudosBox"><h3 class="ex-h">Laudos em texto (culturas, antibiogramas e outros)</h3><ul class="ex-list" id="exLaudos"></ul></div>
+      <div id="exPendBox"><h3 class="ex-h">Exames pendentes</h3><ul class="ex-list" id="exPend"></ul></div>
+      <div id="exAvisosBox" class="ex-noprint"><h3 class="ex-h">Avisos</h3><ul class="ex-list" id="exAvisos"></ul></div>
+    </div>
+  </section>
   <section id="sc" data-views="sc" aria-label="Escores e calculadoras">
     <div class="sc-top">
       <div class="fld w-full"><label for="scPac">Paciente (os dados da ficha entram preenchidos)</label><div class="inp"><select id="scPac"></select></div></div>
@@ -2828,7 +2900,7 @@ function cleanupBlankPatients(){
 }
 
 function setView(v){
-  if (v !== "list" && v !== "ck" && v !== "sc" && !cur()) v = "list";
+  if (v !== "list" && v !== "ck" && v !== "sc" && v !== "ex" && !cur()) v = "list";
   if (v === "list" || v === "ck") backTo = v;
   view = v;
   document.body.dataset.view = v;
@@ -2837,11 +2909,15 @@ function setView(v){
   document.querySelectorAll("#vtabs button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.go === v)));
   menuState();
   $("#btnBack").textContent = backTo === "ck" ? "← Checklist" : "← Pacientes";
-  $("#btnBack").hidden = v === "ck" || v === "sc" || !$("#btnBack").dataset.views.split(" ").includes(v);
+  $("#btnBack").hidden = v === "ck" || v === "sc" || v === "ex" || !$("#btnBack").dataset.views.split(" ").includes(v);
   if (v === "list"){
     $("#vtitle").textContent = "Meus pacientes";
     document.title = "Anamnesia · Pacientes";
     renderList();
+  } else if (v === "ex"){
+    $("#vtitle").textContent = "Extração e análise de exames";
+    document.title = "Anamnesia · Exames";
+    renderEx();
   } else if (v === "sc"){
     $("#vtitle").textContent = "Escores e calculadoras";
     document.title = "Anamnesia · Escores";
@@ -4261,7 +4337,7 @@ const BIO = (() => {
   }
 
   /* ---------------- series.py ---------------- */
-  function series(resultados){
+  function series(resultados, minPontos = 2){
     const m = new Map();
     for (const r of resultados){
       if (r.pendente) continue;
@@ -4274,10 +4350,10 @@ const BIO = (() => {
       let unidade = (r.unidade || "").trim(); if (unidade === "%" && !UNIDADE_MANTIDA.has(sigla)) unidade = "";
       if (!m.has(sigla)) m.set(sigla, { sigla, nome: capitalize(r.exame), unidade, pontos: new Map() });
       const s = m.get(sigla); if (!s.unidade && unidade) s.unidade = unidade;
-      s.pontos.delete(d.ord); s.pontos.set(d.ord, { data: r.data, valor, texto, ord: d.ord });   // mesma data: fica a última lida
+      s.pontos.delete(d.ord); s.pontos.set(d.ord, { data: r.data, valor, texto, ord: d.ord, alterado: !!r.alterado });   // mesma data: fica a última lida
     }
     return [...m.values()].map(s => ({ ...s, pontos: [...s.pontos.values()].sort((a, b) => a.ord - b.ord) }))
-      .filter(s => s.pontos.length >= 2)
+      .filter(s => s.pontos.length >= minPontos)
       .sort((a, b) => b.pontos.length - a.pontos.length || (a.sigla < b.sigla ? -1 : a.sigla > b.sigla ? 1 : 0));
   }
 
@@ -4314,12 +4390,42 @@ function bioPreencheUnidades(sel){
   s.replaceChildren(el("option", { value: "", text: "Padrão do portal" }), ...(bioUnidades || []).map(u => el("option", { value: u.valor, text: u.nome || u.valor })));
   s.value = [...s.options].some(o => o.value === atual) ? atual : "";
 }
-async function bioChamar(corpo){
-  const c = bioCred() || { usuario: $("#bioUser").value.trim(), senha: $("#bioPass").value };
+async function bioChamar(corpo, cred){
+  const c = bioCred() || cred || { usuario: $("#bioUser").value.trim(), senha: $("#bioPass").value };
   if (!c.usuario || !c.senha) throw new Error("Informe usuário e senha do portal.");
   return api("/functions/v1/biomega", { method: "POST", body: { ...corpo, usuario: c.usuario, senha: c.senha } });
 }
 const bioErro = r => `${(r && r.erro) || "Resposta inesperada do portal."}${r && r.codigo && r.codigo !== "PORTAL" ? " [" + r.codigo + "]" : ""}${r && r.detalhe ? " · " + r.detalhe : ""}`;
+// busca pedidos e resultados de um prontuário; aviso(msg) mostra o andamento; cred = usuário e senha digitados (se não lembrados)
+async function bioCarregar(pront, dias, unidade, aviso, cred){
+  const r1 = await bioChamar({ acao: "pedidos", prontuario: pront, dias, fim: todayISO(), unidade }, cred);
+  if (!r1 || !r1.ok) throw new Error("Não foi possível buscar: " + bioErro(r1));
+  if (!bioCred() && cred && cred.lembrar) setBioCred(cred.usuario, cred.senha);
+  if (Array.isArray(r1.unidades) && r1.unidades.length) bioUnidades = r1.unidades;
+  const pedidos = r1.pedidos || [], diag = [];
+  if (r1.mensagem) diag.push("Mensagem do portal: " + r1.mensagem + (unidade ? "" : " (unidade: padrão do portal – tente escolher a unidade na lista)"));
+  if (!pedidos.length && r1.forma) diag.push("Diagnóstico técnico (envie ao Claude) – pedidos: " + r1.forma + " · unidade usada: " + (r1.unidade || "?"));
+  if (pedidos.length && pedidos.every(x => !x.solicitacao && !x.entrada)) diag.push("Diagnóstico técnico (envie ao Claude) – pedidos: " + (r1.forma || "sem forma"));
+  const sexo = BIO.prepararPedidos(pront, pedidos);
+  const validos = pedidos.filter(x => !x._pulado), lidos = new Map();
+  for (let i = 0; i < validos.length; i += BIO_LOTE){
+    const lote = validos.slice(i, i + BIO_LOTE);
+    aviso(`Lendo resultados: pedidos ${i + 1}–${i + lote.length} de ${validos.length}…`);
+    let r2;
+    try { r2 = await bioChamar({ acao: "resultados", unidade: r1.unidade || unidade, pedidos: lote.map(x => ({ infopac: x.infopac })) }, cred); }
+    catch(e){ r2 = { ok: false, erro: e.message }; }
+    if (r2 && r2.ok){
+      (r2.resultados || []).forEach(x => lidos.set(x.infopac, x));
+      const linhas = (r2.resultados || []).flatMap(x => x.linhas || []);
+      if (linhas.length && linhas.every(l => !l.Parametro) && !diag.some(d => d.includes("resultados"))) diag.push("Diagnóstico técnico (envie ao Claude) – resultados: " + (r2.forma || "sem forma"));
+    }
+    else lote.forEach(x => lidos.set(x.infopac, { erro: bioErro(r2) }));
+  }
+  const e = BIO.processar(pront, pedidos, x => lidos.get(x.infopac) || { erro: "sem resposta do portal." }, dias);
+  e.avisos.push(...diag);
+  return { ...e, pront, dias, sexo, unidadeUsada: r1.unidade || unidade, series: BIO.series(e.resultados) };
+}
+const bioErroBusca = err => err.status === 404 ? "A função biomega ainda não foi publicada no Supabase." : err.status === 0 ? "Não consegui falar com a função biomega no Supabase. Confira se ela foi publicada com o nome biomega (Edge Functions → Functions)." : (String(err.message || "").startsWith("Não foi possível") ? err.message : "Erro: " + err.message);
 async function bioBuscar(){
   const p = cur(); if (!p) return;
   const msg = $("#bioMsg"), go = $("#bioGo");
@@ -4330,38 +4436,14 @@ async function bioBuscar(){
   go.disabled = true; $("#bioOut").hidden = true;
   try {
     msg.textContent = "Entrando no portal e buscando pedidos…";
-    const r1 = await bioChamar({ acao: "pedidos", prontuario: pront, dias, fim: todayISO(), unidade });
-    if (!r1 || !r1.ok){ msg.textContent = "Não foi possível buscar: " + bioErro(r1); return; }
-    if (!bioCred() && $("#bioRem").checked) setBioCred($("#bioUser").value.trim(), $("#bioPass").value);
-    if (Array.isArray(r1.unidades) && r1.unidades.length){ bioUnidades = r1.unidades; bioPreencheUnidades(unidade); }
-    const pedidos = r1.pedidos || [];
-    const diag = [];
-    if (r1.mensagem) diag.push("Mensagem do portal: " + r1.mensagem + (unidade ? "" : " (unidade: padrão do portal – tente escolher a unidade na lista)"));
-    if (!pedidos.length && r1.forma) diag.push("Diagnóstico técnico (envie ao Claude) – pedidos: " + r1.forma + " · unidade usada: " + (r1.unidade || "?"));
-    if (pedidos.length && pedidos.every(x => !x.solicitacao && !x.entrada)) diag.push("Diagnóstico técnico (envie ao Claude) – pedidos: " + (r1.forma || "sem forma"));
-    const sexo = BIO.prepararPedidos(pront, pedidos);
-    const validos = pedidos.filter(x => !x._pulado), lidos = new Map();
-    for (let i = 0; i < validos.length; i += BIO_LOTE){
-      const lote = validos.slice(i, i + BIO_LOTE);
-      msg.textContent = `Lendo resultados: pedidos ${i + 1}–${i + lote.length} de ${validos.length}…`;
-      let r2;
-      try { r2 = await bioChamar({ acao: "resultados", unidade: r1.unidade || unidade, pedidos: lote.map(x => ({ infopac: x.infopac })) }); }
-      catch(e){ r2 = { ok: false, erro: e.message }; }
-      if (r2 && r2.ok){
-        (r2.resultados || []).forEach(x => lidos.set(x.infopac, x));
-        const linhas = (r2.resultados || []).flatMap(x => x.linhas || []);
-        if (linhas.length && linhas.every(l => !l.Parametro) && !diag.some(d => d.includes("resultados"))) diag.push("Diagnóstico técnico (envie ao Claude) – resultados: " + (r2.forma || "sem forma"));
-      }
-      else lote.forEach(x => lidos.set(x.infopac, { erro: bioErro(r2) }));
-    }
-    const e = BIO.processar(pront, pedidos, x => lidos.get(x.infopac) || { erro: "sem resposta do portal." }, dias);
-    e.avisos.push(...diag);
-    bioUltimo = { ...e, pid: store.currentBy[store.mode], pront, dias, sexo, series: BIO.series(e.resultados) };
+    const cred = bioCred() ? null : { usuario: $("#bioUser").value.trim(), senha: $("#bioPass").value, lembrar: $("#bioRem").checked };
+    const e = await bioCarregar(pront, dias, unidade, t => msg.textContent = t, cred);
+    bioPreencheUnidades(unidade);
+    bioUltimo = { ...e, pid: store.currentBy[store.mode] };
     msg.textContent = `${e.pedidos} pedido(s) em ${dias} dias · ${e.resultados.length} resultado(s).`;
     bioMostra();
-  } catch(err){
-    msg.textContent = err.status === 404 ? "A função biomega ainda não foi publicada no Supabase." : err.status === 0 ? "Não consegui falar com a função biomega no Supabase. Confira se ela foi publicada com o nome biomega (Edge Functions → Functions)." : "Erro: " + err.message;
-  } finally { go.disabled = !session; }
+  } catch(err){ msg.textContent = bioErroBusca(err); }
+  finally { go.disabled = !session; }
 }
 function bioTexto(){
   if (!bioUltimo) return "";
@@ -4414,6 +4496,101 @@ function bioInserir(){
   const f = document.getElementById("f_" + k); if (f) f.scrollIntoView({ block: "center" });
   toast("Exames inseridos no prontuário");
 }
+
+/* =====================================================================
+   EXTRAÇÃO E ANÁLISE DE EXAMES (pedido do autor, 09/11/2026)
+   Fora do prontuário: escolhe o paciente (ou digita o prontuário), busca no Biomega e mostra
+   tabela evolutiva, gráficos, laudos em texto (culturas, antibiogramas), exames ainda pendentes
+   e os avisos, com impressão. Os resultados ficam só na memória desta tela (como na janela da ficha).
+   ===================================================================== */
+let exUlt = null;
+function renderEx(){
+  const pts = Object.entries(store.patients).filter(([, p]) => p.tpl !== "nota")
+    .sort((a, b) => String(a[1].data.leito || "~").localeCompare(String(b[1].data.leito || "~"), "pt-BR", { numeric: true }));
+  const sel = $("#exPac"), atual = sel.value;
+  sel.replaceChildren(el("option", { value: "", text: "— (só o número do prontuário)" }), ...pts.map(([id, p]) => el("option", { value: id, text: `${ptLabel(p)} · ${TPL_LABEL[p.tpl]}` })));
+  sel.value = store.patients[atual] ? atual : "";
+  const c = bioCred();
+  $("#exCredSaved").hidden = !c; $("#exCredForm").hidden = !!c;
+  if (c) $("#exCredUser").textContent = c.usuario;
+  $("#exRem").disabled = !canRemember(); $("#exRem").checked = canRemember();
+  const u = $("#exUnid"), uAtual = u.value;
+  u.replaceChildren(el("option", { value: "", text: "Padrão do portal" }), ...(bioUnidades || []).map(x => el("option", { value: x.valor, text: x.nome || x.valor })));
+  u.value = [...u.options].some(o => o.value === uAtual) ? uAtual : "";
+  $("#exGo").disabled = !session;
+  if (!session) $("#exMsg").textContent = "Para buscar exames, entre na sua conta (Conta e sincronização).";
+  if (exUlt) exMostra();
+}
+function exPacMudou(){ const p = store.patients[$("#exPac").value]; if (p && p.data.bio_pront) $("#exPront").value = p.data.bio_pront; }
+async function exBuscar(){
+  const msg = $("#exMsg"), go = $("#exGo"), pid = $("#exPac").value, p = store.patients[pid];
+  const pront = $("#exPront").value.replace(/\D/g, "");
+  if (!pront){ msg.textContent = "Informe o prontuário (só números)."; return; }
+  if (p && p.data.bio_pront !== pront){ p.data.bio_pront = pront; changed(pid); }
+  const dias = Number($("#exDias").value) || 30, unidade = $("#exUnid").value;
+  go.disabled = true; $("#exOut").hidden = true;
+  try {
+    msg.textContent = "Entrando no portal e buscando pedidos…";
+    const cred = bioCred() ? null : { usuario: $("#exUser").value.trim(), senha: $("#exPass").value, lembrar: $("#exRem").checked };
+    exUlt = { ...(await bioCarregar(pront, dias, unidade, t => msg.textContent = t, cred)), pid, rotulo: p ? ptLabel(p) : "Prontuário " + pront };
+    msg.textContent = `${exUlt.pedidos} pedido(s) em ${dias} dias · ${exUlt.resultados.length} resultado(s).`;
+    renderEx();
+  } catch(err){ msg.textContent = bioErroBusca(err); }
+  finally { go.disabled = !session; }
+}
+function exGrafico(s){
+  const W = 320, H = 130, L = 44, R = 22, T = 12, B = 26, NS = "http://www.w3.org/2000/svg", pts = s.pontos;
+  const vs = pts.map(p => p.valor); let lo = Math.min(...vs), hi = Math.max(...vs); if (hi === lo){ hi += 1; lo -= 1; }
+  const x = i => L + (pts.length === 1 ? (W - L - R) / 2 : i * (W - L - R) / (pts.length - 1));
+  const y = v => T + (hi - v) * (H - T - B) / (hi - lo);
+  const mk = (tag, at, txt) => { const e = document.createElementNS(NS, tag); Object.entries(at).forEach(([k, v]) => e.setAttribute(k, v)); if (txt != null) e.textContent = txt; return e; };
+  const svg = mk("svg", { viewBox: `0 0 ${W} ${H}`, class: "ex-graf", role: "img", "aria-label": `${s.sigla}: ` + pts.map(p => `${p.data.slice(0, 5)} ${p.texto}`).join(", ") });
+  const fmtV = v => String(Math.round(v * 100) / 100).replace(".", ",");
+  [[hi, T], [lo, H - B]].forEach(([v, yy]) => { svg.append(mk("line", { x1: L, x2: W - R, y1: yy, y2: yy, class: "gl" }), mk("text", { x: L - 6, y: yy + 4, "text-anchor": "end", class: "ax" }, fmtV(v))); });
+  const passo = Math.max(1, Math.ceil(pts.length / 6));
+  pts.forEach((p, i) => { if (i % passo === 0 || i === pts.length - 1) svg.append(mk("text", { x: x(i), y: H - 8, "text-anchor": "middle", class: "ax" }, p.data.slice(0, 5))); });
+  svg.append(mk("polyline", { points: pts.map((p, i) => `${x(i)},${y(p.valor)}`).join(" "), class: "ln" }));
+  pts.forEach((p, i) => { const g = mk("g", {}); g.append(mk("title", {}, `${p.data.slice(0, 5)}: ${p.texto}`), mk("circle", { cx: x(i), cy: y(p.valor), r: 3.5, class: "pt" + (p.alterado ? " alt" : "") })); svg.append(g); });
+  return svg;
+}
+function exMostra(){
+  const u = exUlt; if (!u) return;
+  $("#exOut").hidden = false;
+  $("#exCab").textContent = `${u.rotulo} · prontuário ${u.pront} · últimos ${u.dias} dias · buscado em ${new Date().toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}`;
+  // tabela: exames nas linhas, datas nas colunas (mais recente à direita)
+  const todas = BIO.series(u.resultados, 1), lim = Number($("#exCols").value) || 0;
+  const datas = [...new Set(todas.flatMap(s => s.pontos.map(p => p.ord + "|" + p.data)))].sort().map(x => x.split("|")[1]);
+  const cols = lim ? datas.slice(-lim) : datas;
+  const ordem = todas.slice().sort((a, b) => (a.sigla < b.sigla ? -1 : 1));
+  const tb = $("#exTab");
+  if (!cols.length){ tb.replaceChildren(el("tbody", {}, el("tr", {}, el("td", { text: "Nenhum resultado numérico no período." })))); }
+  else tb.replaceChildren(
+    el("thead", {}, el("tr", {}, el("th", { text: "Exame" }), ...cols.map(d => el("th", { text: d.slice(0, 5) })))),
+    el("tbody", {}, ...ordem.filter(s => s.pontos.some(p => cols.includes(p.data))).map(s => el("tr", {},
+      el("th", { scope: "row" }, el("span", { text: s.sigla }), s.unidade ? el("span", { class: "u", text: " " + s.unidade }) : null),
+      ...cols.map(d => { const pt = s.pontos.find(p => p.data === d); return el("td", { class: pt && pt.alterado ? "alt" : "", text: pt ? pt.texto + (pt.alterado ? "*" : "") : "" }); })))));
+  $("#exTabNota").hidden = !u.resultados.some(r => r.alterado);
+  // gráficos (2 ou mais datas)
+  const graf = todas.filter(s => s.pontos.length >= 2);
+  $("#exGrafBox").hidden = !graf.length;
+  $("#exGraf").replaceChildren(...graf.map(s => el("figure", { class: "ex-fig" },
+    el("figcaption", {}, el("strong", { text: s.sigla }), s.unidade ? el("span", { class: "u", text: " " + s.unidade }) : null, el("span", { class: "ex-ult", text: ` · último: ${s.pontos[s.pontos.length - 1].texto} (${s.pontos[s.pontos.length - 1].data.slice(0, 5)})` })),
+    exGrafico(s))));
+  // laudos em texto (culturas, antibiogramas e outros) e pendentes
+  const laudos = u.resultados.filter(r => !r.pendente && BIO.numero(String(r.resultado)) === null && String(r.resultado).trim().length > 2);
+  $("#exLaudosBox").hidden = !laudos.length;
+  $("#exLaudos").replaceChildren(...laudos.map(r => el("li", {}, el("strong", { text: `${r.data.slice(0, 5)} – ${r.grupo && r.grupo !== r.exame ? r.grupo + " › " : ""}${r.exame}: ` }), el("span", { text: String(r.resultado) + (r.unidade ? " " + r.unidade : "") }))));
+  const pend = u.resultados.filter(r => r.pendente);
+  $("#exPendBox").hidden = !pend.length;
+  $("#exPend").replaceChildren(...pend.map(r => el("li", { text: `${r.data.slice(0, 5)} – ${r.exame} (em andamento)` })));
+  $("#exAvisosBox").hidden = !u.avisos.length;
+  $("#exAvisos").replaceChildren(...u.avisos.map(a => el("li", { text: a })));
+}
+$("#exGo").addEventListener("click", exBuscar);
+$("#exPac").addEventListener("change", exPacMudou);
+$("#exCols").addEventListener("change", exMostra);
+$("#exPrint").addEventListener("click", () => window.print());
+$("#exCopy").addEventListener("click", () => { if (exUlt) copyText(BIO.formatar(exUlt.resultados, true, exUlt.sexo)).then(ok => toast(ok ? "Exames copiados (formato prontuário)" : "Não foi possível copiar")); });
 
 /* =====================================================================
    INICIALIZAÇÃO
@@ -4563,7 +4740,7 @@ $("#homeAcct").addEventListener("click", openAccountEntry);
 $("#homeCode2").addEventListener("click", openCodeDlg);
 $("#homeMenuStep").addEventListener("click", e => {
   const b = e.target.closest("[data-hm]"); if (!b) return;
-  if (b.dataset.hm === "sc"){ hideHome(); setView("sc"); return; }
+  if (b.dataset.hm === "sc" || b.dataset.hm === "ex"){ hideHome(); setView(b.dataset.hm); return; }
   listFilter = b.dataset.hm; listQuery = ""; $("#search").value = "";
   hideHome(); setView("list");
 });
