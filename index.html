@@ -363,9 +363,10 @@ body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .
 .ck-sec{margin:22px 2px 8px;font-size:.9rem;color:var(--muted)}
 
 /* ---------- tela inicial ---------- */
-.home{position:fixed;inset:0;z-index:60;background:var(--bg);display:grid;place-items:center;padding:24px 16px calc(24px + env(safe-area-inset-bottom));transition:opacity .35s ease, visibility .35s}
+/* rola quando o conteúdo (ex.: o menu num celular) é mais alto que a tela; margin:auto centraliza sem cortar o topo */
+.home{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:24px 16px calc(24px + env(safe-area-inset-bottom));transition:opacity .35s ease, visibility .35s}
 .home.hide{opacity:0;visibility:hidden;pointer-events:none}
-.home-in{max-width:560px;width:100%;text-align:center}
+.home-in{max-width:560px;width:100%;text-align:center;margin:auto}
 .ecg{width:min(320px,80vw);height:auto;display:block;margin:0 auto 18px;overflow:visible}
 .ecg .trace{fill:none;stroke:var(--line);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .ecg .beat{fill:none;stroke:var(--accent);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:22 78;stroke-dashoffset:22;filter:drop-shadow(0 0 4px color-mix(in srgb,var(--accent) 55%,transparent))}
@@ -532,7 +533,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <button class="h-card" type="button" data-hm="enf"><span class="h-card-t">Evolução enfermaria</span><span class="h-card-s">Clínica médica</span><span class="h-card-n" data-hm-n="enf"></span></button>
       <button class="h-card" type="button" data-hm="nota"><span class="h-card-t">Notas</span><span class="h-card-s">Bloco de notas por paciente</span><span class="h-card-n" data-hm-n="nota"></span></button>
       <button class="h-card" type="button" data-hm="ex"><span class="h-card-t">Extração e análise de exames</span><span class="h-card-s">Biomega: tabela evolutiva, gráficos, culturas e pendentes</span><span class="h-card-n">Para imprimir</span></button>
-      <button class="h-card" type="button" data-hm="sc"><span class="h-card-t">Escores e calculadoras</span><span class="h-card-s">SOFA, APACHE II, NEWS2, gasometria, Wells, CKD-EPI e outros</span><span class="h-card-n">20 calculadoras</span></button>
+      <button class="h-card" type="button" data-hm="sc"><span class="h-card-t">Escores e calculadoras</span><span class="h-card-s">SOFA, APACHE II, NEWS2, gasometria, Wells, CKD-EPI e outros</span><span class="h-card-n" id="hmScN">33 calculadoras</span></button>
       <button class="h-card" type="button" data-hm="all"><span class="h-card-t">Meus pacientes</span><span class="h-card-s">Todos os prontuários</span><span class="h-card-n" data-hm-n="all"></span></button>
     </div>
     <div class="h-links">
@@ -3642,6 +3643,7 @@ const SC = {
 
 /* ---------- tela ---------- */
 let scAtual = null, scPac = "";
+$("#hmScN").textContent = Object.keys(SC).length + " calculadoras";
 function scVals(){
   const v = {};
   if (!scAtual) return v;
