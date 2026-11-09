@@ -3224,7 +3224,7 @@ if (APP){
    Glasgow, diurese, vasoativas) entram preenchidos; tudo pode ser editado.
    O resultado pode ser copiado ou inserido num campo de texto da ficha.
    ===================================================================== */
-const SC_CATS = [["uti", "Terapia intensiva"], ["tev", "Tromboembolismo venoso"], ["card", "Cardiologia"], ["rf", "Rim e fígado"], ["hem", "Hematologia e oncologia"], ["pneu", "Pneumonia"]];
+const SC_CATS = [["uti", "Terapia intensiva"], ["lab", "Eletrólitos e cálculos laboratoriais"], ["tev", "Tromboembolismo venoso e sangramento"], ["card", "Cardiologia"], ["neuro", "Neurologia"], ["rf", "Rim e fígado"], ["gi", "Gastroenterologia"], ["hem", "Hematologia e oncologia"], ["pneu", "Pneumonia"]];
 const scN = (k, l, u, o = {}) => ({ t: "n", k, l, u, ...o });
 const scS = (k, l, opts, o = {}) => ({ t: "s", k, l, opts, ...o });
 const scC = (k, l, pts, o = {}) => ({ t: "c", k, l, pts, ...o });
@@ -3472,6 +3472,171 @@ const SC = {
       if (v.idade <= 50 && semFatores) return { r: "Classe I", int: "Classe I: idade ≤ 50 anos sem comorbidades nem alterações do exame (mortalidade de 0,1% no estudo original); tratamento ambulatorial." };
       const cl = s <= 70 ? "II" : s <= 90 ? "III" : s <= 130 ? "IV" : "V";
       return { r: `${s} pontos, classe ${cl}`, int: { II: "Classe II (≤ 70): tratamento ambulatorial.", III: "Classe III (71 a 90): ambulatorial ou internação breve.", IV: "Classe IV (91 a 130): internação.", V: "Classe V (> 130): internação; considerar CTI." }[cl] };
+    } },
+  /* ---- acrescentados a pedido do autor (09/11/2026) ---- */
+  fib4: { cat: "rf", nome: "FIB-4", desc: "Fibrose hepática avançada (não invasivo)",
+    ref: "Sterling RK, et al. Development of a simple noninvasive index to predict significant fibrosis in patients with HIV/HCV coinfection. Hepatology. 2006;43:1317-25. Cortes para DHGNA: Shah AG, et al. Clin Gastroenterol Hepatol. 2009;7:1104-12.",
+    campos: [scN("idade", "Idade", "anos", { from: d => d.idade }), scN("ast", "AST (TGO)", "U/L"), scN("alt", "ALT (TGP)", "U/L"), scN("plaq", "Plaquetas", "mil/mm³")],
+    calc(v){
+      if (!(v.idade > 0 && v.ast > 0 && v.alt > 0 && v.plaq > 0)) return null;
+      const f = v.idade * v.ast / (v.plaq * Math.sqrt(v.alt)), r = fmt(f, 2);
+      const dhgna = f < 1.3 ? "< 1,30: fibrose avançada pouco provável" : f > 2.67 ? "> 2,67: fibrose avançada provável" : "1,30 a 2,67: indeterminado";
+      const hcv = f < 1.45 ? "< 1,45: fibrose avançada pouco provável" : f > 3.25 ? "> 3,25: fibrose avançada provável" : "1,45 a 3,25: indeterminado";
+      return { r: "FIB-4 " + r, int: `DHGNA (Shah, 2009): ${dhgna}. Hepatite C/HIV (Sterling, 2006): ${hcv}.` };
+    } },
+  nihss: { cat: "neuro", nome: "NIHSS", desc: "Gravidade do AVC",
+    ref: "Brott T, et al. Measurements of acute cerebral infarction: a clinical examination scale. Stroke. 1989;20:864-70. Versão brasileira: Cincura C, et al. Cerebrovasc Dis. 2009;27:119-22. Faixas de gravidade: Kwah LK, Diong J. J Physiother. 2014;60:61.",
+    campos: [
+      scS("n1a", "1a. Nível de consciência", [["0", "0 – Alerta"], ["1", "1 – Sonolento, desperta com estímulo leve"], ["2", "2 – Obnubilado, precisa de estímulo repetido ou doloroso"], ["3", "3 – Coma, só respostas reflexas ou nenhuma"]]),
+      scS("n1b", "1b. Perguntas (mês e idade)", [["0", "0 – Responde as duas corretamente"], ["1", "1 – Responde uma corretamente"], ["2", "2 – Nenhuma correta"]]),
+      scS("n1c", "1c. Comandos (abrir e fechar os olhos; apertar e soltar a mão)", [["0", "0 – Realiza os dois"], ["1", "1 – Realiza um"], ["2", "2 – Nenhum"]]),
+      scS("n2", "2. Olhar conjugado", [["0", "0 – Normal"], ["1", "1 – Paralisia parcial do olhar"], ["2", "2 – Desvio forçado ou paralisia total"]]),
+      scS("n3", "3. Campos visuais", [["0", "0 – Sem perda visual"], ["1", "1 – Hemianopsia parcial"], ["2", "2 – Hemianopsia completa"], ["3", "3 – Hemianopsia bilateral (inclui cegueira cortical)"]]),
+      scS("n4", "4. Paralisia facial", [["0", "0 – Normal"], ["1", "1 – Leve (apagamento do sulco, assimetria ao sorrir)"], ["2", "2 – Parcial (paralisia total ou quase da face inferior)"], ["3", "3 – Completa (face superior e inferior)"]]),
+      ...[["n5a", "5a. Motor do membro superior esquerdo", "10"], ["n5b", "5b. Motor do membro superior direito", "10"], ["n6a", "6a. Motor do membro inferior esquerdo", "5"], ["n6b", "6b. Motor do membro inferior direito", "5"]].map(([k, l, s]) =>
+        scS(k, l, [["0", `0 – Sem queda por ${s} s`], ["1", `1 – Queda antes de ${s} s, sem tocar a cama`], ["2", "2 – Algum esforço contra a gravidade"], ["3", "3 – Sem esforço contra a gravidade, cai"], ["4", "4 – Nenhum movimento"], ["un", "NT – Amputação ou anquilose (não pontua)"]])),
+      scS("n7", "7. Ataxia de membros", [["0", "0 – Ausente"], ["1", "1 – Presente em um membro"], ["2", "2 – Presente em dois membros"]]),
+      scS("n8", "8. Sensibilidade", [["0", "0 – Normal"], ["1", "1 – Perda leve a moderada"], ["2", "2 – Perda grave ou total"]]),
+      scS("n9", "9. Linguagem", [["0", "0 – Normal"], ["1", "1 – Afasia leve a moderada"], ["2", "2 – Afasia grave"], ["3", "3 – Mutismo ou afasia global"]]),
+      scS("n10", "10. Disartria", [["0", "0 – Normal"], ["1", "1 – Leve a moderada"], ["2", "2 – Grave ou anartria"]]),
+      scS("n11", "11. Extinção ou inatenção (negligência)", [["0", "0 – Nenhuma"], ["1", "1 – Em uma modalidade"], ["2", "2 – Profunda ou em mais de uma modalidade"]])],
+    calc(v, campos){
+      const fe = campos.filter(c => v[c.k]), falta = campos.filter(c => !v[c.k]).map(c => c.l.split(".")[0]);
+      if (!fe.length) return null;
+      const s = fe.reduce((x, c) => x + (parseInt(v[c.k], 10) || 0), 0);
+      const g = s === 0 ? "sem déficit mensurável" : s <= 4 ? "AVC menor (1 a 4)" : s <= 15 ? "AVC moderado (5 a 15)" : s <= 20 ? "moderado a grave (16 a 20)" : "grave (21 a 42)";
+      return { r: ptsTxt(s), det: fe.map(c => c.l.split(".")[0] + " " + (v[c.k] === "un" ? "NT" : v[c.k])).join(" | "), int: (falta.length ? "Faltam os itens " + falta.join(", ") + ". " : "") + "Gravidade: " + g + "." };
+    } },
+  qtc: { cat: "card", nome: "QT corrigido", desc: "Bazett, Fridericia, Framingham e Hodges",
+    ref: "Bazett HC. Heart. 1920;7:353-70. Fridericia LS. Acta Med Scand. 1920;53:469-86. Sagie A, et al. (Framingham) Am J Cardiol. 1992;70:797-801. Hodges M, et al. J Am Coll Cardiol. 1983;1:694. Limites: Rautaharju PM, et al. AHA/ACCF/HRS. Circulation. 2009;119:e241-50; Drew BJ, et al. AHA. Circulation. 2010;121:1047-60.",
+    campos: [scN("qt", "Intervalo QT medido", "ms"), scN("fc", "FC", "bpm", { from: d => d.fc }), scS("sexo", "Sexo", SEXO, { from: d => d.sexo })],
+    calc(v){
+      if (!(v.qt > 0 && v.fc > 0)) return null;
+      const rr = 60 / v.fc, baz = v.qt / Math.sqrt(rr), fri = v.qt / Math.cbrt(rr), fra = v.qt + 154 * (1 - rr), hod = v.qt + 1.75 * (v.fc - 60);
+      const lim = v.sexo === "F" ? 460 : v.sexo === "M" ? 450 : null, ref = fri;
+      const int = (ref >= 500 ? "QTc ≥ 500 ms: risco aumentado de torsades de pointes. " : lim && ref > lim ? `QTc prolongado (> ${lim} ms em ${v.sexo === "F" ? "mulheres" : "homens"}). ` : lim ? "QTc dentro do limite. " : "Informe o sexo para o limite (> 450 ms em homens, > 460 ms em mulheres). ")
+        + "Interpretação pelo Fridericia; Bazett superestima o QTc com FC alta.";
+      return { r: `Fridericia ${Math.round(fri)} ms`, det: `Bazett ${Math.round(baz)} ms | Framingham ${Math.round(fra)} ms | Hodges ${Math.round(hod)} ms (RR ${fmt(rr, 2)} s)`, int };
+    } },
+  cacorr: { cat: "lab", nome: "Cálcio corrigido pela albumina", desc: "Cálcio total ajustado à albumina",
+    ref: "Payne RB, Little AJ, Williams RB, Milner JR. Interpretation of serum calcium in patients with abnormal serum proteins. Br Med J. 1973;4:643-6.",
+    campos: [scN("ca", "Cálcio total", "mg/dL"), scN("alb", "Albumina", "g/dL")],
+    calc(v){
+      if (!(v.ca > 0 && v.alb > 0)) return null;
+      const c = v.ca + 0.8 * (4 - v.alb);
+      return { r: `${fmt(c, 1)} mg/dL`, int: "Cálcio corrigido = cálcio total + 0,8 × (4 − albumina). Comparar com a faixa de referência do laboratório." };
+    } },
+  osm: { cat: "lab", nome: "Osmolalidade sérica", desc: "Calculada, efetiva e gap osmolar",
+    ref: "Rasouli M. Basic concepts and practical equations on osmolality: biochemical approach. Clin Biochem. 2016;49:936-41. Gap osmolar: Kraut JA, Kurtz I. Toxic alcohol ingestions. Clin J Am Soc Nephrol. 2008;3:208-25.",
+    campos: [scN("na", "Sódio", "mEq/L"), scN("glic", "Glicose", "mg/dL"), scN("ureia", "Ureia", "mg/dL"), scN("med", "Osmolalidade medida (opcional)", "mOsm/kg")],
+    calc(v){
+      if (!(v.na > 0 && v.glic >= 0 && isFinite(v.glic))) return null;
+      const ef = 2 * v.na + v.glic / 18, calc = isFinite(v.ureia) ? ef + v.ureia / 6 : null;
+      const det = `Efetiva (tonicidade) = 2 × Na + glicose/18 = ${Math.round(ef)} mOsm/kg`;
+      let int = calc != null ? "Calculada = 2 × Na + glicose/18 + ureia/6 (ureia/6 = BUN/2,8). Referência usual: 275 a 295 mOsm/kg." : "Informe a ureia para a osmolalidade calculada.";
+      if (calc != null && v.med > 0){ const gap = v.med - calc; int += ` Gap osmolar = ${Math.round(gap)} mOsm/kg` + (gap > 10 ? " (> 10: sugere osmóis não medidos, como álcoois tóxicos)." : " (≤ 10)."); }
+      return { r: calc != null ? `${Math.round(calc)} mOsm/kg` : `Efetiva ${Math.round(ef)} mOsm/kg`, det, int };
+    } },
+  agualivre: { cat: "lab", nome: "Déficit de água livre", desc: "Hipernatremia",
+    ref: "Adrogué HJ, Madias NE. Hypernatremia. N Engl J Med. 2000;342:1493-9.",
+    campos: [scN("na", "Sódio sérico", "mEq/L"), scN("peso", "Peso", "kg", { from: d => d.peso }), scN("idade", "Idade", "anos", { from: d => d.idade }), scS("sexo", "Sexo", SEXO, { from: d => d.sexo }),
+      scN("alvo", "Sódio desejado", "mEq/L", { from: () => "140" }), scN("inf", "Sódio da solução a infundir (opcional; SG 5% = 0, NaCl 0,45% = 77)", "mEq/L")],
+    calc(v){
+      if (!(v.na > 0 && v.peso > 0 && v.idade > 0 && v.sexo)) return null;
+      const idoso = v.idade >= 65, fa = v.sexo === "F" ? (idoso ? 0.45 : 0.5) : (idoso ? 0.5 : 0.6), act = fa * v.peso, alvo = v.alvo > 0 ? v.alvo : 140;
+      const def = act * (v.na / alvo - 1);
+      let det = `Água corporal total = ${String(fa).replace(".", ",")} × ${v.peso} kg = ${fmt(act, 1)} L`;
+      if (isFinite(v.inf)) det += ` | 1 L da solução muda o sódio em ${fmt((v.inf - v.na) / (act + 1), 1)} mEq/L (Adrogué-Madias)`;
+      return { r: def > 0 ? `${fmt(def, 1)} L` : "Sem déficit (sódio ≤ desejado)", det, int: "Déficit = ACT × (Na atual / Na desejado − 1); não inclui as perdas que continuam. Na hipernatremia de evolução prolongada, Adrogué e Madias recomendam reduzir o sódio em até 10 mEq/L por dia." };
+    } },
+  gbs: { cat: "gi", nome: "Glasgow-Blatchford", desc: "Hemorragia digestiva alta: necessidade de intervenção",
+    ref: "Blatchford O, Murray WR, Blatchford M. A risk score to predict need for treatment for upper-gastrointestinal haemorrhage. Lancet. 2000;356:1318-21. Conduta pelo escore: Gralnek IM, et al. ESGE guideline. Endoscopy. 2021;53:300-32.",
+    campos: [scN("ureia", "Ureia", "mg/dL"), scN("hb", "Hemoglobina", "g/dL"), scS("sexo", "Sexo", SEXO, { from: d => d.sexo }), scN("pas", "PA sistólica", "mmHg", { from: d => d.pas }),
+      scC("fc", "FC ≥ 100 bpm", 1, { from: d => num(d.fc) >= 100 }), scC("melena", "Melena", 1), scC("sinc", "Síncope", 2), scC("hep", "Doença hepática", 2), scC("ic", "Insuficiência cardíaca", 2)],
+    calc(v, campos){
+      if (!(isFinite(v.ureia) && isFinite(v.hb) && v.sexo && isFinite(v.pas))) return null;
+      const u = v.ureia / 6.006;   // mmol/L (o artigo usa ureia em mmol/L)
+      const pu = u >= 25 ? 6 : u >= 10 ? 4 : u >= 8 ? 3 : u >= 6.5 ? 2 : 0;
+      const ph = v.sexo === "M" ? (v.hb < 10 ? 6 : v.hb < 12 ? 3 : v.hb < 13 ? 1 : 0) : (v.hb < 10 ? 6 : v.hb < 12 ? 1 : 0);
+      const pp = v.pas < 90 ? 3 : v.pas < 100 ? 2 : v.pas < 110 ? 1 : 0, s = pu + ph + pp + somaC(v, campos);
+      return { r: ptsTxt(s), det: `Ureia ${pu} | Hemoglobina ${ph} | PAS ${pp} | Outros ${somaC(v, campos)}`, int: s <= 1 ? "0 a 1: muito baixo risco; a ESGE (2021) admite manejo ambulatorial sem endoscopia de urgência." : "≥ 2: não é de muito baixo risco; quanto maior, maior a chance de transfusão, endoscopia terapêutica ou cirurgia." };
+    } },
+  duke: { cat: "card", nome: "Critérios de Duke", desc: "Endocardite infecciosa (Duke modificado)",
+    ref: "Li JS, et al. Proposed modifications to the Duke criteria for the diagnosis of infective endocarditis. Clin Infect Dis. 2000;30:633-8.",
+    campos: [
+      scC("pat", "Critério patológico: microrganismo (cultura ou histologia) ou lesão ativa em vegetação, êmbolo ou abscesso intracardíaco", "Patológico"),
+      scC("M1", "Hemocultura: microrganismo típico em 2 amostras separadas (S. viridans, S. gallolyticus, HACEK, S. aureus, enterococo comunitário sem foco), hemoculturas persistentemente positivas ou Coxiella (1 cultura ou IgG fase I > 1:800)", "Maior"),
+      scC("M2", "Envolvimento endocárdico: ecocardiograma com vegetação, abscesso ou nova deiscência parcial de prótese, ou nova regurgitação valvar", "Maior"),
+      scC("m1", "Predisposição: cardiopatia predisponente ou uso de drogas injetáveis", "Menor"),
+      scC("m2", "Febre ≥ 38 °C", "Menor", { from: d => num(d.tmax) >= 38 }),
+      scC("m3", "Fenômenos vasculares: embolia arterial, infartos pulmonares sépticos, aneurisma micótico, hemorragia intracraniana ou conjuntival, lesões de Janeway", "Menor"),
+      scC("m4", "Fenômenos imunológicos: glomerulonefrite, nódulos de Osler, manchas de Roth, fator reumatoide", "Menor"),
+      scC("m5", "Evidência microbiológica: hemocultura positiva sem critério maior ou sorologia de infecção ativa por microrganismo compatível", "Menor")],
+    calc(v){
+      const M = ["M1", "M2"].filter(k => v[k]).length, m = ["m1", "m2", "m3", "m4", "m5"].filter(k => v[k]).length;
+      const def = v.pat || M === 2 || (M === 1 && m >= 3) || m === 5, pos = !def && ((M === 1 && m >= 1) || m >= 3);
+      return { r: def ? "Endocardite definida" : pos ? "Endocardite possível" : "Critérios insuficientes", det: `${M} maior(es) e ${m} menor(es)` + (v.pat ? " | critério patológico" : ""),
+        int: "Definida: critério patológico, 2 maiores, 1 maior + 3 menores ou 5 menores. Possível: 1 maior + 1 menor ou 3 menores. Rejeitada: diagnóstico alternativo firme, resolução com ≤ 4 dias de antibiótico, sem achado em cirurgia ou necropsia com ≤ 4 dias de antibiótico, ou sem critérios de possível." };
+    } },
+  quatroT: { cat: "hem", nome: "4Ts", desc: "Probabilidade de trombocitopenia induzida por heparina",
+    ref: "Lo GK, et al. Evaluation of pretest clinical score (4 T's) for the diagnosis of heparin-induced thrombocytopenia in two clinical settings. J Thromb Haemost. 2006;4:759-65.",
+    campos: [
+      scS("t1", "Trombocitopenia", [["2", "2 – Queda > 50% e nadir ≥ 20 mil"], ["1", "1 – Queda de 30 a 50% ou nadir de 10 a 19 mil"], ["0", "0 – Queda < 30% ou nadir < 10 mil"]]),
+      scS("t2", "Tempo da queda", [["2", "2 – Início claro entre o 5º e o 10º dia, ou em ≤ 1 dia com heparina nos últimos 30 dias"], ["1", "1 – Compatível com 5 a 10 dias, mas incerto; após o 10º dia; ou ≤ 1 dia com heparina há 30 a 100 dias"], ["0", "0 – Queda em ≤ 4 dias sem exposição recente à heparina"]]),
+      scS("t3", "Trombose ou outras sequelas", [["2", "2 – Trombose nova confirmada, necrose de pele no local da injeção ou reação sistêmica aguda após bolus de heparina"], ["1", "1 – Trombose progressiva ou recorrente, lesões eritematosas de pele ou suspeita de trombose não confirmada"], ["0", "0 – Nenhuma"]]),
+      scS("t4", "Outras causas de plaquetopenia", [["2", "2 – Nenhuma aparente"], ["1", "1 – Possível"], ["0", "0 – Definida"]])],
+    calc(v){
+      if (!["t1", "t2", "t3", "t4"].every(k => v[k])) return null;
+      const s = ["t1", "t2", "t3", "t4"].reduce((x, k) => x + Number(v[k]), 0);
+      return { r: ptsTxt(s), int: s >= 6 ? "Alta probabilidade (6 a 8)." : s >= 4 ? "Probabilidade intermediária (4 a 5)." : "Baixa probabilidade (0 a 3)." };
+    } },
+  abcd2: { cat: "neuro", nome: "ABCD2", desc: "Risco de AVC após AIT",
+    ref: "Johnston SC, et al. Validation and refinement of scores to predict very early stroke risk after transient ischaemic attack. Lancet. 2007;369:283-92.",
+    campos: [scC("a", "Idade ≥ 60 anos", 1, { from: d => num(d.idade) >= 60 }), scC("b", "PA ≥ 140/90 mmHg na avaliação inicial", 1, { from: d => num(d.pas) >= 140 || num(d.pad) >= 90 }),
+      scS("c", "Quadro clínico", [["2", "Fraqueza unilateral"], ["1", "Alteração da fala sem fraqueza"], ["0", "Outros"]]),
+      scS("dur", "Duração dos sintomas", [["2", "≥ 60 minutos"], ["1", "10 a 59 minutos"], ["0", "< 10 minutos"]]), scC("dm", "Diabetes", 1)],
+    calc(v, campos){
+      if (!v.c || !v.dur) return null;
+      const s = somaC(v, campos) + Number(v.c) + Number(v.dur);
+      return { r: ptsTxt(s), int: s >= 6 ? "Alto risco (6 a 7): AVC em 2 dias em 8,1% na validação." : s >= 4 ? "Risco moderado (4 a 5): AVC em 2 dias em 4,1%." : "Baixo risco (0 a 3): AVC em 2 dias em 1,0%." };
+    } },
+  bisap: { cat: "gi", nome: "BISAP", desc: "Pancreatite aguda: mortalidade hospitalar",
+    ref: "Wu BU, et al. The early prediction of mortality in acute pancreatitis: a large population-based study. Gut. 2008;57:1698-703. SIRS: Bone RC, et al. Chest. 1992;101:1644-55.",
+    campos: [scC("b", "BUN > 25 mg/dL (ureia > 53 mg/dL)", 1), scC("i", "Alteração do estado mental (Glasgow < 15)", 1, { from: d => { const g = num(gcsNum(d)); return g > 0 && g < 15; } }),
+      scC("s", "SIRS (≥ 2: T > 38 ou < 36 °C; FC > 90; FR > 20 ou PaCO2 < 32 mmHg; leucócitos > 12 mil, < 4 mil ou > 10% de bastões)", 1),
+      scC("a", "Idade > 60 anos", 1, { from: d => num(d.idade) > 60 }), scC("p", "Derrame pleural na imagem", 1)],
+    calc(v, campos){ const s = somaC(v, campos); return { r: ptsTxt(s), int: s >= 3 ? "≥ 3: associado a maior mortalidade hospitalar e a falência orgânica (Wu, 2008)." : "0 a 2: menor risco de mortalidade hospitalar." }; } },
+  crusade: { cat: "card", nome: "CRUSADE", desc: "Risco de sangramento maior na SCA sem supra de ST",
+    ref: "Subherwal S, et al. Baseline risk of major bleeding in non-ST-segment-elevation myocardial infarction: the CRUSADE bleeding score. Circulation. 2009;119:1873-82. Clearance: Cockcroft DW, Gault MH. Nephron. 1976;16:31-41.",
+    campos: [scN("ht", "Hematócrito basal", "%"), scN("cr", "Creatinina", "mg/dL"), scN("peso", "Peso", "kg", { from: d => d.peso }), scN("idade", "Idade", "anos", { from: d => d.idade }),
+      scN("clcr", "Clearance de creatinina (vazio = Cockcroft-Gault)", "mL/min"), scN("fc", "FC", "bpm", { from: d => d.fc }), scS("sexo", "Sexo", SEXO, { from: d => d.sexo }),
+      scN("pas", "PA sistólica", "mmHg", { from: d => d.pas }), scC("ic", "Sinais de insuficiência cardíaca na apresentação", 7), scC("vasc", "Doença vascular prévia (arterial periférica ou AVC)", 6), scC("dm", "Diabetes", 6)],
+    calc(v, campos){
+      let cl = v.clcr;
+      if (!isFinite(cl) && v.cr > 0 && v.peso > 0 && v.idade > 0 && v.sexo) cl = (140 - v.idade) * v.peso / (72 * v.cr) * (v.sexo === "F" ? 0.85 : 1);
+      if (!(isFinite(v.ht) && isFinite(cl) && isFinite(v.fc) && v.sexo && isFinite(v.pas))) return null;
+      const c = {
+        "Hematócrito": v.ht < 31 ? 9 : v.ht < 34 ? 7 : v.ht < 37 ? 3 : v.ht < 40 ? 2 : 0,
+        ["ClCr " + Math.round(cl)]: cl <= 15 ? 39 : cl <= 30 ? 35 : cl <= 60 ? 28 : cl <= 90 ? 17 : cl <= 120 ? 7 : 0,
+        "FC": v.fc <= 70 ? 0 : v.fc <= 80 ? 1 : v.fc <= 90 ? 3 : v.fc <= 100 ? 6 : v.fc <= 110 ? 8 : v.fc <= 120 ? 10 : 11,
+        "Sexo": v.sexo === "F" ? 8 : 0,
+        "PAS": v.pas <= 90 ? 10 : v.pas <= 100 ? 8 : v.pas <= 120 ? 5 : v.pas <= 180 ? 1 : v.pas <= 200 ? 3 : 5,
+        "Comorbidades": somaC(v, campos) };
+      const s = Object.values(c).reduce((a, b) => a + b, 0);
+      const r = s <= 20 ? "muito baixo (3,1%)" : s <= 30 ? "baixo (5,5%)" : s <= 40 ? "moderado (8,6%)" : s <= 50 ? "alto (11,9%)" : "muito alto (19,5%)";
+      return { r: ptsTxt(s), det: Object.entries(c).map(([k, x]) => `${k} ${x}`).join(" | "), int: `Risco de sangramento maior intra-hospitalar ${r}.` };
+    } },
+  improve: { cat: "tev", nome: "IMPROVE (sangramento)", desc: "Risco de sangramento em pacientes clínicos internados",
+    ref: "Decousus H, et al. Factors at admission associated with bleeding risk in medical patients: findings from the IMPROVE investigators. Chest. 2011;139:69-79.",
+    campos: [scC("ulc", "Úlcera gastroduodenal ativa", 4.5), scC("sang", "Sangramento nos 3 meses antes da internação", 4), scC("plaq", "Plaquetas < 50 mil/mm³", 4),
+      scS("idade", "Idade", [["0", "< 40 anos"], ["1.5", "40 a 84 anos"], ["3.5", "≥ 85 anos"]], { from: d => { const i = num(d.idade); return isFinite(i) ? (i >= 85 ? "3.5" : i >= 40 ? "1.5" : "0") : ""; } }),
+      scC("hep", "Insuficiência hepática (INR > 1,5)", 2.5), scS("renal", "Função renal (TFG)", [["0", "≥ 60 mL/min/1,73 m²"], ["1", "30 a 59 mL/min/1,73 m²"], ["2.5", "< 30 mL/min/1,73 m²"]]),
+      scC("uti", "Internação em UTI ou unidade coronariana", 2.5), scC("cvc", "Cateter venoso central", 2, { from: d => !!String(d.cvcs_1_sitio || d.cvcs_1_tipo || "").trim() }), scC("reuma", "Doença reumática", 2), scC("cancer", "Câncer ativo", 2),
+      scC("masc", "Sexo masculino", 1, { from: d => d.sexo === "M" })],
+    calc(v, campos){
+      if (!v.idade || !v.renal) return null;
+      const s = somaC(v, campos) + Number(v.idade) + Number(v.renal);
+      return { r: ptsTxt(s), int: s >= 7 ? "≥ 7: alto risco de sangramento (maior e clinicamente relevante) na coorte IMPROVE." : "< 7: menor risco de sangramento." };
     } }
 };
 
