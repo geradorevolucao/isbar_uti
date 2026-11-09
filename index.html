@@ -88,7 +88,8 @@ details.menu .menu-list button:hover{background:var(--band)}
 .diary-d{flex:0 0 10.5rem}
 .rep-item{border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px}
 .rep-item[hidden]{display:none}
-.rep-h{font-weight:700;color:var(--accent);margin-bottom:6px}
+.rep-h{font-weight:700;color:var(--accent);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.rep-d{align-self:flex-end;padding:0 0 14px;font-weight:700;color:var(--accent)}
 fieldset.inf{border:0;padding:0;margin:0 0 6px}
 fieldset.inf>legend{font-weight:700;color:var(--ink);margin-bottom:6px}
 .inf-item .row{align-items:flex-start}
@@ -817,14 +818,16 @@ const CTI = [
   { title: "Lista de problemas ativos", rows: [
    [F("prob","Problemas","problems",{n:12,subs:[],item:"Problema",tl:""})],
    [F("motivo","Contexto","area",{rows:5})],
-   [F("atb","Antimicrobianos em uso","text",{w:"l"}), F("atb_d1","D1","date")],
-   [F("atb_prev","Antimicrobianos prévios","text",{w:"l"}), F("atb_prev_ini","Início","date"), F("atb_prev_fim","Término","date")]
+   [F("atbs","Antimicrobianos em uso","repeat",{n:10,item:"antimicrobiano",hl:"Antimicrobiano",lista:true,cols:[
+     F("nome","Antimicrobiano","text",{w:"l",tl:""}), F("d1","D1","date",{w:"auto",dcalc:true})]})],
+   [F("atbp","Antimicrobianos prévios","repeat",{n:10,item:"antimicrobiano",hl:"Antimicrobiano prévio",lista:true,cols:[
+     F("nome","Antimicrobiano","text",{w:"l",tl:""}), F("ini","Início","date",{w:"auto"}), F("fim","Término","date",{w:"auto"})]})]
   ]},
   { title: "Evolução da internação", rows: [
    [F("evint","Registros por dia","diary",{n:40,tl:""})]
   ]}
  ]},
- { id: "B", title: "BACKGROUND (HISTÓRICO)", groups: [ { rows: [
+ { id: "B", title: "BACKGROUND (HISTÓRICO)", groups: [ { title: "Comorbidades, medicações, alergias e social", txtTitle: false, rows: [
    [F("comorb","Comorbidades","area",{rows:2})],
    [F("meds","Medicações de uso contínuo","area",{rows:2})],
    [F("alergias_sn","Alergias","cond",{opts:["Sim","Não"],sub:{ "Sim": [F("alergias","Quais","text",{w:"full"})] }})],
@@ -834,10 +837,11 @@ const CTI = [
   { title: "Dados vitais", rows: [
    [F("pa","PA","pair",{keys:["pas","pad"],sep:"/",u:"mmHg"}), F("pam","PAM","calc",{fn:"pam"}), F("fc","FC","num",{u:"bpm"}), F("fr_pac","FR","num",{u:"irpm"}), F("spo2","SpO2","num",{u:"%"}), F("tmax","Tmáx","num",{u:"°C"})]
   ]},
-  { title: "Balanço hídrico", rows: [
+  { title: "Balanço hídrico", bhEvol: true, rows: [
+   [F("bh_per","Período","radio",{opts:["12h","24h"],optl:{"12h":"12 h (plantão noturno)","24h":"24 h (plantão diurno)"}})],
    [F("bh_ganhos","Ganhos","num",{w:"m",u:"mL"}), F("bh_perdas","Perdas","num",{w:"m",u:"mL"})],
-   [F("bh24","Balanço hídrico 24 h","num",{w:"m",u:"mL"}), F("bh_acum","BH acumulado","num",{w:"m",u:"mL"})],
-   [F("diurese","Diurese","num",{w:"s",u:"mL/24 h"}), F("dkgh","Diurese/kg/h","calc",{w:"m",u:"mL/kg/h",fn:"dkgh"})]
+   [F("bh24","Balanço hídrico","num",{w:"m",u:"mL"}), F("bh_acum","BH acumulado","num",{w:"m",u:"mL"})],
+   [F("diurese","Diurese","num",{w:"s",u:"mL"}), F("dkgh","Diurese/kg/h","calc",{w:"m",u:"mL/kg/h",fn:"dkgh"})]
   ]},
   { title: "Medicações em infusão contínua", rows: [
    [F("inf_sed","Sedação","infusao",{n:6,item:"sedativo",drogas:["midazolam","propofol","dexmedetomidina","cetamina"]})],
@@ -1053,7 +1057,7 @@ const REFS_ENF = [
 ];
 
 const TPL = {
-  cti: { tab: "CTI", title: "ISBAR · CTI", textTitle: "ISBAR – CTI", btn: "Gerar texto ISBAR", model: CTI, refs: REFS_CTI, grpWord: "sistemas" },
+  cti: { recolher: true, limparAR: true, tab: "CTI", title: "ISBAR · CTI", textTitle: "ISBAR – CTI", btn: "Gerar texto ISBAR", model: CTI, refs: REFS_CTI, grpWord: "sistemas" },
   enf: { tab: "Enfermaria", title: "Clínica Médica", textTitle: "EVOLUÇÃO – CLÍNICA MÉDICA", btn: "Gerar texto", model: ENF, build: enfModel, sig: enfMom, text: admText, refs: REFS_ENF,
          newDay: "Nova evolução do dia", newDayMsg: "Os campos de Evolução diária, Dados vitais e Exame físico serão apagados, a data passa para hoje e o DIH aumenta em 1. Se a ficha estiver em Admissão, passa para Evolução e as situações viram a lista de problemas. Problemas, contexto, HPP, MUC, exames e condutas são mantidos." },
   nota: { tab: "Notas", title: "Notas", textTitle: "NOTA", btn: "Copiar / enviar", dlg: "Nota", model: NOTA, text: d => String(d.nota || ""), refs: [] }
@@ -1161,6 +1165,17 @@ function normalizeStore(st){
       mud = true;
     });
     if (mud) d.cti_v5 = 1;
+  }
+  // CTI, 09/11/2026: antimicrobianos em uso e prévios passam a ser listas (o texto antigo vira o 1º item)
+  for (const p of Object.values(st.patients)){
+    const d = p.data;
+    if (p.tpl !== "cti" || !d || d.cti_v6) continue;
+    const t = k => String(d[k] || "").trim();
+    if ((t("atb") || t("atb_d1")) && !t("atbs_1_nome") && !t("atbs_1_d1")){ if (t("atb")) d.atbs_1_nome = t("atb"); if (t("atb_d1")) d.atbs_1_d1 = d.atb_d1; }
+    if ((t("atb_prev") || t("atb_prev_ini") || t("atb_prev_fim")) && !t("atbp_1_nome")){
+      if (t("atb_prev")) d.atbp_1_nome = t("atb_prev"); if (t("atb_prev_ini")) d.atbp_1_ini = d.atb_prev_ini; if (t("atb_prev_fim")) d.atbp_1_fim = d.atb_prev_fim;
+    }
+    d.cti_v6 = 1;
   }
   if (!TPL[st.mode]) st.mode = "cti";
   if (!st.settings || typeof st.settings !== "object") st.settings = {};
@@ -1295,7 +1310,7 @@ const CALC = {
   dp(d){ if (d.vent_modo && d.vent_modo !== "VCV") return ""; const pl = num(d.pplato), pe = num(d.peep); return (isFinite(pl) && isFinite(pe)) ? fmt(pl - pe, 0) : ""; },
   cst(d){ if (d.vent_modo && d.vent_modo !== "VCV") return ""; const vc = num(d.vc), dp = num(d.pplato) - num(d.peep); return (vc > 0 && dp > 0) ? fmt(vc/dp, 1) : ""; },
   pf(d){ const po = num(d.pao2); let fi = num(d.fio2); if (!(fi > 0)) fi = num(d.cnaf_fio2); if (!(po > 0 && fi > 0)) return ""; if (fi > 1) fi = fi/100; return fi <= 1 ? fmt(po/fi, 0) : ""; },
-  dkgh(d){ const u = num(d.diurese), p = num(d.peso); return (u >= 0 && p > 0) ? fmt(u/p/24, 2) : ""; },
+  dkgh(d){ const u = num(d.diurese), p = num(d.peso), h = d.bh_per === "12h" ? 12 : 24; return (u >= 0 && p > 0) ? fmt(u/p/h, 2) : ""; },
   ag(d){ const na = num(d.na), cl = num(d.cl), hc = num(d.hco3); return [na,cl,hc].every(isFinite) ? fmt(na - cl - hc, 1) : ""; },
   dcti(d){   // dia da admissão no CTI = D1 (definido pelo autor)
     if (!d.adm_cti) return "";
@@ -1432,7 +1447,11 @@ function renderField(f){
       for (let i = 1; i <= f.n; i++){
         const row = el("div", { class: "row" });
         f.cols.forEach(c => row.append(renderField(repCol(f, i, c))));
-        box.append(el("div", { class: "rep-item", "data-i": String(i) }, el("div", { class: "rep-h", text: `${f.l} ${i}` }), row));
+        f.cols.forEach(c => { if (c.dcalc) row.append(el("span", { class: "rep-d", "data-rep-d": `${f.k}_${i}_${c.k}` })); });
+        box.append(el("div", { class: "rep-item", "data-i": String(i) },
+          el("div", { class: "rep-h" }, el("span", { text: `${f.hl || f.l} ${i}` }),
+            el("button", { class: "btn icon ol-delsub", type: "button", "data-del-rep": `${f.k}|${i}`, title: "Apagar", "aria-label": `Apagar ${(f.hl || f.l).toLowerCase()} ${i}`, text: "×" })),
+          row));
       }
       box.append(el("button", { class: "btn add-prob", type: "button", "data-add-rep": f.k, text: "+ Adicionar " + (f.item || "item").toLowerCase() }));
       return box;
@@ -1490,6 +1509,9 @@ function renderForm(){
   const root = $("#form");
   const model = modelOf(t, D());
   renderedSig = store.mode + "|" + sigOf(t, D());
+  const abertos = new Set([...root.querySelectorAll("details.grp[open]")].map(x => x.dataset.gid));
+  const manter = root.dataset.mode === store.mode && root.childElementCount > 0;
+  root.dataset.mode = store.mode;
   root.replaceChildren();
   fieldsIndex = [];
   model.forEach(sec => {
@@ -1508,8 +1530,9 @@ function renderForm(){
         content.append(row);
       });
       if (g.hint) content.append(el("p", { class: "hint", text: g.hint }));
+      if (g.bhEvol) content.append(el("button", { class: "btn add-prob", type: "button", "data-bh-evol": "1", text: "+ Inserir na evolução da internação" }));
       if (g.title){
-        body.append(el("details", { class: "grp", open: true },
+        body.append(el("details", { class: "grp", "data-gid": gid, open: t.recolher ? (manter && abertos.has(gid)) : true },
           el("summary", {}, el("span", { class: "t", text: g.title }), el("span", { class: "badge", "data-badge": gid })),
           content));
       } else {
@@ -1586,8 +1609,64 @@ function updateRepeat(){
     box.querySelectorAll(".rep-item").forEach(r => r.hidden = Number(r.dataset.i) > shown);
     box.querySelector("[data-add-rep]").hidden = shown >= max;
   });
+  document.querySelectorAll("#form [data-rep-d]").forEach(x => { const n = diaDe(d[x.dataset.repD]); x.textContent = n ? "D" + n : ""; });
+}
+// dia do tratamento: a data de início conta como D1 (como os Dias de CTI)
+function diaDe(iso){
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || "")) return "";
+  const n = Math.round((new Date(todayISO() + "T12:00") - new Date(iso + "T12:00")) / 864e5) + 1;
+  return n >= 1 ? String(n) : "";
+}
+/* balanço hídrico → "Evolução da internação" do dia (pedido do autor, 09/11/2026; formato e faixas do autor):
+   "DE 12h: Balanço hídrico: ___ mL | Ganhos: ___ mL | Perdas: ___ mL | Diurese: ___ mL (___ mL/kg/h) | Afebril | Euglicêmico"
+   Tmáx: até 37,1 °C afebril; 37,2 a 38,0 °C subfebril; acima de 38,0 °C febril.
+   Controle glicêmico: adequado = euglicêmico; inadequado = disglicêmico. Campos vazios ficam de fora. */
+function febreDe(t){ const v = num(t); if (!isFinite(v)) return ""; return v > 38 ? "Febril" : v >= 37.2 ? "Subfebril" : "Afebril"; }
+function bhTexto(d){
+  const ml = v => String(v == null ? "" : v).trim();
+  const partes = [];
+  if (ml(d.bh24)) partes.push(`Balanço hídrico: ${ml(d.bh24)} mL`);
+  if (ml(d.bh_ganhos)) partes.push(`Ganhos: ${ml(d.bh_ganhos)} mL`);
+  if (ml(d.bh_perdas)) partes.push(`Perdas: ${ml(d.bh_perdas)} mL`);
+  if (ml(d.diurese)){ const k = CALC.dkgh(d); partes.push(`Diurese: ${ml(d.diurese)} mL` + (k ? ` (${k} mL/kg/h)` : "")); }
+  const f = febreDe(d.tmax); if (f) partes.push(f);
+  if (d.glic_ctrl === "Adequado") partes.push("Euglicêmico"); else if (d.glic_ctrl === "Inadequado") partes.push("Disglicêmico");
+  return partes.length ? `DE ${d.bh_per}: ` + partes.join(" | ") : "";
+}
+function bhParaEvolucao(){
+  const p = cur(); if (!p) return;
+  const d = p.data;
+  if (!d.bh_per){ toast("Escolha o período do balanço: 12 h ou 24 h"); return; }
+  const linha = bhTexto(d);
+  if (!linha){ toast("Preencha os dados do balanço hídrico"); return; }
+  const k = "evint", max = 40, hoje = todayISO();
+  let i = 0;
+  for (let x = 1; x <= max; x++) if (d[`${k}_${x}_d`] === hoje){ i = x; break; }
+  if (i){ const t = String(d[`${k}_${i}`] || "").trim(); d[`${k}_${i}`] = t ? t + "\n" + linha : linha; }
+  else {
+    let last = 0; for (let x = 1; x <= max; x++) if (String(d[`${k}_${x}`] || "").trim() || d[`${k}_${x}_d`]) last = x;
+    i = Math.max(last, Number(d[k + "_n"]) || 0) + 1;
+    if (i > max){ toast("A evolução da internação já tem o máximo de registros"); return; }
+    d[`${k}_${i}_d`] = hoje; d[`${k}_${i}`] = linha; d[k + "_n"] = String(i);
+  }
+  fillForm(); changed();
+  toast("Inserido na evolução da internação de " + brDate(hoje));
+}
+// apagar um item de um campo repetido: os seguintes sobem uma posição (pedido do autor, 09/11/2026)
+function onDelRep(e){
+  const b = e.target.closest("[data-del-rep]"); if (!b || !cur()) return;
+  const d = cur().data, [k, i] = b.dataset.delRep.split("|"), box = b.closest("[data-rep]");
+  const fi = fieldsIndex.find(x => x.f.k === k && x.f.t === "repeat"); if (!fi) return;
+  const cols = fi.f.cols.map(c => c.k), max = Number(box.dataset.max), at = Number(i);
+  if (cols.some(c => String(d[`${k}_${at}_${c}`] || "").trim()) && !confirm("Apagar este item?")) return;
+  const shown = box.querySelectorAll(".rep-item:not([hidden])").length;
+  for (let x = at; x <= max; x++) cols.forEach(c => { const nx = d[`${k}_${x + 1}_${c}`]; if (x < max && nx != null) d[`${k}_${x}_${c}`] = nx; else delete d[`${k}_${x}_${c}`]; });
+  d[k + "_n"] = String(Math.max(0, shown - 1));
+  fillForm(); changed();
 }
 function onAddRep(e){
+  if (e.target.closest("[data-del-rep]")) return onDelRep(e);
+  if (e.target.closest("[data-bh-evol]")) return bhParaEvolucao();
   const b = e.target.closest("[data-add-rep]"); if (!b || !cur()) return;
   const k = b.dataset.addRep, i = b.closest("[data-rep]").querySelectorAll(".rep-item:not([hidden])").length + 1;
   cur().data[k + "_n"] = String(i);
@@ -1847,11 +1926,13 @@ function buildText(){
             return;
           }
           if (f.t === "repeat"){
-            let idx = 0;
+            let idx = 0; const it = [];
             for (let i = 1; i <= f.n; i++){
-              const vals = f.cols.map(c => { const cc = repCol(f, i, c), v = valueText(cc, d); if (!v) return ""; const l = c.tl != null ? c.tl : c.l; return l ? `${l}: ${v}` : v; }).filter(Boolean);
-              if (vals.length) gLines.push(`${f.l} ${++idx}: ${vals.join(" | ")}`);
+              const vals = f.cols.map(c => { const cc = repCol(f, i, c); let v = valueText(cc, d); if (!v) return ""; if (c.dcalc){ const n = diaDe(d[cc.k]); if (n) v += ` (D${n})`; } const l = c.tl != null ? c.tl : c.l; return l ? `${l}: ${v}` : v; }).filter(Boolean);
+              if (vals.length) it.push(f.lista ? "- " + vals.join(" | ") : `${f.l} ${++idx}: ${vals.join(" | ")}`);
             }
+            if (it.length && f.lista) gLines.push(f.l + ":");
+            gLines.push(...it);
             return;
           }
           if (f.t === "cond" && f.subtxt && f.subtxt[d[f.k]]){
@@ -1883,7 +1964,7 @@ function buildText(){
         if (inline.length) gLines.push(inline.join(" | "));
       });
       if (gLines.length){
-        if (g.title) secLines.push(`[${g.title}]`);
+        if (g.title && g.txtTitle !== false) secLines.push(`[${g.title}]`);
         secLines.push(...gLines);
       }
     });
@@ -1914,7 +1995,8 @@ function fileSafe(s){ return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g
    AÇÕES
    ===================================================================== */
 function showCurrent(){ renderForm(); fillForm(); refreshSelect(); }
-function switchTo(id){ store.currentBy[store.mode] = id; fillForm(); refreshSelect(); saveSoon(); window.scrollTo({ top: 0 }); }
+function recolherGrupos(){ if (TPL[store.mode] && TPL[store.mode].recolher) document.querySelectorAll("#form details.grp").forEach(x => x.open = false); }
+function switchTo(id){ store.currentBy[store.mode] = id; fillForm(); recolherGrupos(); refreshSelect(); saveSoon(); window.scrollTo({ top: 0 }); }
 function switchMode(mode){
   if (!TPL[mode] || mode === store.mode) return;
   saveNow();
@@ -2013,7 +2095,18 @@ function onMenu(act){
       break;
     case "import": $("#importFile").click(); break;
     case "clear":
-      if (p && confirm(`Limpar todos os campos de “${ptLabel(p)}”?`)){
+      if (p && TPL[p.tpl].limparAR){
+        if (!confirm(`Limpar a Avaliação (A) e as Recomendações (R) de “${ptLabel(p)}”?\n\nIdentificação, Situação e Background ficam como estão.`)) break;
+        const apagar = new Set();
+        eachField(modelOf(TPL[p.tpl], p.data).filter(sec => sec.id === "A" || sec.id === "R"), f => {
+          keysOf(f).forEach(k => apagar.add(k));
+          apagar.add(f.k + "_n");                                                     // quantos itens estavam abertos
+          if (f.t === "outline") for (let i = 1; i <= f.n; i++) apagar.add(`${f.k}_${i}_n`);
+        });
+        apagar.forEach(k => delete p.data[k]);
+        fillForm(); changed(); saveNow(); toast("Avaliação e recomendações limpas");
+      }
+      else if (p && confirm(`Limpar todos os campos de “${ptLabel(p)}”?`)){
         const keep = {}; ["nome","leito","idade","sexo","enf_mom"].forEach(k => { if (p.data[k]) keep[k] = p.data[k]; });
         p.data = { ...keep, data_aval: todayISO() }; fillForm(); refreshSelect(); changed(); saveNow(); toast("Campos limpos");
       }
@@ -2593,7 +2686,7 @@ function setView(v){
 function openPatient(id, v = "chart"){
   const p = store.patients[id]; if (!p) return;
   store.mode = p.tpl; store.currentBy[p.tpl] = id;
-  showCurrent();
+  showCurrent(); recolherGrupos();
   setView(v);
   saveSoon();
 }
@@ -3272,6 +3365,7 @@ function menuState(){
   const nd = $('[data-act="newday"]');
   nd.hidden = !(view === "chart" && t && t.newDay); if (t && t.newDay) nd.textContent = t.newDay;
   $('[data-act="std"]').hidden = !(view === "chart" && t && hasStd(t, p.data));
+  $('[data-act="clear"]').textContent = t && t.limparAR ? "Limpar avaliação e recomendações (A e R)" : "Limpar campos do prontuário (mantém nome e leito)";
   const hasGroups = !!(t && modelOf(t, p.data).some(s => s.groups.some(g => g.title)));
   $('[data-act="expand"]').hidden = $('[data-act="collapse"]').hidden = !(view === "chart" && hasGroups);
 }
