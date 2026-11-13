@@ -217,23 +217,50 @@ body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .
 .ex-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
 .ex-bar .fld{flex:1 1 12rem}
 .ex-h{margin:22px 2px 8px;font-size:1rem;color:var(--ink)}
-/* tabela evolutiva (redesenho a pedido do autor, 13/11/2026): colunas do tamanho do conteúdo, grupos, listras e A4 */
-.ex-tabs{display:grid;gap:14px}
-.ex-tabwrap{overflow-x:auto;max-width:100%;width:max-content;border:1px solid var(--line);border-radius:var(--radius);background:var(--card)}
-.ex-tab{border-collapse:separate;border-spacing:0;font-size:.9rem;font-variant-numeric:tabular-nums}
-.ex-tab caption{caption-side:top;text-align:left;padding:8px 12px 0;color:var(--muted);font-size:.8rem;white-space:nowrap}
-.ex-tab th,.ex-tab td{padding:6px 12px;white-space:nowrap;border-bottom:1px solid var(--line)}
-.ex-tab thead th{background:var(--card);color:var(--accent);font-weight:700;text-align:center;border-bottom:2px solid var(--accent);position:sticky;top:0}
+/* resultado dos exames (layout refeito a pedido do autor, 13/11/2026): cabeçalho em destaque, um cartão por grupo
+   (dois por linha quando há até 4 datas), minigráfico de evolução por exame e culturas/antibiogramas em cartões */
+.ex-head{margin:16px 0 12px;padding:14px 18px;border-radius:var(--radius);background:var(--accent);color:var(--accent-ink)}
+.ex-head .t{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;opacity:.85}
+.ex-head .n{font-size:1.2rem;font-weight:700;margin:2px 0 4px}
+.ex-head .m{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.85rem;opacity:.92}
+.ex-sec{display:flex;align-items:center;gap:10px;margin:18px 0 10px;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.ex-sec::after{content:"";flex:1;border-top:1px solid var(--line)}
+.ex-tabs{display:block}
+.ex-cards{columns:2 360px;column-gap:14px}
+.ex-cards.um{columns:1}
+.ex-card{break-inside:avoid;break-inside:avoid-column;display:block;margin:0 0 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);overflow:hidden}
+.ex-card-h{margin:0;padding:7px 12px;background:var(--band);color:var(--accent);font-size:.78rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;border-left:4px solid var(--accent)}
+.ex-card-b{overflow-x:auto}
+.ex-tab{width:100%;border-collapse:collapse;font-size:.88rem;font-variant-numeric:tabular-nums}
+.ex-tab th,.ex-tab td{padding:5px 8px;white-space:nowrap;border-bottom:1px solid var(--line)}
+.ex-tab thead th{color:var(--muted);font-size:.72rem;font-weight:700;text-align:center;letter-spacing:.03em}
 .ex-tab thead th:first-child{text-align:left}
-.ex-tab th[scope=row]{text-align:left;font-weight:700;color:var(--ink);position:sticky;left:0;background:inherit;padding-right:18px}
-.ex-tab tbody tr{background:var(--card)}
-.ex-tab tbody tr.z{background:color-mix(in srgb,var(--band) 45%,var(--card))}
-.ex-tab td{text-align:center;min-width:3.6rem}
-.ex-tab .u{color:var(--muted);font-weight:400;font-size:.75rem;margin-left:4px}
-.ex-tab td.alt{font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
-.ex-tab td.vazio{color:var(--line)}
-.ex-tab tr.ex-grp th{background:var(--band);color:var(--accent);font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-align:left;padding:5px 12px;position:static}
+.ex-tab th[scope=row]{text-align:left;font-weight:700;color:var(--ink);width:1%}
+.ex-tab tbody tr:nth-child(even){background:color-mix(in srgb,var(--band) 40%,var(--card))}
 .ex-tab tbody tr:last-child th,.ex-tab tbody tr:last-child td{border-bottom:0}
+.ex-tab td{text-align:center}
+.ex-tab td.ult{font-weight:700}
+.ex-tab .u{display:block;color:var(--muted);font-weight:400;font-size:.68rem;line-height:1.1}
+.ex-tab td.alt{font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 11%,transparent)}
+.ex-tab td.vazio{color:var(--line)}
+.ex-tab td.sp{width:1%;padding:3px 8px}
+.ex-spark{display:block;width:64px;height:20px}
+.ex-spark polyline{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
+.ex-spark circle{fill:var(--card);stroke:var(--accent);stroke-width:1.2}
+.ex-spark circle.ult{fill:var(--accent)}
+.ex-spark circle.alt{fill:var(--accent);stroke:var(--accent)}
+.ex-parte{margin:4px 2px 8px;color:var(--muted);font-size:.8rem}
+.ex-nota{margin:0 2px 6px;font-size:.8rem}
+.ex-cults{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.ex-cult{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);overflow:hidden;break-inside:avoid}
+.ex-cult-h{display:flex;justify-content:space-between;gap:10px;padding:7px 12px;background:var(--band);color:var(--accent);font-weight:700;font-size:.85rem;border-left:4px solid var(--accent)}
+.ex-cult-h span:last-child{color:var(--muted);font-weight:400;white-space:nowrap}
+.ex-cult-b{padding:8px 12px;font-size:.88rem}
+.ex-cult-b p{margin:2px 0;white-space:pre-line}
+.ex-abg{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.ex-abg span{border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:.8rem;white-space:nowrap}
+.ex-abg span b{margin-left:4px}
+.ex-abg .res{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .ex-grafs{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .ex-fig{margin:0;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;break-inside:avoid}
 .ex-fig figcaption{font-size:.9rem}
@@ -256,25 +283,33 @@ body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .
 .ia-rec small{color:var(--muted);font-size:13px}
 #iaAtualBox[hidden],#iaFontesBox[hidden]{display:none}
 #iaAtualBox[hidden] + .fld{grid-column:1/-1}
-#exGrafBox[hidden],#exCultBox[hidden],#exLaudosBox[hidden],#exPendBox[hidden],#exAvisosBox[hidden],#exTabNota[hidden],#exCredForm[hidden],#exCredSaved[hidden]{display:none}
+#exCab:empty,#exGrafBox[hidden],#exCultBox[hidden],#exLaudosBox[hidden],#exPendBox[hidden],#exAvisosBox[hidden],#exTabNota[hidden],#exCredForm[hidden],#exCredSaved[hidden]{display:none}
 @media print{
   body[data-view="ex"] .ex-form,body[data-view="ex"] .ex-bar,body[data-view="ex"] .ex-noprint,body[data-view="ex"] header.top{display:none!important}
   body[data-view="ex"] #ex{page:exames;max-width:none}
-  body[data-view="ex"] .ex-cab{margin:0 0 2mm;font-size:11pt}
-  body[data-view="ex"] .ex-h{margin:4mm 0 2mm;font-size:10.5pt}
-  body[data-view="ex"] .ex-tabs{gap:4mm}
-  body[data-view="ex"] .ex-tabwrap{overflow:visible;border:.3mm solid #bbb;border-radius:2mm;max-width:100%}
+  body[data-view="ex"] #ex,body[data-view="ex"] #ex *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body[data-view="ex"] .ex-head{margin:0 0 4mm;padding:3.5mm 5mm;border-radius:2.5mm;color:#fff}
+  body[data-view="ex"] .ex-head .n{font-size:13pt}
+  body[data-view="ex"] .ex-head .t,body[data-view="ex"] .ex-head .m{font-size:8pt}
+  body[data-view="ex"] .ex-sec{margin:4mm 0 2.5mm;font-size:8pt}
+  body[data-view="ex"] .ex-cards{columns:1;column-gap:5mm}
+  body[data-view="ex"] .ex-cards.dois{columns:2}
+  body[data-view="ex"] .ex-card{margin:0 0 4mm;border-color:#cfcfcf;border-radius:2mm}
+  body[data-view="ex"] .ex-card-h{padding:1.4mm 3mm;font-size:7.5pt}
+  body[data-view="ex"] .ex-card-b{overflow:visible}
   body[data-view="ex"] .ex-tab{font-size:8.5pt}
-  body[data-view="ex"] .ex-tab th,body[data-view="ex"] .ex-tab td{padding:1.1mm 2.4mm;border-bottom:.2mm solid #d4d4d4}
-  body[data-view="ex"] .ex-tab td{min-width:12mm}
-  body[data-view="ex"] .ex-tab thead th{position:static;border-bottom:.5mm solid #7A2E3B}
-  body[data-view="ex"] .ex-tab th[scope=row]{position:static}
+  body[data-view="ex"] .ex-tab th,body[data-view="ex"] .ex-tab td{padding:1.1mm 2.2mm;border-bottom-color:#e2e2e2}
+  body[data-view="ex"] .ex-tab thead th{font-size:7pt}
+  body[data-view="ex"] .ex-tab .u{font-size:6.5pt}
+  body[data-view="ex"] .ex-spark{width:16mm;height:5mm}
   body[data-view="ex"] .ex-tab tr{break-inside:avoid}
-  body[data-view="ex"] .ex-tab tr.ex-grp{break-after:avoid}
-  body[data-view="ex"] .ex-tab tr.ex-grp th{font-size:7pt;padding:.8mm 2.4mm}
-  body[data-view="ex"] .ex-tab,body[data-view="ex"] .ex-tab *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  body[data-view="ex"] .ex-list{font-size:8.5pt}
-  body[data-view="ex"] #exTabNota{font-size:8pt;margin:1mm 0 0}
+  body[data-view="ex"] .ex-cards.um .ex-card{break-inside:auto}
+  body[data-view="ex"] .ex-card-h{break-after:avoid}
+  body[data-view="ex"] .ex-cults{grid-template-columns:1fr 1fr;gap:4mm}
+  body[data-view="ex"] .ex-cult-h{padding:1.4mm 3mm;font-size:8pt}
+  body[data-view="ex"] .ex-cult-b{padding:2mm 3mm;font-size:8.5pt}
+  body[data-view="ex"] .ex-abg span{font-size:7.5pt;padding:.4mm 2.5mm}
+  body[data-view="ex"] .ex-nota,body[data-view="ex"] .ex-parte{font-size:7.5pt}
   body[data-view="ex"] .ex-grafs{grid-template-columns:repeat(3,1fr)}
 }
 #sc{max-width:900px;margin:0 auto}
@@ -488,7 +523,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .toast.show{opacity:1}
 
 /* ---------- impressão ---------- */
-@page exames{size:A4 portrait;margin:12mm 10mm}
+@page exames{size:A4 portrait;margin:14mm 13mm}
 @media print{
   :root{--bg:#fff;--card:#fff;--field:#fff;--ink:#000;--line:#999;--band:#EDEDED;--accent:#7A2E3B;--calc-bg:#fff}
   body{padding:0;font-size:11px}
@@ -646,16 +681,15 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <p class="msg" id="exMsg" role="status"></p>
     </div>
     <div id="exOut" hidden>
-      <p class="ex-cab" id="exCab"></p>
+      <div class="ex-head" id="exCab"></div>
       <div class="ex-bar">
         <div class="fld w-m"><label for="exCols">Datas na tabela</label><div class="inp"><select id="exCols"><option value="7" selected>Últimas 7 datas</option><option value="14">Últimas 14 datas</option><option value="0">Todas</option></select></div></div>
         <button class="btn" type="button" id="exCopy">Copiar (formato prontuário)</button>
         <button class="btn primary" type="button" id="exPrint">Imprimir</button>
       </div>
-      <h3 class="ex-h">Tabela evolutiva</h3>
       <div class="ex-tabs" id="exTabs"></div>
-      <p class="sub" id="exTabNota" hidden>* resultado sinalizado pelo laboratório</p>
-      <div id="exCultBox"><h3 class="ex-h">Culturas e antibiogramas</h3><ul class="ex-list" id="exCult"></ul></div>
+      <p class="sub ex-nota" id="exTabNota" hidden>* resultado sinalizado pelo laboratório · a última coluna mostra a evolução de cada exame no período da tabela</p>
+      <div id="exCultBox"><h3 class="ex-sec"><span>Culturas e antibiogramas</span></h3><div class="ex-cults" id="exCult"></div></div>
       <!-- na impressão (pedido do autor, 13/11/2026) saem só a tabela e as culturas/antibiogramas -->
       <div id="exGrafBox" class="ex-noprint"><h3 class="ex-h">Gráficos</h3><div class="ex-grafs" id="exGraf"></div></div>
       <div id="exLaudosBox" class="ex-noprint"><h3 class="ex-h">Outros laudos em texto</h3><ul class="ex-list" id="exLaudos"></ul></div>
@@ -5049,49 +5083,81 @@ const EX_POS = new Map(EX_GRUPOS.flat().map((x, i) => [x, i]));
 const EX_GRUPO_NOMES = ["Hemograma", "Função renal", "Eletrólitos / íons", "Função hepática", "Gasometria", "Demais exames"];
 const exGrupo = sigla => { const i = EX_GRUPOS.findIndex(g => g.includes(sigla)); return i < 0 ? EX_GRUPOS.length - 1 : i; };
 const EX_MAXCOL = 10;
+// entidades HTML que chegam do portal sem decodificar (ex.: "&LT 1,20" → "<1,20")
+const exTxt = t => String(t).replace(/&lt;?\s*/gi, "<").replace(/&gt;?\s*/gi, ">").replace(/&amp;?/gi, "&");
+// minigráfico da evolução de um exame (só desenha com 2 ou mais valores)
+function exSpark(pts){
+  if (pts.length < 2) return null;
+  const W = 64, H = 20, P = 3, NS = "http://www.w3.org/2000/svg", vs = pts.map(p => p.valor);
+  let lo = Math.min(...vs), hi = Math.max(...vs); if (hi === lo){ hi += 1; lo -= 1; }
+  const x = i => P + i * (W - 2 * P) / (pts.length - 1), y = v => P + (hi - v) * (H - 2 * P) / (hi - lo);
+  const mk = (tag, at) => { const e = document.createElementNS(NS, tag); Object.entries(at).forEach(([k, v]) => e.setAttribute(k, v)); return e; };
+  const svg = mk("svg", { viewBox: `0 0 ${W} ${H}`, class: "ex-spark", role: "img", "aria-label": "Evolução: " + pts.map(p => p.texto).join(", ") });
+  svg.append(mk("polyline", { points: pts.map((p, i) => `${x(i).toFixed(1)},${y(p.valor).toFixed(1)}`).join(" ") }));
+  pts.forEach((p, i) => { if (p.alterado || i === pts.length - 1) svg.append(mk("circle", { cx: x(i).toFixed(1), cy: y(p.valor).toFixed(1), r: 2, class: p.alterado ? "alt" : "ult" })); });
+  return svg;
+}
+// culturas e antibiogramas: um cartão por exame (grupo) e data; antibiograma como etiquetas "antimicrobiano: resultado"
+const exNomeGrupo = g => { const t = String(g || "").replace(/\s*\((assinado|liberado|parcial|em andamento|conclu[ií]do)\)\s*$/i, "").trim(); return t === t.toUpperCase() ? t.toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase()) : t; };
+function exCultCards(lista){
+  const m = new Map();
+  lista.forEach(r => { const k = r.data.slice(0, 10) + "|" + (r.grupo || r.exame); if (!m.has(k)) m.set(k, []); m.get(k).push(r); });
+  return [...m.values()].map(rs => {
+    const r0 = rs[0], nome = exNomeGrupo(r0.grupo || r0.exame), abg = /antibiogram|sensibilidade|\btsa\b/i.test(normTxt(r0.grupo || r0.exame));
+    const corpo = abg
+      ? el("div", { class: "ex-abg" }, ...rs.map(r => { const v = exTxt(String(r.resultado)), n = normTxt(v); return el("span", { class: /^resist/.test(n) ? "res" : "" }, document.createTextNode(exNomeGrupo(r.exame) + ":"), el("b", { text: v })); }))
+      : el("div", {}, ...rs.map(r => el("p", {}, normTxt(r.exame) !== normTxt(r.grupo || "") && rs.length > 1 ? el("strong", { text: exNomeGrupo(r.exame) + ": " }) : null, document.createTextNode(exTxt(String(r.resultado)) + (r.unidade ? " " + r.unidade : "")))));
+    return el("article", { class: "ex-cult" }, el("div", { class: "ex-cult-h" }, el("span", { text: nome }), el("span", { text: r0.data.slice(0, 5) })), el("div", { class: "ex-cult-b" }, corpo));
+  });
+}
 const exPos = sigla => EX_POS.has(sigla) ? EX_POS.get(sigla) : EX_POS.size;
 const exEhCultura = r => /cultur|antibiogram|bacterioscop|\bgram\b|teste de sensibilidade|\btsa\b/.test(normTxt(`${r.grupo || ""} ${r.exame || ""}`));
 function exMostra(){
   const u = exUlt; if (!u) return;
   $("#exOut").hidden = false;
-  $("#exCab").textContent = `${u.rotulo} · prontuário ${u.pront} · últimos ${u.dias} dias · buscado em ${new Date().toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}`;
-  // tabela: exames nas linhas, datas nas colunas (mais recente à direita)
-  const todas = BIO.series(u.resultados, 1), lim = Number($("#exCols").value) || 0;
+  const agora = new Date().toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  $("#exCab").replaceChildren(el("div", { class: "t", text: "Exames laboratoriais · Biomega" }), el("div", { class: "n", text: u.rotulo }),
+    el("div", { class: "m" }, el("span", { text: "Prontuário " + u.pront }), el("span", { text: `Últimos ${u.dias} dias` }), el("span", { text: "Emitido em " + agora })));
+  // exames nas linhas, datas nas colunas (mais recente à direita), um cartão por grupo
+  // culturas e antibiogramas ficam fora da tabela (um "negativa após 48 h" não é valor numérico)
+  const todas = BIO.series(u.resultados.filter(r => !exEhCultura(r)), 1), lim = Number($("#exCols").value) || 0;
   const datas = [...new Set(todas.flatMap(s => s.pontos.map(p => p.ord + "|" + p.data)))].sort().map(x => x.split("|")[1]);
   const cols = lim ? datas.slice(-lim) : datas;
   const ordem = todas.slice().sort((a, b) => exPos(a.sigla) - exPos(b.sigla) || (a.sigla < b.sigla ? -1 : a.sigla > b.sigla ? 1 : 0));
-  // até EX_MAXCOL datas por tabela, para caber na largura de uma folha A4 em pé; mais datas viram outra tabela
-  const nb = Math.ceil(cols.length / EX_MAXCOL), tam = Math.ceil(cols.length / (nb || 1)), blocos = [];   // partes de tamanho parecido
+  // até EX_MAXCOL datas por parte, para caber em A4 em pé; partes de tamanho parecido
+  const nb = Math.ceil(cols.length / EX_MAXCOL), tam = Math.ceil(cols.length / (nb || 1)), blocos = [];
   for (let i = 0; i < cols.length; i += tam) blocos.push(cols.slice(i, i + tam));
   $("#exTabs").replaceChildren(...(!cols.length
     ? [el("p", { class: "sub", text: "Nenhum resultado numérico no período." })]
-    : blocos.map((bc, bi) => {
-      const linhas = []; let grupo = -1, z = false;
-      ordem.filter(s => s.pontos.some(p => bc.includes(p.data))).forEach(s => {
-        const g = exGrupo(s.sigla);
-        if (g !== grupo){ grupo = g; z = false; linhas.push(el("tr", { class: "ex-grp" }, el("th", { colspan: String(bc.length + 1), scope: "colgroup", text: EX_GRUPO_NOMES[g] }))); }
-        linhas.push(el("tr", { class: z ? "z" : "" },
-          el("th", { scope: "row", title: s.nome || s.sigla }, el("span", { text: s.sigla }), s.unidade ? el("span", { class: "u", text: s.unidade }) : null),
-          ...bc.map(d => { const pt = s.pontos.find(p => p.data === d); return el("td", { class: pt ? (pt.alterado ? "alt" : "") : "vazio", text: pt ? pt.texto + (pt.alterado ? "*" : "") : "–" }); })));
-        z = !z;
-      });
-      return el("div", { class: "ex-tabwrap" }, el("table", { class: "ex-tab" },
-        blocos.length > 1 ? el("caption", { text: `Datas ${bc[0].slice(0, 5)} a ${bc[bc.length - 1].slice(0, 5)} (parte ${bi + 1} de ${blocos.length})` }) : null,
-        el("thead", {}, el("tr", {}, el("th", { scope: "col", text: "Exame" }), ...bc.map(d => el("th", { scope: "col", text: d.slice(0, 5) })))),
-        el("tbody", {}, ...linhas)));
+    : blocos.flatMap((bc, bi) => {
+      const grupos = new Map();
+      ordem.filter(s => s.pontos.some(p => bc.includes(p.data))).forEach(s => { const g = exGrupo(s.sigla); if (!grupos.has(g)) grupos.set(g, []); grupos.get(g).push(s); });
+      const cards = [...grupos].map(([g, lista]) => el("section", { class: "ex-card" },
+        el("h4", { class: "ex-card-h", text: EX_GRUPO_NOMES[g] }),
+        el("div", { class: "ex-card-b" }, el("table", { class: "ex-tab" },
+          el("thead", {}, el("tr", {}, el("th", { scope: "col", text: "Exame" }), ...bc.map(d => el("th", { scope: "col", text: d.slice(0, 5) })), el("th", { scope: "col", text: "Evolução" }))),
+          el("tbody", {}, ...lista.map(s => {
+            const pts = bc.map(d => s.pontos.find(p => p.data === d)), ult = pts.reduce((k, p, i) => p ? i : k, -1);
+            return el("tr", {},
+              el("th", { scope: "row", title: s.nome || s.sigla }, el("span", { text: s.sigla }), s.unidade ? el("span", { class: "u", text: s.unidade }) : null),
+              ...pts.map((pt, i) => el("td", { class: pt ? [pt.alterado ? "alt" : "", i === ult ? "ult" : ""].join(" ").trim() : "vazio", text: pt ? exTxt(pt.texto) + (pt.alterado ? "*" : "") : "–" })),
+              el("td", { class: "sp" }, exSpark(pts.filter(Boolean))));
+          }))))));
+      return [blocos.length > 1 ? el("p", { class: "ex-parte", text: `Datas ${bc[0].slice(0, 5)} a ${bc[bc.length - 1].slice(0, 5)} (parte ${bi + 1} de ${blocos.length})` }) : null,
+        el("div", { class: "ex-cards" + (bc.length <= 4 ? " dois" : " um") }, ...cards)].filter(Boolean);
     })));
   $("#exTabNota").hidden = !u.resultados.some(r => r.alterado);
   // gráficos (2 ou mais datas)
-  const graf = todas.filter(s => s.pontos.length >= 2);
+  const graf = ordem.filter(s => s.pontos.length >= 2);
   $("#exGrafBox").hidden = !graf.length;
   $("#exGraf").replaceChildren(...graf.map(s => el("figure", { class: "ex-fig" },
-    el("figcaption", {}, el("strong", { text: s.sigla }), s.unidade ? el("span", { class: "u", text: " " + s.unidade }) : null, el("span", { class: "ex-ult", text: ` · último: ${s.pontos[s.pontos.length - 1].texto} (${s.pontos[s.pontos.length - 1].data.slice(0, 5)})` })),
+    el("figcaption", {}, el("strong", { text: s.sigla }), s.unidade ? el("span", { class: "u", text: " " + s.unidade }) : null, el("span", { class: "ex-ult", text: ` · último: ${exTxt(s.pontos[s.pontos.length - 1].texto)} (${s.pontos[s.pontos.length - 1].data.slice(0, 5)})` })),
     exGrafico(s))));
   // laudos em texto: culturas e antibiogramas (vão para a impressão) e os demais (só na tela); pendentes
-  const laudos = u.resultados.filter(r => !r.pendente && BIO.numero(String(r.resultado)) === null && String(r.resultado).trim().length > 2);
-  const cult = laudos.filter(exEhCultura), outros = laudos.filter(r => !exEhCultura(r));
-  const li = r => el("li", {}, el("strong", { text: `${r.data.slice(0, 5)} – ${r.grupo && r.grupo !== r.exame ? r.grupo + " › " : ""}${r.exame}: ` }), el("span", { text: String(r.resultado) + (r.unidade ? " " + r.unidade : "") }));
-  $("#exCultBox").hidden = !cult.length; $("#exCult").replaceChildren(...cult.map(li));
+  const cult = u.resultados.filter(r => !r.pendente && exEhCultura(r) && String(r.resultado).trim());
+  const outros = u.resultados.filter(r => !r.pendente && !exEhCultura(r) && BIO.numero(String(r.resultado)) === null && String(r.resultado).trim().length > 2);
+  const li = r => el("li", {}, el("strong", { text: `${r.data.slice(0, 5)} – ${r.grupo && r.grupo !== r.exame ? r.grupo + " › " : ""}${r.exame}: ` }), el("span", { text: exTxt(String(r.resultado)) + (r.unidade ? " " + r.unidade : "") }));
+  $("#exCultBox").hidden = !cult.length; $("#exCult").replaceChildren(...exCultCards(cult));
   $("#exLaudosBox").hidden = !outros.length; $("#exLaudos").replaceChildren(...outros.map(li));
   const pend = u.resultados.filter(r => r.pendente);
   $("#exPendBox").hidden = !pend.length;
