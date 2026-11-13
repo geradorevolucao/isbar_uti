@@ -247,7 +247,7 @@ body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .
 .ia-rec small{color:var(--muted);font-size:13px}
 #iaAtualBox[hidden],#iaFontesBox[hidden]{display:none}
 #iaAtualBox[hidden] + .fld{grid-column:1/-1}
-#exGrafBox[hidden],#exLaudosBox[hidden],#exPendBox[hidden],#exAvisosBox[hidden],#exTabNota[hidden],#exCredForm[hidden],#exCredSaved[hidden]{display:none}
+#exGrafBox[hidden],#exCultBox[hidden],#exLaudosBox[hidden],#exPendBox[hidden],#exAvisosBox[hidden],#exTabNota[hidden],#exCredForm[hidden],#exCredSaved[hidden]{display:none}
 @media print{
   body[data-view="ex"] .ex-form,body[data-view="ex"] .ex-bar,body[data-view="ex"] .ex-noprint,body[data-view="ex"] header.top{display:none!important}
   body[data-view="ex"] .ex-tabwrap{overflow:visible;border:0}
@@ -632,9 +632,11 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <h3 class="ex-h">Tabela evolutiva</h3>
       <div class="ex-tabwrap"><table class="ex-tab" id="exTab"></table></div>
       <p class="sub" id="exTabNota" hidden>* resultado sinalizado pelo laboratório</p>
-      <div id="exGrafBox"><h3 class="ex-h">Gráficos</h3><div class="ex-grafs" id="exGraf"></div></div>
-      <div id="exLaudosBox"><h3 class="ex-h">Laudos em texto (culturas, antibiogramas e outros)</h3><ul class="ex-list" id="exLaudos"></ul></div>
-      <div id="exPendBox"><h3 class="ex-h">Exames pendentes</h3><ul class="ex-list" id="exPend"></ul></div>
+      <div id="exCultBox"><h3 class="ex-h">Culturas e antibiogramas</h3><ul class="ex-list" id="exCult"></ul></div>
+      <!-- na impressão (pedido do autor, 13/11/2026) saem só a tabela e as culturas/antibiogramas -->
+      <div id="exGrafBox" class="ex-noprint"><h3 class="ex-h">Gráficos</h3><div class="ex-grafs" id="exGraf"></div></div>
+      <div id="exLaudosBox" class="ex-noprint"><h3 class="ex-h">Outros laudos em texto</h3><ul class="ex-list" id="exLaudos"></ul></div>
+      <div id="exPendBox" class="ex-noprint"><h3 class="ex-h">Exames pendentes</h3><ul class="ex-list" id="exPend"></ul></div>
       <div id="exAvisosBox" class="ex-noprint"><h3 class="ex-h">Avisos</h3><ul class="ex-list" id="exAvisos"></ul></div>
     </div>
   </section>
@@ -5011,6 +5013,18 @@ function exGrafico(s){
   pts.forEach((p, i) => { const g = mk("g", {}); g.append(mk("title", {}, `${p.data.slice(0, 5)}: ${p.texto}`), mk("circle", { cx: x(i), cy: y(p.valor), r: 3.5, class: "pt" + (p.alterado ? " alt" : "") })); svg.append(g); });
   return svg;
 }
+// ordem da tabela (pedido do autor, 13/11/2026): hemograma, função renal, eletrólitos/íons, função hepática,
+// gasometria e demais exames (PCR primeiro, depois em ordem alfabética)
+const EX_GRUPOS = [
+  ["Hb", "Ht", "VCM", "HCM", "RDW", "GL", "Neut", "Bast", "Eos", "Baso", "Linf", "Mono", "Meta", "Mielo", "Promielo", "Blastos", "Plt"],
+  ["Ur", "Cr"],
+  ["Na", "K", "Cl", "Mg", "Ca", "Cai", "P"],
+  ["TGO", "TGP", "GGT", "FA", "BT", "BD", "BI", "Alb", "RNI", "TTpA"],
+  ["pH", "pCO2", "pO2", "SatO2", "HCO3", "BE", "Lac"],
+  ["PCR"]];
+const EX_POS = new Map(EX_GRUPOS.flat().map((x, i) => [x, i]));
+const exPos = sigla => EX_POS.has(sigla) ? EX_POS.get(sigla) : EX_POS.size;
+const exEhCultura = r => /cultur|antibiogram|bacterioscop|\bgram\b|teste de sensibilidade|\btsa\b/.test(normTxt(`${r.grupo || ""} ${r.exame || ""}`));
 function exMostra(){
   const u = exUlt; if (!u) return;
   $("#exOut").hidden = false;
@@ -5019,7 +5033,7 @@ function exMostra(){
   const todas = BIO.series(u.resultados, 1), lim = Number($("#exCols").value) || 0;
   const datas = [...new Set(todas.flatMap(s => s.pontos.map(p => p.ord + "|" + p.data)))].sort().map(x => x.split("|")[1]);
   const cols = lim ? datas.slice(-lim) : datas;
-  const ordem = todas.slice().sort((a, b) => (a.sigla < b.sigla ? -1 : 1));
+  const ordem = todas.slice().sort((a, b) => exPos(a.sigla) - exPos(b.sigla) || (a.sigla < b.sigla ? -1 : a.sigla > b.sigla ? 1 : 0));
   const tb = $("#exTab");
   if (!cols.length){ tb.replaceChildren(el("tbody", {}, el("tr", {}, el("td", { text: "Nenhum resultado numérico no período." })))); }
   else tb.replaceChildren(
@@ -5034,10 +5048,12 @@ function exMostra(){
   $("#exGraf").replaceChildren(...graf.map(s => el("figure", { class: "ex-fig" },
     el("figcaption", {}, el("strong", { text: s.sigla }), s.unidade ? el("span", { class: "u", text: " " + s.unidade }) : null, el("span", { class: "ex-ult", text: ` · último: ${s.pontos[s.pontos.length - 1].texto} (${s.pontos[s.pontos.length - 1].data.slice(0, 5)})` })),
     exGrafico(s))));
-  // laudos em texto (culturas, antibiogramas e outros) e pendentes
+  // laudos em texto: culturas e antibiogramas (vão para a impressão) e os demais (só na tela); pendentes
   const laudos = u.resultados.filter(r => !r.pendente && BIO.numero(String(r.resultado)) === null && String(r.resultado).trim().length > 2);
-  $("#exLaudosBox").hidden = !laudos.length;
-  $("#exLaudos").replaceChildren(...laudos.map(r => el("li", {}, el("strong", { text: `${r.data.slice(0, 5)} – ${r.grupo && r.grupo !== r.exame ? r.grupo + " › " : ""}${r.exame}: ` }), el("span", { text: String(r.resultado) + (r.unidade ? " " + r.unidade : "") }))));
+  const cult = laudos.filter(exEhCultura), outros = laudos.filter(r => !exEhCultura(r));
+  const li = r => el("li", {}, el("strong", { text: `${r.data.slice(0, 5)} – ${r.grupo && r.grupo !== r.exame ? r.grupo + " › " : ""}${r.exame}: ` }), el("span", { text: String(r.resultado) + (r.unidade ? " " + r.unidade : "") }));
+  $("#exCultBox").hidden = !cult.length; $("#exCult").replaceChildren(...cult.map(li));
+  $("#exLaudosBox").hidden = !outros.length; $("#exLaudos").replaceChildren(...outros.map(li));
   const pend = u.resultados.filter(r => r.pendente);
   $("#exPendBox").hidden = !pend.length;
   $("#exPend").replaceChildren(...pend.map(r => el("li", { text: `${r.data.slice(0, 5)} – ${r.exame} (em andamento)` })));
