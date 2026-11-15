@@ -368,6 +368,31 @@ body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .
 .rxf-hor{grid-column:span 4}
 @media (min-width:760px){.rxi-grid{grid-template-columns:repeat(12,minmax(0,1fr))}.rxf-desc{grid-column:span 12}.rxf-dose{grid-column:span 2}.rxf-via{grid-column:span 2}.rxf-freq{grid-column:span 2}.rxf-ini{grid-column:span 2}.rxf-hor{grid-column:span 4}.rxf-obs{grid-column:span 12}}
 #rxPrint{display:none}
+/* passômetro (pedido do autor, 15/11/2026): um box por leito, como a folha do CTI */
+#ps{max-width:980px;margin:0 auto}
+.ps-box{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);overflow:hidden}
+.ps-h{background:var(--band);color:var(--accent);font-weight:700;text-align:center;padding:9px;letter-spacing:.04em;border-bottom:1px solid var(--line)}
+.ps-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr))}
+.ps-c{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:8px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.ps-c:last-child,.ps-c.fim{border-right:0}
+.ps-c.s2{grid-column:span 2}.ps-c.s3{grid-column:span 3}.ps-c.s4{grid-column:span 4}.ps-c.s6{grid-column:span 6;border-right:0}
+.ps-l{font-weight:700;font-size:.85rem;color:var(--ink)}
+.ps-l small{font-weight:400;color:var(--accent);font-size:.72rem;margin-left:4px}
+.ps-c input,.ps-c textarea{width:100%;border:1px solid var(--line);border-radius:var(--radius);background:var(--field);color:var(--ink);font:inherit;padding:8px 10px;min-height:42px}
+.ps-c textarea{resize:vertical;field-sizing:content;min-height:42px}
+.ps-c input:focus,.ps-c textarea:focus{outline:2px solid var(--focus);outline-offset:-1px}
+.ps-calc{padding:8px 10px;min-height:42px;border:1px dashed var(--line);border-radius:var(--radius);color:var(--ink);background:var(--calc-bg,transparent)}
+.ps-atb{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ps-atb input[type=text]{flex:2 1 10rem}.ps-atb input[type=date]{flex:1 1 8rem}
+.ps-atb .btn{min-height:42px}
+.ps-nota{margin:10px 2px;color:var(--muted);font-size:.85rem}
+@media (max-width:640px){.ps-grid{grid-template-columns:1fr}.ps-c,.ps-c.s2,.ps-c.s3,.ps-c.s4,.ps-c.s6{grid-column:auto;border-right:0}}
+body[data-view="ps"] #jump{display:none}
+#psPrint{display:none;font:10.5pt/1.3 Arial,Helvetica,sans-serif;color:#000;background:#fff}
+#psPrint table{width:100%;table-layout:fixed;border-collapse:collapse;margin:0 0 6mm;break-inside:avoid}
+#psPrint th,#psPrint td{border:1px solid #000;padding:1.4mm 2mm;text-align:left;vertical-align:top;white-space:pre-line}
+#psPrint th{background:#BFBFBF;text-align:center;font-weight:700}
+#psPrint b{font-weight:700}
 #rxPrint{font:11px/1.35 Arial,Helvetica,sans-serif;color:#000;background:#fff}
 .rp-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px}
 .rp-h h1{font-size:15px;margin:0 0 3px;text-transform:uppercase;letter-spacing:.02em}
@@ -534,6 +559,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 
 /* ---------- impressão ---------- */
 @page exames{size:A4 portrait;margin:14mm 13mm}
+@page passometro{size:A4 portrait;margin:12mm 12mm}
 @media print{
   :root{--bg:#fff;--card:#fff;--field:#fff;--ink:#000;--line:#999;--band:#EDEDED;--accent:#7A2E3B;--calc-bg:#fff}
   body{padding:0;font-size:11px}
@@ -553,6 +579,9 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   .hint{display:none}
   body[data-view="rx"] main,body[data-view="rx"] footer.refs,body[data-view="list"] main{display:none!important}
   body[data-view="rx"] #rxPrint{display:block}
+  body[data-view="ps"] main,body[data-view="ps"] footer.refs{display:none!important}
+  body[data-view="ps"] #psPrint{display:block;page:passometro}
+  #psPrint *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #rxPrint *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .add-prob,.prob[hidden]{display:none}
   .prob{border:0;padding:0;background:none;margin-bottom:8px}
@@ -622,17 +651,17 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <button type="button" class="syncst" id="syncStatus" aria-live="polite"></button>
   </div>
   <div class="pt-row">
-    <button class="btn back" id="btnBack" type="button" data-views="chart rx ck">← Pacientes</button>
+    <button class="btn back" id="btnBack" type="button" data-views="chart rx ps ck">← Pacientes</button>
     <div class="search" data-views="list"><input id="search" type="search" placeholder="Buscar por nome ou leito" aria-label="Buscar paciente" autocomplete="off"></div>
-    <div class="ptname" id="ptName" data-views="chart rx"></div>
+    <div class="ptname" id="ptName" data-views="chart rx ps"></div>
     <select id="ptSelect" hidden aria-hidden="true" tabindex="-1"></select>
     <button id="btnNew" type="button" hidden tabindex="-1"></button>
     <details class="menu" id="menu">
       <summary class="btn" role="button" aria-label="Mais opções">⋯</summary>
       <div class="menu-list">
-        <button type="button" data-act="account" data-views="list chart rx ck">Conta e sincronização</button>
+        <button type="button" data-act="account" data-views="list chart rx ps ck">Conta e sincronização</button>
         <button type="button" data-act="opencode" data-views="list">Abrir texto por código</button>
-        <button type="button" data-act="edit" data-views="chart rx">Editar dados do paciente</button>
+        <button type="button" data-act="edit" data-views="chart rx ps">Editar dados do paciente</button>
         <button type="button" data-act="newday" hidden></button>
         <button type="button" data-act="std" hidden>Preencher com o texto padrão</button>
         <button type="button" data-act="rx-newday" data-views="rx">Nova proposta do dia</button>
@@ -641,21 +670,22 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
         <button type="button" data-act="ia-contexto" hidden>IA: atualizar o contexto</button>
         <button type="button" data-act="ia-escrita" hidden>IA: melhorar a escrita da evolução do dia</button>
         <button type="button" data-act="ia-condutas" hidden>IA: sugerir recomendações (com referências)</button>
-        <button type="button" data-act="print" data-views="chart rx">Imprimir / salvar PDF</button>
+        <button type="button" data-act="print" data-views="chart rx ps">Imprimir / salvar PDF</button>
         <button type="button" data-act="expand">Expandir todos os grupos</button>
         <button type="button" data-act="collapse">Recolher todos os grupos</button>
         <button type="button" data-act="export" data-views="list">Exportar backup (.json)</button>
         <button type="button" data-act="import" data-views="list">Importar backup (.json)</button>
         <button type="button" data-act="clear" class="danger" data-views="chart">Limpar campos do prontuário (mantém nome e leito)</button>
         <button type="button" data-act="rx-clear" class="danger" data-views="rx">Apagar proposta de prescrição</button>
-        <button type="button" data-act="delete" class="danger" data-views="chart rx">Excluir este paciente</button>
+        <button type="button" data-act="delete" class="danger" data-views="chart rx ps">Excluir este paciente</button>
       </div>
     </details>
     <input type="file" id="importFile" accept="application/json,.json" hidden>
   </div>
-  <div class="vtabs" id="vtabs" data-views="chart rx" role="group" aria-label="Seção do paciente">
+  <div class="vtabs" id="vtabs" data-views="chart rx ps" role="group" aria-label="Seção do paciente">
     <button type="button" data-go="chart" aria-pressed="true">Prontuário</button>
     <button type="button" data-go="rx" aria-pressed="false">Prescrição</button>
+    <button type="button" data-go="ps" aria-pressed="false" hidden>Passômetro</button>
   </div>
   <nav class="jump" id="jump" aria-label="Seções" data-views="chart"></nav>
 </header>
@@ -669,6 +699,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   </section>
   <div id="form" data-views="chart"></div>
   <div id="rx" data-views="rx"></div>
+  <section id="ps" data-views="ps" aria-label="Passômetro do leito"></section>
   <section id="ck" data-views="ck" aria-label="Checklist do CTI"></section>
   <section id="ex" data-views="ex" aria-label="Extração e análise de exames">
     <div class="ex-form">
@@ -728,6 +759,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   </section>
 </main>
 <div id="rxPrint"></div>
+<div id="psPrint"></div>
 <datalist id="rxFreqList"></datalist>
 
 <footer class="refs" data-views="chart">
@@ -744,6 +776,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <button class="btn primary" type="button" id="btnText" data-views="chart">Gerar texto ISBAR</button>
     <button class="btn" type="button" id="btnRxPrint" data-views="rx">Imprimir proposta</button>
     <button class="btn primary" type="button" id="btnRxText" data-views="rx">Copiar como texto</button>
+    <button class="btn" type="button" id="btnPsUm" data-views="ps">Imprimir este leito</button>
+    <button class="btn primary" type="button" id="btnPsTodos" data-views="ps">Imprimir passômetro (todos os leitos)</button>
   </div>
 </div>
 
@@ -2409,6 +2443,7 @@ addEventListener("afterprint", () => fitProbAreas(false));
 
 function doPrint(){
   if (view === "rx"){ buildRxPrint(); window.print(); return; }
+  if (view === "ps"){ buildPsPrint(); window.print(); return; }
   const dets = [...document.querySelectorAll("details.grp")];
   const closed = dets.filter(x => !x.open); closed.forEach(x => x.open = true);
   window.print();
@@ -3031,12 +3066,14 @@ function cleanupBlankPatients(){
 
 function setView(v){
   if (v !== "list" && v !== "ck" && v !== "sc" && v !== "ex" && !cur()) v = "list";
+  if (v === "ps" && cur().tpl !== "cti") v = "chart";   // passômetro só no CTI
   if (v === "list" || v === "ck") backTo = v;
   view = v;
   document.body.dataset.view = v;
   $("#menu").open = false;
   document.querySelectorAll("[data-views]").forEach(x => x.hidden = !x.dataset.views.split(" ").includes(v));
   document.querySelectorAll("#vtabs button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.go === v)));
+  $('#vtabs [data-go="ps"]').hidden = !(cur() && cur().tpl === "cti");
   menuState();
   $("#btnBack").textContent = backTo === "ck" ? "← Checklist" : "← Pacientes";
   $("#btnBack").hidden = v === "ck" || v === "sc" || v === "ex" || !$("#btnBack").dataset.views.split(" ").includes(v);
@@ -3060,7 +3097,8 @@ function setView(v){
     const p = cur();
     $("#vtitle").textContent = TPL[p.tpl].title;
     $("#ptName").textContent = ptLabel(p);
-    if (v === "chart"){ document.title = "Anamnesia · " + TPL[p.tpl].tab; }
+    if (v === "chart"){ document.title = "Anamnesia · " + TPL[p.tpl].tab; fillForm(); }   // mostra o que foi escrito no passômetro
+    else if (v === "ps"){ document.title = "Anamnesia · Passômetro"; renderPs(); }
     else { document.title = "Anamnesia · Prescrição"; renderRx(); }
   }
   window.scrollTo({ top: 0 });
@@ -3288,7 +3326,7 @@ window.anamnesiaBack = () => {
     return false;
   }
   if (locked()) return false;
-  if (view === "chart" || view === "rx"){ saveNow(); setView(backTo); return true; }
+  if (view === "chart" || view === "rx" || view === "ps"){ saveNow(); setView(backTo); return true; }
   showMenu(); return true;
 };
 if (APP){
@@ -4388,7 +4426,7 @@ function onRemoteChange(changedCurrent){
   if (!cur() || !id){ setView("list"); toast("Este paciente foi alterado em outro aparelho"); return; }
   const p = cur();
   if (p.tpl !== store.mode){ openPatient(id, view); return; }
-  fillForm(); if (view === "rx") renderRx();
+  fillForm(); if (view === "rx") renderRx(); if (view === "ps") renderPs();
   $("#ptName").textContent = ptLabel(p);
 }
 /* estado dos itens do menu que dependem do modelo */
@@ -5330,6 +5368,103 @@ $("#exPac").addEventListener("change", exPacMudou);
 $("#exCols").addEventListener("change", exMostra);
 $("#exPrint").addEventListener("click", () => window.print());
 $("#exCopy").addEventListener("click", () => { if (exUlt) copyText(BIO.formatar(exUlt.resultados, true, exUlt.sexo)).then(ok => toast(ok ? "Exames copiados (formato prontuário)" : "Não foi possível copiar")); });
+
+/* =====================================================================
+   PASSÔMETRO DO CTI (pedido do autor, 15/11/2026)
+   Mesma ordem e mesmos campos do modelo do passômetro da unidade ("MODELO – NÃO APAGAR"):
+   Nome | Idade; Admissão | Admissão UEC | Peso predito; Motivo da admissão; HP; Medicações; HMA; Evolução;
+   ATB Atuais; ATB Prévios; Culturas; Exames relevantes; Nutrição; Ventilação; Invasões; Propostas.
+   Compartilhados com o ISBAR (decisão do autor): nome, idade, admissões (adm_hosp, adm_cti), peso predito (calculado),
+   HP = comorbidades (comorb), medicações (meds), ATB atuais (atbs) e prévios (atbp) e culturas (culturas).
+   Os demais são próprios do passômetro (chaves ps_*). Impressão: folha com todos os leitos do CTI, em ordem de leito,
+   sem cabeçalho (decisão do autor); dentro da ficha também imprime só o leito aberto.
+   ===================================================================== */
+const PS_TXT = [["ps_motivo", "Motivo da admissão"], ["comorb", "HP", 1], ["meds", "Medicações", 1], ["ps_hma", "HMA"], ["ps_evol", "Evolução"],
+  ["atbs", "ATB Atuais", 1], ["atbp", "ATB Prévios", 1], ["culturas", "Culturas", 1], ["ps_exames", "Exames relevantes"],
+  ["ps_nutri", "Nutrição"], ["ps_vent", "Ventilação"], ["ps_inv", "Invasões"], ["ps_prop", "Propostas"]];
+const PS_ATB = { atbs: { cols: ["nome", "d1"], rot: ["Antimicrobiano", "Início"], max: 10 }, atbp: { cols: ["nome", "ini", "fim"], rot: ["Antimicrobiano", "Início", "Término"], max: 10 } };
+const psDm = iso => /^\d{4}-\d{2}-\d{2}$/.test(iso || "") ? iso.slice(8, 10) + "/" + iso.slice(5, 7) : "";
+function psAtbN(d, k){
+  const c = PS_ATB[k]; let u = 0;
+  for (let i = 1; i <= c.max; i++) if (c.cols.some(x => String(d[`${k}_${i}_${x}`] || "").trim())) u = i;
+  return Math.min(c.max, Math.max(u, Number(d[k + "_n"]) || 0));
+}
+// texto do ATB no formato da folha: "Meropenem (14/11-) + Vancomicina (14/11-)" e "Cefepime (11/11-14/11) | Tazocin (…)"
+function psAtbTxt(d, k){
+  const out = [];
+  for (let i = 1; i <= PS_ATB[k].max; i++){
+    const nome = String(d[`${k}_${i}_nome`] || "").trim(); if (!nome) continue;
+    if (k === "atbs"){ const a = psDm(d[`${k}_${i}_d1`]); out.push(a ? `${nome} (${a}-)` : nome); }
+    else { const a = psDm(d[`${k}_${i}_ini`]), b = psDm(d[`${k}_${i}_fim`]); out.push(a || b ? `${nome} (${a}-${b})` : nome); }
+  }
+  return out.join(k === "atbs" ? " + " : " | ");
+}
+const psBox = d => { const l = String(d.leito || "").trim(); return "BOX " + (/^\d+$/.test(l) ? l.padStart(2, "0") : (l || "–")); };
+const psPeso = d => { const v = CALC.pp(d); return v ? v + " kg" : ""; };
+function renderPs(){
+  const p = cur(), box = $("#ps"); if (!p || p.tpl !== "cti"){ box.replaceChildren(); return; }
+  const d = p.data;
+  const cel = (cls, l, ctl, comp) => el("div", { class: "ps-c " + cls }, el("span", { class: "ps-l" }, document.createTextNode(l), comp ? el("small", { text: "· ISBAR" }) : null), ctl);
+  const ta = (k, l) => el("textarea", { "data-pk": k, rows: "1", "aria-label": l });
+  const atb = k => {
+    const c = PS_ATB[k], n = psAtbN(d, k), linhas = [];
+    for (let i = 1; i <= n; i++) linhas.push(el("div", { class: "ps-atb" },
+      ...c.cols.map((x, j) => el("input", { type: x === "nome" ? "text" : "date", "data-pk": `${k}_${i}_${x}`, "aria-label": `${c.rot[j]} ${i}`, placeholder: x === "nome" ? c.rot[j] : null })),
+      el("button", { class: "btn icon", type: "button", "data-ps-del": `${k}|${i}`, title: "Apagar", "aria-label": `Apagar antimicrobiano ${i}`, text: "×" })));
+    return el("div", {}, ...linhas, n < c.max ? el("button", { class: "btn add-prob", type: "button", "data-ps-add": k, text: "+ Adicionar antimicrobiano" }) : null);
+  };
+  box.replaceChildren(
+    el("div", { class: "ps-box" },
+      el("div", { class: "ps-h", text: psBox(d) }),
+      el("div", { class: "ps-grid" },
+        cel("s4", "Nome", el("input", { type: "text", "data-pk": "nome", "aria-label": "Nome" }), 1),
+        cel("s2 fim", "Idade", el("input", { type: "text", inputmode: "numeric", "data-pk": "idade", "aria-label": "Idade" }), 1),
+        cel("s2", "Admissão", el("input", { type: "date", "data-pk": "adm_hosp", "aria-label": "Admissão" }), 1),
+        cel("s2", "Admissão UEC", el("input", { type: "date", "data-pk": "adm_cti", "aria-label": "Admissão UEC" }), 1),
+        cel("s2 fim", "Peso predito", el("div", { class: "ps-calc", title: "Calculado pela altura e pelo sexo do Prontuário (ARDSNet)", text: psPeso(d) || "Preencha altura e sexo no Prontuário" }), 1),
+        ...PS_TXT.map(([k, l, comp]) => cel("s6", l, PS_ATB[k] ? atb(k) : ta(k, l), comp)))),
+    el("p", { class: "ps-nota", text: "Campos marcados com “· ISBAR” são os mesmos do Prontuário: o que for escrito aqui aparece lá, e vice-versa." }));
+  box.querySelectorAll("[data-pk]").forEach(x => { const v = d[x.dataset.pk]; x.value = v == null ? "" : v; });
+}
+$("#ps").addEventListener("input", e => {
+  const x = e.target.closest("[data-pk]"), p = cur(); if (!x || !p) return;
+  const k = x.dataset.pk;
+  if (x.value === "") delete p.data[k]; else p.data[k] = x.value;
+  if (k === "nome") $("#ptName").textContent = ptLabel(p);
+  changed();
+});
+$("#ps").addEventListener("click", e => {
+  const p = cur(); if (!p) return;
+  const a = e.target.closest("[data-ps-add]"), r = e.target.closest("[data-ps-del]");
+  if (a){ const k = a.dataset.psAdd; p.data[k + "_n"] = String(psAtbN(p.data, k) + 1); changed(); renderPs();
+    const f = $("#ps").querySelector(`[data-pk="${k}_${psAtbN(p.data, k)}_nome"]`); if (f) f.focus(); return; }
+  if (r){
+    const [k, i] = r.dataset.psDel.split("|"), c = PS_ATB[k], d = p.data, at = Number(i), n = psAtbN(d, k);
+    if (c.cols.some(x => String(d[`${k}_${at}_${x}`] || "").trim()) && !confirm("Apagar este antimicrobiano?")) return;
+    for (let y = at; y <= c.max; y++) c.cols.forEach(x => { const nx = d[`${k}_${y + 1}_${x}`]; if (y < c.max && nx != null) d[`${k}_${y}_${x}`] = nx; else delete d[`${k}_${y}_${x}`]; });
+    d[k + "_n"] = String(Math.max(0, n - 1));
+    changed(); renderPs();
+  }
+});
+// folha impressa: um box por paciente do CTI, leitos 1 a 10 em ordem e depois os demais
+function buildPsPrint(soId){
+  const ids = soId ? [soId] : ctiPatients().map(([id]) => id).sort((a, b) => {
+    const la = String(store.patients[a].data.leito || ""), lb = String(store.patients[b].data.leito || "");
+    const na = /^\d+$/.test(la) ? Number(la) : 999, nb = /^\d+$/.test(lb) ? Number(lb) : 999;
+    return na - nb || la.localeCompare(lb, "pt-BR");
+  });
+  const lab = (l, v) => [el("b", { text: l + ": " }), document.createTextNode(v || "")];
+  $("#psPrint").replaceChildren(...ids.map(id => {
+    const d = store.patients[id].data, txt = k => PS_ATB[k] ? psAtbTxt(d, k) : String(d[k] || "").trim();
+    return el("table", {},
+      el("tr", {}, el("th", { colspan: "6", text: psBox(d) })),
+      el("tr", {}, el("td", { colspan: "4" }, ...lab("Nome", d.nome)), el("td", { colspan: "2" }, ...lab("Idade", d.idade ? d.idade + " anos" : ""))),
+      el("tr", {}, el("td", { colspan: "2" }, ...lab("Admissão", d.adm_hosp ? brDate(d.adm_hosp) : "")), el("td", { colspan: "2" }, ...lab("Admissão UEC", d.adm_cti ? brDate(d.adm_cti) : "")), el("td", { colspan: "2" }, ...lab("Peso predito", psPeso(d)))),
+      ...PS_TXT.map(([k, l]) => el("tr", {}, el("td", { colspan: "6" }, ...lab(l, txt(k))))));
+  }));
+}
+$("#btnPsTodos").addEventListener("click", () => { saveNow(); buildPsPrint(); window.print(); });
+$("#btnPsUm").addEventListener("click", () => { saveNow(); buildPsPrint(store.currentBy[store.mode]); window.print(); });
 
 /* =====================================================================
    INICIALIZAÇÃO
