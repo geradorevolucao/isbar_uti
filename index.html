@@ -3705,6 +3705,49 @@ const SC = {
       const r = s <= 20 ? "muito baixo (3,1%)" : s <= 30 ? "baixo (5,5%)" : s <= 40 ? "moderado (8,6%)" : s <= 50 ? "alto (11,9%)" : "muito alto (19,5%)";
       return { r: ptsTxt(s), det: Object.entries(c).map(([k, x]) => `${k} ${x}`).join(" | "), int: `Risco de sangramento maior intra-hospitalar ${r}.` };
     } },
+  timi: { cat: "card", nome: "TIMI (SCA sem supra de ST)", desc: "Angina instável e IAM sem supra de ST: risco em 14 dias",
+    ref: "Antman EM, et al. The TIMI risk score for unstable angina/non-ST elevation MI: a method for prognostication and therapeutic decision making. JAMA. 2000;284:835-42.",
+    campos: [scC("idade", "Idade ≥ 65 anos", 1, { from: d => num(d.idade) >= 65 }),
+      scC("fr", "3 ou mais fatores de risco para DAC (história familiar, HAS, dislipidemia, diabetes, tabagismo atual)", 1),
+      scC("dac", "DAC conhecida (estenose ≥ 50%)", 1), scC("aas", "Uso de AAS nos últimos 7 dias", 1),
+      scC("angina", "Angina grave recente (2 ou mais episódios em 24 h)", 1), scC("st", "Desvio do segmento ST ≥ 0,5 mm", 1),
+      scC("marc", "Marcadores de necrose miocárdica elevados", 1)],
+    calc(v, campos){
+      const s = somaC(v, campos), r = ["4,7%", "4,7%", "8,3%", "13,2%", "19,9%", "26,2%", "40,9%", "40,9%"][s];
+      return { r: ptsTxt(s), int: `Morte, IAM novo ou recorrente ou isquemia grave com revascularização de urgência em 14 dias: ${r} na coorte de derivação (TIMI 11B)` + (s <= 2 ? " – baixo risco (0 a 2)." : s <= 4 ? " – risco intermediário (3 a 4)." : " – alto risco (5 a 7).") };
+    } },
+  timiest: { cat: "card", nome: "TIMI (IAM com supra de ST)", desc: "IAM com supra de ST: mortalidade em 30 dias",
+    ref: "Morrow DA, et al. TIMI risk score for ST-elevation myocardial infarction: a convenient, bedside, clinical score for risk assessment at presentation. Circulation. 2000;102:2031-7.",
+    campos: [scS("idade", "Idade", [["0", "< 65 anos"], ["2", "65 a 74 anos"], ["3", "≥ 75 anos"]], { from: d => { const i = num(d.idade); return isFinite(i) ? (i >= 75 ? "3" : i >= 65 ? "2" : "0") : ""; } }),
+      scC("hist", "Diabetes, hipertensão ou angina prévia", 1), scC("pas", "PA sistólica < 100 mmHg", 3, { from: d => num(d.pas) < 100 }),
+      scC("fc", "FC > 100 bpm", 2, { from: d => num(d.fc) > 100 }), scC("killip", "Killip II a IV", 2),
+      scC("peso", "Peso < 67 kg", 1, { from: d => num(d.peso) < 67 }), scC("ant", "Supra de ST anterior ou BRE", 1),
+      scC("tempo", "Tempo até o tratamento > 4 h", 1)],
+    calc(v, campos){
+      if (!v.idade) return null;
+      const s = Number(v.idade) + somaC(v, campos);
+      const m = ["0,8%", "1,6%", "2,2%", "4,4%", "7,3%", "12,4%", "16,1%", "23,4%", "26,8%"][s] || "35,9%";
+      return { r: ptsTxt(s), int: `Mortalidade em 30 dias: ${m} na coorte de derivação (InTIME II).` };
+    } },
+  grace: { cat: "card", nome: "GRACE", desc: "Síndrome coronariana aguda: mortalidade hospitalar",
+    ref: "Granger CB, et al. Predictors of hospital mortality in the Global Registry of Acute Coronary Events. Arch Intern Med. 2003;163:2345-53. Faixas de risco: Hamm CW, et al. Diretriz ESC de SCA sem supra de ST. Eur Heart J. 2011;32:2999-3054.",
+    campos: [scN("idade", "Idade", "anos", { from: d => d.idade }), scN("fc", "FC", "bpm", { from: d => d.fc }), scN("pas", "PA sistólica", "mmHg", { from: d => d.pas }),
+      scN("cr", "Creatinina", "mg/dL"), scS("killip", "Classe de Killip", [["0", "I – sem congestão"], ["20", "II – estertores ou B3"], ["39", "III – edema agudo de pulmão"], ["59", "IV – choque cardiogênico"]]),
+      scC("pcr", "Parada cardiorrespiratória na admissão", 39), scC("st", "Desvio do segmento ST", 28), scC("enz", "Marcadores de necrose elevados", 14),
+      scS("tipo", "Tipo de SCA (para as faixas de risco)", [["sem", "Sem supra de ST"], ["com", "Com supra de ST"]], { def: "sem" })],
+    calc(v, campos){
+      if (!(v.idade > 0 && v.fc > 0 && v.pas > 0 && v.cr > 0 && v.killip)) return null;
+      const c = {
+        "Idade": v.idade < 30 ? 0 : v.idade < 40 ? 8 : v.idade < 50 ? 25 : v.idade < 60 ? 41 : v.idade < 70 ? 58 : v.idade < 80 ? 75 : v.idade < 90 ? 91 : 100,
+        "FC": v.fc < 50 ? 0 : v.fc < 70 ? 3 : v.fc < 90 ? 9 : v.fc < 110 ? 15 : v.fc < 150 ? 24 : v.fc < 200 ? 38 : 46,
+        "PAS": v.pas < 80 ? 58 : v.pas < 100 ? 53 : v.pas < 120 ? 43 : v.pas < 140 ? 34 : v.pas < 160 ? 24 : v.pas < 200 ? 10 : 0,
+        "Creatinina": v.cr < 0.4 ? 1 : v.cr < 0.8 ? 4 : v.cr < 1.2 ? 7 : v.cr < 1.6 ? 10 : v.cr < 2 ? 13 : v.cr < 4 ? 21 : 28,
+        "Killip": Number(v.killip), "Outros": somaC(v, campos) };
+      const s = Object.values(c).reduce((a, b) => a + b, 0), com = v.tipo === "com";
+      const r = com ? (s <= 125 ? "baixo (mortalidade hospitalar < 2%)" : s <= 154 ? "intermediário (2 a 5%)" : "alto (> 5%)")
+        : (s <= 108 ? "baixo (mortalidade hospitalar < 1%)" : s <= 140 ? "intermediário (1 a 3%)" : "alto (> 3%)");
+      return { r: ptsTxt(s), det: Object.entries(c).map(([k, x]) => `${k} ${x}`).join(" | "), int: `Risco ${r}, SCA ${com ? "com" : "sem"} supra de ST (faixas: ${com ? "≤ 125, 126 a 154, ≥ 155" : "≤ 108, 109 a 140, > 140"}).` };
+    } },
   improve: { cat: "tev", nome: "IMPROVE (sangramento)", desc: "Risco de sangramento em pacientes clínicos internados",
     ref: "Decousus H, et al. Factors at admission associated with bleeding risk in medical patients: findings from the IMPROVE investigators. Chest. 2011;139:69-79.",
     campos: [scC("ulc", "Úlcera gastroduodenal ativa", 4.5), scC("sang", "Sangramento nos 3 meses antes da internação", 4), scC("plaq", "Plaquetas < 50 mil/mm³", 4),
