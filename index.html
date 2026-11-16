@@ -552,6 +552,7 @@ footer.refs li{margin:4px 0}
 .bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
 .bottom .in{max-width:980px;margin:0 auto;display:flex;gap:8px}
 .bottom .btn{flex:1;height:46px}
+@media (max-width:600px){.bottom .in{gap:6px}.bottom .btn{min-width:0;padding:4px 8px;white-space:normal;line-height:1.15;font-size:.88rem}}
 
 /* ---------- diálogo do texto ---------- */
 dialog{border:0;border-radius:var(--radius);padding:0;width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 40px);background:var(--card);color:var(--ink)}
@@ -783,6 +784,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <div class="in">
     <button class="btn primary" type="button" id="btnAdd" data-views="list">+ Adicionar paciente</button>
     <button class="btn" type="button" id="btnPrint" data-views="chart">Imprimir</button>
+    <button class="btn" type="button" id="btnAdm" data-views="chart" hidden>Gerar texto de admissão</button>
     <button class="btn primary" type="button" id="btnText" data-views="chart">Gerar texto ISBAR</button>
     <button class="btn" type="button" id="btnRxPrint" data-views="rx">Imprimir proposta</button>
     <button class="btn primary" type="button" id="btnRxText" data-views="rx">Copiar como texto</button>
@@ -1202,6 +1204,7 @@ const CTI = [
    [F("pocus","Fluidorresponsividade/POCUS","area",{rows:2})]
   ]},
   { title: "Respiratório", rows: [
+   [F("ausculta","Ausculta","area",{rows:2})],   // pedido do autor (16/11/2026), usado também no texto de admissão
    [F("tot","TOT","cond",{opts:["SIM","NÃO"],sub:{ "SIM": [F("tot_data","Data","text",{w:"s"})] }})],
    [F("tqt","TQT","cond",{opts:["SIM","NÃO"],sub:{ "SIM": [F("tqt_data","Data","text",{w:"s"})] }})],
    [F("vent_modo","Suporte ventilatório","cond",{opts:["AA","CNBF","VCV","PCV","PSV"],sub:VENT})]
@@ -1210,6 +1213,9 @@ const CTI = [
    [F("dieta_tipo","Dieta","cond",{opts:["Suspensa","VO","SNE"],sub:{ "Suspensa": [F("dieta_mot","Motivo","text",{w:"l"})], "VO": [F("dieta_vo","Tipo","text",{w:"l"})], "SNE": [F("vazao","Vazão","num",{w:"s",u:"mL/h"})] }})],
    [F("evac","Última evacuação","date",{w:"auto"}), F("evac_aspecto","Aspecto da evacuação","radio",{opts:["Diarreia","Melena","Consistente"]})],
    [F("glic_ctrl","Controle glicêmico","radio",{opts:["Adequado","Inadequado"]})]
+  ]},
+  { title: "Extremidades", rows: [   // pedido do autor (16/11/2026), usado também no texto de admissão
+   [F("extrem","Extremidades","area",{rows:2,tl:""})]
   ]},
   { title: "Exames complementares", rows: [
    [F("ec_lab","Laboratoriais","area")],
@@ -3084,6 +3090,7 @@ function setView(v){
   document.querySelectorAll("[data-views]").forEach(x => x.hidden = !x.dataset.views.split(" ").includes(v));
   document.querySelectorAll("#vtabs button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.go === v)));
   $('#vtabs [data-go="ps"]').hidden = !(cur() && cur().tpl === "cti");
+  $("#btnAdm").hidden = !(v === "chart" && cur() && cur().tpl === "cti");
   menuState();
   $("#btnBack").textContent = backTo === "ck" ? "← Checklist" : "← Pacientes";
   $("#btnBack").hidden = v === "ck" || v === "sc" || v === "ex" || !$("#btnBack").dataset.views.split(" ").includes(v);
@@ -5477,6 +5484,88 @@ function buildPsPrint(soId){
 }
 $("#btnPsTodos").addEventListener("click", () => { saveNow(); buildPsPrint(); window.print(); });
 $("#btnPsUm").addEventListener("click", () => { saveNow(); buildPsPrint(store.currentBy[store.mode]); window.print(); });
+
+/* =====================================================================
+   TEXTO DE ADMISSÃO DO CTI (pedido do autor, 16/11/2026)
+   Gerado da própria ficha do CTI, no formato do modelo do autor ("# ADMISSÃO - UEC #", blocos "| Título:",
+   itens "»" no antecedente e no exame, "a) b) c)" nos exames). Só os blocos do modelo (decisão do autor):
+   infusões, dispositivos, balanço hídrico, escores, exames "Outros", pendências e recomendações ficam de fora.
+   ===================================================================== */
+const admJ = a => a.filter(x => x && String(x).trim() !== "").join(" | ");
+const admLinhas = t => String(t || "").split("\n").map(x => x.trim()).filter(Boolean);
+const admUmaLinha = t => admLinhas(t).join(" | ");
+function admCtiText(d){
+  const v = k => String(d[k] == null ? "" : d[k]).trim(), out = [];
+  const bloco = (titulo, linhas) => { out.push("| " + titulo + ":"); linhas.filter(x => x != null).forEach(x => out.push(x)); };
+  out.push("# ADMISSÃO - UEC #", "");
+  // identificação
+  const idade = v("idade") ? (/anos?$/i.test(v("idade")) ? v("idade") : v("idade") + " anos") : "";
+  const pp = CALC.pp(d);
+  bloco("Identificação", [
+    admJ([v("nome") && "Nome: " + v("nome"), idade && "Idade: " + idade, d.sexo && "Sexo: " + (d.sexo === "F" ? "Feminino" : d.sexo === "M" ? "Masculino" : d.sexo)]),
+    admJ([v("peso") && `Peso: ${v("peso")} kg`, v("altura") && `Altura: ${v("altura")} cm`, pp && `Peso predito: ${pp} kg`,
+      v("adm_hosp") && "Admissão SCBH: " + brDate(v("adm_hosp")), v("adm_cti") && "Admissão CTI: " + brDate(v("adm_cti"))])].filter(Boolean));
+  out.push("");
+  // situação (lista de problemas)
+  const probs = []; for (let i = 1; i <= 12; i++){ const t = v(`prob_${i}`); if (t) probs.push(` ${probs.length + 1}) ${t}`); }
+  bloco("Situação", probs); out.push("");
+  bloco("Contexto", admLinhas(v("motivo"))); out.push("");
+  // antimicrobianos
+  const atb = [], atbp = [];
+  for (let i = 1; i <= 10; i++){
+    const n = v(`atbs_${i}_nome`); if (n) atb.push(`  - ${n}` + (v(`atbs_${i}_d1`) ? ` | D1: ${brDate(v(`atbs_${i}_d1`))}` : ""));
+    const m = v(`atbp_${i}_nome`); if (m) atbp.push(`  - ${m}` + (v(`atbp_${i}_ini`) ? ` | Início: ${brDate(v(`atbp_${i}_ini`))}` : "") + (v(`atbp_${i}_fim`) ? ` | Término: ${brDate(v(`atbp_${i}_fim`))}` : ""));
+  }
+  bloco("Antimicrobianos em uso", atb);
+  bloco("Antimicrobianos prévios", atbp); out.push("");
+  // antecedentes
+  const alerg = d.alergias_sn === "Não" ? "nega" : d.alergias_sn === "Sim" ? (v("alergias") || "sim") : "";
+  bloco("Antecedentes prévios", ["» Comorbidades: " + admUmaLinha(v("comorb")), "» Medicações de uso contínuo: " + admUmaLinha(v("meds")),
+    "» Alergias: " + alerg, "» Social: " + admUmaLinha(v("social"))]); out.push("");
+  // evolução da internação (registros por dia, em ordem de data)
+  const ev = [];
+  for (let i = 1; i <= 40; i++){ const t = v(`evint_${i}`); if (t) ev.push({ dt: v(`evint_${i}_d`), t, i }); }
+  ev.sort((a, b) => (a.dt || "9999") < (b.dt || "9999") ? -1 : (a.dt || "9999") > (b.dt || "9999") ? 1 : a.i - b.i);
+  bloco("Evolução", ev.map(x => (x.dt ? brDate(x.dt) + " - " : "") + x.t)); out.push("");
+  // exame
+  const pa = v("pas") && v("pad") ? `PA: ${v("pas")}/${v("pad")} mmHg` : "";
+  const vitais = admJ([pa, CALC.pam(d) && "PAM: " + CALC.pam(d), v("fc") && `FC: ${v("fc")} bpm`, v("fr_pac") && `FR: ${v("fr_pac")} irpm`, v("spo2") && `SpO2: ${v("spo2")} %`, v("tmax") && `Tmáx: ${v("tmax")}°C`]);
+  const esc = d.neuro_escala && NEURO_TXT[d.neuro_escala] ? NEURO_TXT[d.neuro_escala](d) : "";
+  const neuro = admJ([esc, d.pupilas && "Pupilas " + String(d.pupilas).toLowerCase(), d.cam && "CAM-ICU " + d.cam]);
+  const modo = d.vent_modo;
+  let vent = "";
+  if (modo === "AA") vent = "Em ar ambiente";
+  else if (modo === "CNBF") vent = "Suporte ventilatório com CNBF" + (v("cn_l") ? ` a ${v("cn_l")} L/min` : "");
+  else if (modo && VENT[modo]) vent = admJ(["Suporte ventilatório com " + modo, ...VENT[modo].map(f => v(f.k) && `${f.l}: ${v(f.k)}${f.u ? " " + f.u : ""}`)]);
+  const resp = admJ([admUmaLinha(v("ausculta")), d.tot === "SIM" && ("TOT" + (v("tot_data") ? ` (${v("tot_data")})` : "")), d.tqt === "SIM" && ("TQT" + (v("tqt_data") ? ` (${v("tqt_data")})` : "")), vent]);
+  const ritmo = v("ritmo") ? (/^ritmo/i.test(v("ritmo")) ? v("ritmo") : "Ritmo cardíaco " + v("ritmo")) : "";
+  const cardio = admJ([ritmo, admUmaLinha(v("cardio_ex")), v("tec") && `TEC: ${v("tec")} s`, v("livedo") && (/^livedo/i.test(v("livedo")) ? v("livedo") : "Livedo " + v("livedo")),
+    v("pocus") && "Fluidorresponsividade/POCUS: " + admUmaLinha(v("pocus"))]);
+  const dieta = d.dieta_tipo === "Suspensa" ? "Dieta suspensa" + (v("dieta_mot") ? ` (${v("dieta_mot")})` : "")
+    : d.dieta_tipo === "VO" ? "Dieta VO" + (v("dieta_vo") ? `: ${v("dieta_vo")}` : "")
+    : d.dieta_tipo === "SNE" ? "Dieta por SNE" + (v("vazao") ? ` a ${v("vazao")} mL/h` : "") : "";
+  const gi = admJ([dieta, v("evac") && "Última evacuação: " + brDate(v("evac")), d.evac_aspecto && "Aspecto da evacuação: " + d.evac_aspecto, d.glic_ctrl && "Controle glicêmico: " + d.glic_ctrl]);
+  bloco("Ao exame", ["» Dados vitais: " + vitais, "» Neurológico: " + neuro, "» Respiratório: " + resp, "» Cardiovascular: " + cardio,
+    "» Gastrointestinal / nutrição: " + gi, "» Extremidades: " + admUmaLinha(v("extrem"))]); out.push("");
+  // exames complementares: nos laboratoriais, cada linha "(dd/mm) - …" do Biomega ganha "- " na frente
+  const labs = admLinhas(v("ec_lab")).map(x => /^[-•*]/.test(x) ? x : "- " + x);
+  bloco("Exames complementares", ["a) Laboratoriais:", ...labs, "", "b) Imagem:", ...String(v("imagem")).split("\n").map(x => x.trimEnd()).filter((x, i, a) => x || (i > 0 && a[i - 1])),
+    "", "c) Culturas:", ...admLinhas(v("culturas"))]); out.push("");
+  // condutas
+  const cond = [];
+  for (let i = 1; i <= 20; i++){
+    const t = v(`cdl_${i}`), subs = Array.from({ length: 8 }, (_, j) => v(`cdl_${i}_${j + 1}`)).filter(Boolean);
+    if (t) cond.push("- " + t); subs.forEach(x => cond.push((t ? "   - " : "- ") + x));
+  }
+  bloco("Condutas", cond);
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd();
+}
+$("#btnAdm").addEventListener("click", () => {
+  const p = cur(); if (!p || p.tpl !== "cti") return;
+  $("#out").value = admCtiText(p.data); $("#codeOut").hidden = true;
+  $("#mailTo").value = $("#mailTo").value || ls.get(MAIL_KEY) || "";
+  $("#dlgTitle").textContent = "Texto de admissão"; dlg.showModal();
+});
 
 /* =====================================================================
    INICIALIZAÇÃO
