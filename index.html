@@ -1409,7 +1409,7 @@ const TPL = {
 const modelOf = (t, d) => t.build ? t.build(d || {}) : t.model;
 const sigOf = (t, d) => t.sig ? t.sig(d || {}) : "";
 
-const DEFAULT_W = { text:"m", num:"xs", area:"full", date:"s", radio:"auto", check:"full", calc:"xs", pair:"s", gcs:"m", list:"full", problems:"full", cond:"full", diary:"full", select:"m", repeat:"full", infusao:"full" };
+const DEFAULT_W = { text:"m", num:"xs", area:"full", date:"s", radio:"auto", check:"full", calc:"xs", pair:"s", gcs:"m", list:"full", problems:"full", cond:"full", diary:"full", select:"m", repeat:"full", infusao:"full", outline:"full" };
 const PROB_SUBS = [["apr","Apresentação"],["etio","Etiologia"],["prop","Propedêutica"],["plano","Plano de cuidados"]];
 
 /* =====================================================================
@@ -1526,6 +1526,16 @@ function normalizeStore(st){
     });
     if (n) d.inf_n = String(Math.min(n, 15));
     d.cti_v7 = 1;
+  }
+  // CTI, 18/11/2026: o passômetro passou a usar a lista de problemas (Motivo da admissão) e o Contexto (HMA) do ISBAR.
+  // O que já estava escrito só no passômetro entra no ISBAR quando o campo do ISBAR está vazio (os textos antigos ficam guardados).
+  for (const p of Object.values(st.patients)){
+    const d = p.data;
+    if (p.tpl !== "cti" || !d || d.ps_v2) continue;
+    const temProb = Array.from({ length: 12 }, (_, i) => String(d[`prob_${i + 1}`] || "").trim()).some(Boolean);
+    if (!temProb && String(d.ps_motivo || "").trim()) psProbSalva(d, d.ps_motivo);
+    if (!String(d.motivo || "").trim() && String(d.ps_hma || "").trim()) d.motivo = d.ps_hma;
+    d.ps_v2 = 1;
   }
   // CTI, 09/11/2026: antimicrobianos em uso e prévios passam a ser listas (o texto antigo vira o 1º item)
   for (const p of Object.values(st.patients)){
@@ -5396,7 +5406,8 @@ $("#exCopy").addEventListener("click", () => { if (exUlt) copyText(BIO.formatar(
    Os demais são próprios do passômetro (chaves ps_*). Impressão: folha com todos os leitos do CTI, em ordem de leito,
    sem cabeçalho (decisão do autor); dentro da ficha também imprime só o leito aberto.
    ===================================================================== */
-const PS_TXT = [["ps_motivo", "Motivo da admissão"], ["comorb", "HP", 1], ["meds", "Medicações", 1], ["ps_hma", "HMA"], ["ps_evol", "Evolução"],
+// pedido do autor (18/11/2026): "Motivo da admissão" é a lista de problemas do ISBAR (uma linha por problema) e "HMA" é o Contexto
+const PS_TXT = [["prob", "Motivo da admissão", 1], ["comorb", "HP", 1], ["meds", "Medicações", 1], ["motivo", "HMA", 1], ["ps_evol", "Evolução"],
   ["atbs", "ATB Atuais", 1], ["atbp", "ATB Prévios", 1], ["culturas", "Culturas", 1], ["ps_exames", "Exames relevantes"],
   ["ps_nutri", "Nutrição"], ["ps_vent", "Ventilação"], ["ps_inv", "Invasões"], ["ps_prop", "Propostas"]];
 const PS_ATB = { atbs: { cols: ["nome", "d1"], rot: ["Antimicrobiano", "Início"], max: 10 }, atbp: { cols: ["nome", "ini", "fim"], rot: ["Antimicrobiano", "Início", "Término"], max: 10 } };
@@ -5416,13 +5427,20 @@ function psAtbTxt(d, k){
   }
   return out.join(k === "atbs" ? " + " : " | ");
 }
+// lista de problemas ↔ texto "1) problema" (um por linha)
+const psProbTxt = d => { const o = []; for (let i = 1; i <= 12; i++){ const t = String(d[`prob_${i}`] || "").trim(); if (t) o.push(`${o.length + 1}) ${t}`); } return o.join("\n"); };
+function psProbSalva(d, txt){
+  const itens = String(txt).split("\n").map(x => x.replace(/^\s*(\d+\s*[).:-]|[-•*])\s*/, "").trim()).filter(Boolean).slice(0, 12);
+  for (let i = 1; i <= 12; i++){ if (itens[i - 1]) d[`prob_${i}`] = itens[i - 1]; else delete d[`prob_${i}`]; }
+  d.prob_n = String(Math.max(1, itens.length));
+}
 const psBox = d => { const l = String(d.leito || "").trim(); return "BOX " + (/^\d+$/.test(l) ? l.padStart(2, "0") : (l || "–")); };
 const psPeso = d => { const v = CALC.pp(d); return v ? v + " kg" : ""; };
 function renderPs(){
   const p = cur(), box = $("#ps"); if (!p || p.tpl !== "cti"){ box.replaceChildren(); return; }
   const d = p.data;
   const cel = (cls, l, ctl, comp) => el("div", { class: "ps-c " + cls }, el("span", { class: "ps-l" }, document.createTextNode(l), comp ? el("small", { text: "· ISBAR" }) : null), ctl);
-  const ta = (k, l) => el("textarea", { "data-pk": k, rows: "1", "aria-label": l });
+  const ta = (k, l) => el("textarea", { "data-pk": k === "prob" ? "__prob" : k, rows: "1", "aria-label": l });
   const atb = k => {
     const c = PS_ATB[k], n = psAtbN(d, k), linhas = [];
     for (let i = 1; i <= n; i++) linhas.push(el("div", { class: "ps-atb" },
@@ -5441,12 +5459,13 @@ function renderPs(){
         cel("s2 fim", "Peso predito", el("div", { class: "ps-calc", title: "Calculado pela altura e pelo sexo do Prontuário (ARDSNet)", text: psPeso(d) || "Preencha altura e sexo no Prontuário" }), 1),
         ...PS_TXT.map(([k, l, comp]) => cel("s6", l, PS_ATB[k] ? atb(k) : ta(k, l), comp)))),
     el("p", { class: "ps-nota", text: "Campos marcados com “· ISBAR” são os mesmos do Prontuário: o que for escrito aqui aparece lá, e vice-versa." }));
-  box.querySelectorAll("[data-pk]").forEach(x => { const v = d[x.dataset.pk]; x.value = v == null ? "" : v; });
+  box.querySelectorAll("[data-pk]").forEach(x => { const v = x.dataset.pk === "__prob" ? psProbTxt(d) : d[x.dataset.pk]; x.value = v == null ? "" : v; });
 }
 $("#ps").addEventListener("input", e => {
   const x = e.target.closest("[data-pk]"), p = cur(); if (!x || !p) return;
   const k = x.dataset.pk;
-  if (x.value === "") delete p.data[k]; else p.data[k] = x.value;
+  if (k === "__prob") psProbSalva(p.data, x.value);
+  else if (x.value === "") delete p.data[k]; else p.data[k] = x.value;
   if (k === "nome") $("#ptName").textContent = ptLabel(p);
   changed();
 });
@@ -5472,7 +5491,7 @@ function buildPsPrint(soId){
   });
   const lab = (l, v) => [el("b", { text: l + ": " }), document.createTextNode(v || "")];
   $("#psPrint").replaceChildren(...ids.map(id => {
-    const d = store.patients[id].data, txt = k => PS_ATB[k] ? psAtbTxt(d, k) : String(d[k] || "").trim();
+    const d = store.patients[id].data, txt = k => PS_ATB[k] ? psAtbTxt(d, k) : k === "prob" ? psProbTxt(d) : String(d[k] || "").trim();
     const col = el("colgroup", {}, ...Array.from({ length: 6 }, () => el("col", { style: "width:16.666%" })));
     return el("section", { class: "psp-box" },
       el("div", { class: "psp-h", text: psBox(d) }),
