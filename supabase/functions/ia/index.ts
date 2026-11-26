@@ -5,7 +5,7 @@
 // (separados por vírgula). A chave da API fica no segredo ANTHROPIC_API_KEY, nunca no site.
 //
 // Modelos (escolha do autor; revisão de 09/11/2026: contexto e condutas passaram para o Sonnet):
-//   contexto   → Claude Sonnet 5.5 (interpretar a evolução e a avaliação para atualizar o contexto)
+//   contexto   → Claude Sonnet 5.5 (reescrever o contexto inteiro como resumo da internação, com os pontos-chave)
 //   escrita    → Claude Sonnet 5.5 (revisar a escrita da evolução do dia, sem mudar o conteúdo)
 //   condutas   → Claude Sonnet 5.5 (recomendações com busca em PubMed, Cochrane e diretrizes AHA/ESC/KDIGO)
 //   pendencias → Claude Haiku 5.5  (na troca de plantão: condutas de plantões anteriores sem registro no prontuário)
@@ -45,14 +45,20 @@ type Tarefa = {
 const TAREFAS: Record<string, Tarefa> = {
   contexto: {
     modelo: "claude-sonnet-5-5", effort: "medium", fallback: true,
-    system: BASE + " Tarefa: atualizar o campo \"Contexto\", que resume a internação. Leia o contexto atual, a evolução " +
-      "da internação (ou a evolução diária) e os dados da avaliação (sinais vitais, balanço hídrico, dispositivos, infusões, " +
-      "suporte ventilatório, antimicrobianos e exames) e reescreva o contexto interpretando o que mudou no quadro. " +
-      "Não copie as evoluções nem liste os dados brutos do dia: sintetize, em ordem cronológica, os fatos relevantes da " +
-      "internação (motivo da admissão, diagnósticos, procedimentos, intercorrências e resposta ao tratamento) e a tendência " +
-      "clínica atual. Mantenha do contexto atual o que continua relevante. A interpretação deve se apoiar só no que está " +
-      "escrito: não acrescente diagnósticos, valores nem fatos que não estejam no prontuário e não sugira condutas. " +
-      "Texto corrido, objetivo, com no máximo 200 palavras. Responda apenas com o novo texto do contexto, sem título nem comentários.",
+    // revisão de 26/11/2026 (pedido do autor): reescrever o contexto inteiro como resumo, não acrescentar ao fim
+    system: BASE + " Tarefa: reescrever por inteiro o campo \"Contexto\" como um resumo atualizado da internação. " +
+      "Você recebe o CONTEXTO ATUAL e o PRONTUÁRIO (evolução da internação ou evolução diária e dados da avaliação). " +
+      "O texto que você devolver substitui o contexto atual: não o use como base para acrescentar frases ou parágrafos " +
+      "no fim. Integre o que é novo com o que já estava escrito num único resumo: condense em uma frase o que já foi " +
+      "resolvido e retire detalhes que deixaram de ser relevantes (valores e eventos de dias anteriores sem repercussão " +
+      "no quadro atual). Destaque os pontos-chave para o prontuário: motivo da admissão e diagnóstico principal; " +
+      "complicações e intercorrências relevantes; procedimentos e dispositivos importantes; antimicrobianos e resposta " +
+      "ao tratamento; situação atual e tendência (melhora, estabilidade ou piora), com os suportes em uso. " +
+      "Não copie frases das evoluções nem liste dados brutos do dia (sinais vitais, balanço, exames), salvo um valor " +
+      "decisivo para entender o quadro. Apoie-se só no que está escrito: não acrescente diagnósticos, valores nem fatos " +
+      "que não estejam no prontuário e não sugira condutas. Texto corrido, frases curtas e objetivas, em ordem " +
+      "cronológica, com no máximo 150 palavras (pode e deve ficar mais curto que o contexto atual quando ele estiver longo). " +
+      "Responda apenas com o novo texto do contexto, sem título nem comentários.",
   },
   escrita: {
     modelo: "claude-sonnet-5-5", effort: "medium", fallback: true,

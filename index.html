@@ -5047,7 +5047,7 @@ function iaSemNome(t, p){
   return t;
 }
 const IA_INFO = {
-  contexto: { titulo: "IA: atualizar o contexto", sobre: "Claude Sonnet interpreta a evolução e os dados da avaliação para reescrever o Contexto, sem acrescentar condutas. Custo típico: cerca de US$ 0,03.", aplica: true },
+  contexto: { titulo: "IA: atualizar o contexto", sobre: "Claude Sonnet reescreve o Contexto inteiro como um resumo da internação, com os pontos-chave e a situação atual (não só acrescenta o que é novo), sem condutas. Custo típico: cerca de US$ 0,03.", aplica: true },
   escrita: { titulo: "IA: melhorar a escrita da evolução", sobre: "Claude Sonnet revisa ortografia, clareza e terminologia, sem mudar o conteúdo clínico. Custo típico: cerca de US$ 0,03.", aplica: true },
   condutas: { titulo: "IA: sugerir recomendações", sobre: "Claude Sonnet propõe recomendações por problema, com busca em PubMed, Cochrane e diretrizes da AHA, ESC e KDIGO, para discussão com a preceptoria. Custo típico: US$ 0,10 a 0,25; pode levar até 2 minutos.", aplica: false }
 };
@@ -5109,6 +5109,7 @@ async function iaAbrir(tarefa){
   $("#iaMsg").textContent = "Enviando o prontuário (sem o nome do paciente)…";
   $("#iaDlg").showModal();
   let texto = buildText();
+  if (tarefa === "contexto") texto = "CONTEXTO ATUAL (será substituído pelo resumo):\n" + (String(p.data[alvo.k] || "").trim() || "(vazio)") + "\n\nPRONTUÁRIO:\n" + texto;
   if (tarefa === "escrita") texto = "TEXTO A REVISAR:\n" + String(p.data[alvo.k] || "") + "\n\nPRONTUÁRIO (só para contexto):\n" + texto;
   texto = iaSemNome(texto, p);   // o nome nunca sai do aparelho, nem dentro da evolução
   const pid = store.currentBy[store.mode];
