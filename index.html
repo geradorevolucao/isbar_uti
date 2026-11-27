@@ -273,6 +273,56 @@ body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .
 .ex-graf .pt.alt{fill:#C62828}
 .ex-list{margin:0;padding-left:20px}
 .ex-list li{margin:6px 0;white-space:pre-line}
+/* todos os leitos e culturas (pedido do autor, 27/11/2026) */
+:root{--ex-pos:#B71C1C;--ex-neg:#2E7D32;--ex-and:#9A6700}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--ex-pos:#F28B82;--ex-neg:#81C995;--ex-and:#E3B764}}
+:root[data-theme="dark"]{--ex-pos:#F28B82;--ex-neg:#81C995;--ex-and:#E3B764}
+.ex-modo{display:inline-flex;gap:0;margin:0 0 14px;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.ex-modo label{cursor:pointer}
+.ex-modo input{position:absolute;opacity:0;pointer-events:none}
+.ex-modo span{display:block;padding:10px 18px;min-height:44px;box-sizing:border-box;font-size:.9rem}
+.ex-modo input:checked+span{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.ex-modo input:focus-visible+span{outline:2px solid var(--focus,#A04558);outline-offset:-3px}
+.ex-tlist{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:8px}
+.ex-tlist li{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius)}
+.ex-tlist label{display:flex;align-items:center;gap:10px;flex:1 1 14rem;cursor:pointer;min-height:40px}
+.ex-tlist input[type=checkbox]{width:20px;height:20px;flex:none;accent-color:var(--accent)}
+.ex-tlist .pr{display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--muted)}
+.ex-tlist .pr input{width:9.5em;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);font:inherit;background:var(--card);color:var(--ink)}
+.ex-tlist .st{flex-basis:100%;font-size:.8rem;color:var(--muted)}
+.ex-tlist .st.ok{color:var(--ex-neg)}.ex-tlist .st.erro{color:var(--accent)}
+.ex-pac{margin:0 0 28px}
+.ex-pac-erro{padding:10px 14px;border:1px dashed var(--accent);border-radius:var(--radius);color:var(--accent)}
+.ex-cult{display:flex;flex-direction:column}
+.ex-cult-h{align-items:center}
+.ex-cult-h .nm{flex:1;min-width:0}
+.ex-cult-h .dt{color:var(--muted);font-weight:400;white-space:nowrap}
+.ex-st{border-radius:999px;padding:1px 9px;font-size:.72rem;font-weight:700;letter-spacing:.03em;white-space:nowrap;border:1px solid currentColor}
+.ex-st.pos{color:var(--ex-pos);background:color-mix(in srgb,var(--ex-pos) 10%,transparent)}
+.ex-st.neg{color:var(--ex-neg);background:color-mix(in srgb,var(--ex-neg) 10%,transparent)}
+.ex-st.and{color:var(--ex-and);background:color-mix(in srgb,#C99A00 14%,transparent)}
+.ex-st.res{color:var(--muted)}
+.ex-cult.pos .ex-cult-h{border-left-color:var(--ex-pos)}
+.ex-cult.and .ex-cult-h{border-left-color:#C99A00}
+.ex-cult.neg .ex-cult-h{border-left-color:var(--ex-neg)}
+.ex-micro{display:flex;align-items:center;gap:12px;margin:4px 0 8px;padding:8px 10px;border-radius:var(--radius);background:color-mix(in srgb,var(--band) 55%,var(--card))}
+.ex-micro svg{width:46px;height:46px;flex:none}
+.ex-micro strong{display:block;font-style:italic}
+.ex-micro small{display:block;color:var(--muted);font-size:.78rem}
+.ex-atb{width:100%;border-collapse:collapse;margin:6px 0 4px;font-size:.84rem}
+.ex-atb caption{text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:4px 0}
+.ex-atb th,.ex-atb td{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left}
+.ex-atb thead th{font-size:.7rem;color:var(--muted)}
+.ex-atb td{overflow-wrap:anywhere}
+.ex-atb td:last-child{min-width:7.5em}
+@media (min-width:760px){.ex-cult.atb{grid-column:span 2}}
+.ex-atb tr.r td{color:var(--ex-pos);font-weight:700}
+.ex-sir{display:inline-block;min-width:1.5em;text-align:center;margin-right:6px;padding:0 4px;border-radius:5px;font-weight:700;font-size:.78rem;color:#fff}
+.ex-sir.s{background:#2E7D32}.ex-sir.i{background:#C99A00}.ex-sir.r{background:#B71C1C}.ex-sir.x{background:var(--muted)}
+.ex-and{display:flex;align-items:center;gap:6px;margin:6px 0 0;color:var(--ex-and);font-size:.84rem;font-weight:700}
+.ex-and::before{content:"";width:9px;height:9px;border-radius:50%;background:#C99A00;flex:none}
+.ex-leg{margin:6px 2px 0;font-size:.74rem;color:var(--muted)}
+#exAll[hidden],#exTodosBox[hidden],#exUmBox[hidden]{display:none}
 .ia-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:700px){.ia-cols{grid-template-columns:1fr}}
 .ia-cols textarea{min-height:12em}
@@ -311,6 +361,17 @@ body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .
   body[data-view="ex"] .ex-abg span{font-size:7.5pt;padding:.4mm 2.5mm}
   body[data-view="ex"] .ex-nota,body[data-view="ex"] .ex-parte{font-size:7.5pt}
   body[data-view="ex"] .ex-grafs{grid-template-columns:repeat(3,1fr)}
+  body[data-view="ex"] .ex-pac{margin:0}
+  body[data-view="ex"] .ex-pac + .ex-pac{break-before:page}
+  body[data-view="ex"] .ex-micro{padding:1.5mm 2.5mm;margin:1mm 0 2mm}
+  body[data-view="ex"] .ex-micro svg{width:10mm;height:10mm}
+  body[data-view="ex"] .ex-atb{font-size:8pt}
+  body[data-view="ex"] .ex-cult.atb{grid-column:auto}
+  body[data-view="ex"] .ex-atb th,body[data-view="ex"] .ex-atb td{padding:.7mm 1.5mm}
+  body[data-view="ex"] .ex-atb tr{break-inside:avoid}
+  body[data-view="ex"] .ex-st{font-size:6.8pt}
+  body[data-view="ex"] .ex-sir{font-size:7pt}
+  body[data-view="ex"] .ex-leg{font-size:6.8pt}
 }
 #sc{max-width:900px;margin:0 auto}
 .sc-cat h3{margin:18px 2px 8px;font-size:.95rem;color:var(--muted);font-weight:600}
@@ -714,11 +775,23 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <section id="ck" data-views="ck" aria-label="Checklist do CTI"></section>
   <section id="ex" data-views="ex" aria-label="Extração e análise de exames">
     <div class="ex-form">
-      <div class="row">
+      <!-- pedido do autor (27/11/2026): além de um paciente, buscar de uma vez todos os leitos do CTI ou da enfermaria -->
+      <div class="ex-modo" role="radiogroup" aria-label="O que buscar">
+        <label><input type="radio" name="exModo" value="um" checked><span>Um paciente</span></label>
+        <label><input type="radio" name="exModo" value="todos"><span>Todos os leitos</span></label>
+      </div>
+      <div class="row" id="exUmBox">
         <div class="fld w-l"><label for="exPac">Paciente</label><div class="inp"><select id="exPac"></select></div></div>
         <div class="fld w-s"><label for="exPront">Prontuário</label><div class="inp"><input id="exPront" inputmode="numeric" autocomplete="off"></div></div>
+      </div>
+      <div id="exTodosBox" hidden>
+        <div class="row"><div class="fld w-m"><label for="exTMod">Módulo</label><div class="inp"><select id="exTMod"><option value="cti">CTI</option><option value="enf">Enfermaria</option></select></div></div></div>
+        <p class="sub">Pacientes do módulo, em ordem de leito. Marque quem entra na busca; o prontuário do Biomega fica guardado na ficha.</p>
+        <ul class="ex-tlist" id="exTList"></ul>
+      </div>
+      <div class="row">
         <div class="fld w-s"><label for="exDias">Período</label><div class="inp"><select id="exDias">
-          <option value="7">7 dias</option><option value="15">15 dias</option><option value="30" selected>30 dias</option><option value="60">60 dias</option>
+          <option value="3">3 dias</option><option value="7">7 dias</option><option value="15">15 dias</option><option value="30" selected>30 dias</option><option value="60">60 dias</option>
           <option value="90">90 dias</option><option value="180">180 dias</option><option value="365">365 dias</option></select></div></div>
         <div class="fld w-m"><label for="exUnid">Unidade</label><div class="inp"><select id="exUnid"></select></div></div>
       </div>
@@ -748,6 +821,14 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <div id="exLaudosBox" class="ex-noprint"><h3 class="ex-h">Outros laudos em texto</h3><ul class="ex-list" id="exLaudos"></ul></div>
       <div id="exPendBox" class="ex-noprint"><h3 class="ex-h">Exames pendentes</h3><ul class="ex-list" id="exPend"></ul></div>
       <div id="exAvisosBox" class="ex-noprint"><h3 class="ex-h">Avisos</h3><ul class="ex-list" id="exAvisos"></ul></div>
+    </div>
+    <!-- todos os leitos: um bloco por paciente (na impressão, cada paciente começa numa folha) -->
+    <div id="exAll" hidden>
+      <div class="ex-bar ex-noprint">
+        <p class="sub" id="exAllInfo"></p>
+        <button class="btn primary" type="button" id="exAllPrint">Imprimir todos</button>
+      </div>
+      <div id="exAllPacs"></div>
     </div>
   </section>
   <section id="sc" data-views="sc" aria-label="Escores e calculadoras">
@@ -5262,7 +5343,8 @@ function renderEx(){
   u.value = [...u.options].some(o => o.value === uAtual) ? uAtual : "";
   $("#exGo").disabled = !session;
   if (!session) $("#exMsg").textContent = "Para buscar exames, entre na sua conta (Conta e sincronização).";
-  if (exUlt) exMostra();
+  if (exModo() === "todos"){ exTodosLista(); if (exTodos) exMostraTodos(); }
+  else if (exUlt) exMostra();
 }
 function exPacMudou(){ const p = store.patients[$("#exPac").value]; if (p && p.data.bio_pront) $("#exPront").value = p.data.bio_pront; }
 async function exBuscar(){
@@ -5323,37 +5405,122 @@ function exSpark(pts){
   pts.forEach((p, i) => { if (p.alterado || i === pts.length - 1) svg.append(mk("circle", { cx: x(i).toFixed(1), cy: y(p.valor).toFixed(1), r: 2, class: p.alterado ? "alt" : "ult" })); });
   return svg;
 }
-// culturas e antibiogramas: um cartão por exame (grupo) e data; antibiograma como etiquetas "antimicrobiano: resultado"
-const exNomeGrupo = g => { const t = String(g || "").replace(/\s*\((assinado|liberado|parcial|em andamento|conclu[ií]do)\)\s*$/i, "").trim(); return t === t.toUpperCase() ? t.toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase()) : t; };
-function exCultCards(lista){
-  const m = new Map();
-  lista.forEach(r => { const k = r.data.slice(0, 10) + "|" + (r.grupo || r.exame); if (!m.has(k)) m.set(k, []); m.get(k).push(r); });
-  return [...m.values()].map(rs => {
-    const r0 = rs[0], nome = exNomeGrupo(r0.grupo || r0.exame), abg = /antibiogram|sensibilidade|\btsa\b/i.test(normTxt(r0.grupo || r0.exame));
-    const corpo = abg
-      ? el("div", { class: "ex-abg" }, ...rs.map(r => { const v = exTxt(String(r.resultado)), n = normTxt(v); return el("span", { class: /^resist/.test(n) ? "res" : "" }, document.createTextNode(exNomeGrupo(r.exame) + ":"), el("b", { text: v })); }))
-      : el("div", {}, ...rs.map(r => el("p", {}, normTxt(r.exame) !== normTxt(r.grupo || "") && rs.length > 1 ? el("strong", { text: exNomeGrupo(r.exame) + ": " }) : null, document.createTextNode(exTxt(String(r.resultado)) + (r.unidade ? " " + r.unidade : "")))));
-    return el("article", { class: "ex-cult" }, el("div", { class: "ex-cult-h" }, el("span", { text: nome }), el("span", { text: r0.data.slice(0, 5) })), el("div", { class: "ex-cult-b" }, corpo));
+// ---------- culturas, antibiogramas e microrganismos (pedido do autor, 27/11/2026) ----------
+// Um cartão por pedido de cultura: situação (positiva, negativa, em andamento), o microrganismo com um desenho
+// da forma e do Gram, o antibiograma em tabela (antimicrobiano e S/I/R) e o que ainda está em andamento.
+// Forma, arranjo e Gram dos gêneros: Murray PR, Rosenthal KS, Pfaller MA. Medical Microbiology, 9ª ed., Elsevier, 2021;
+// Procop GW et al. Koneman's Color Atlas and Textbook of Diagnostic Microbiology, 7ª ed., Wolters Kluwer, 2017.
+// S/I/R como o laboratório libera (BrCAST/EUCAST 2024: "I" = sensível aumentando a exposição).
+const exNomeGrupo = g => { const t = String(g || "").replace(/\s*\((assinado|liberado|parcial|em andamento|conclu[ií]do)\)\s*$/i, "").trim(); return t === t.toUpperCase() ? t.toLowerCase().replace(/(^|\s)(\S+)/g, (x, e, w) => e + (e && /^(de|da|do|das|dos|e|pelo|pela|para)$/.test(w) ? w : w[0].toUpperCase() + w.slice(1))) : t; };
+const EX_MICRO = [
+  [/streptococcus pneumoniae|\bs\.\s*pneumoniae\b|pneumococ/, { f: "coco", g: "+", a: "pares" }],
+  [/staphylococc|estafilococ|\bs\.\s*(aureus|epidermidis|haemolyticus|hominis|capitis|lugdunensis)\b|\bscn\b|micrococc/, { f: "coco", g: "+", a: "cachos" }],
+  [/streptococc|estreptococ|enterococ|\be\.\s*(faecalis|faecium)\b|aerococc|\bgemella|peptostreptococc/, { f: "coco", g: "+", a: "cadeias" }],
+  [/\bneisseria|\bmoraxella|\bveillonella/, { f: "coco", g: "-", a: "pares" }],
+  [/acinetobacter|\ba\.\s*baumannii\b|haemophilus|\bh\.\s*influenzae\b|bordetella|\bbrucella/, { f: "cocobacilo", g: "-" }],
+  [/escherichia|\be\.\s*coli\b|klebsiella|\bk\.\s*(pneumoniae|oxytoca|aerogenes)\b|enterobacter\b|citrobacter|\bserratia|\bproteus|morganella|providencia|salmonella|shigella|\bhafnia|raoultella|pseudomonas|\bp\.\s*aeruginosa\b|stenotrophomonas|burkholderia|achromobacter|aeromonas|elizabethkingia|chryseobacterium|bacteroides|legionella|\bpantoea|fusobacterium/, { f: "bacilo", g: "-" }],
+  [/corynebacter|\blisteria|\bbacillus\b|clostridi|cutibacter|propionibacter|lactobacill|actinomyces|\bnocardia/, { f: "bacilo", g: "+" }],
+  [/\bcandida|\bc\.\s*(albicans|glabrata|tropicalis|parapsilosis|krusei|auris)\b|cryptococc|levedura/, { f: "levedura" }],
+  [/bacilos?\s+gram[\s-]*negativ|\bbgn\b/, { f: "bacilo", g: "-" }],
+  [/bacilos?\s+gram[\s-]*positiv/, { f: "bacilo", g: "+" }],
+  [/cocos?\s+gram[\s-]*positiv/, { f: "coco", g: "+" }],
+  [/cocos?\s+gram[\s-]*negativ/, { f: "coco", g: "-" }]];
+const EX_NEGA = /negativ|ausencia de crescimento|nao houve crescimento|sem crescimento|nao (foram |foi )?(isolad|evidenciad|observad)|ausencia de (micro|bacter)/;
+const EX_POSI = /positiv|isolad|crescimento de|crescimento bacteriano|\bufc\b/;
+const exMicro = txt => { const n = normTxt(txt); if (EX_NEGA.test(n)) return null; const m = EX_MICRO.find(([re]) => re.test(n)); if (!m) return null;
+  // coco sem gênero (bacterioscopia): o arranjo vem do texto, se houver
+  return m[1].f === "coco" && !m[1].a ? { ...m[1], a: /cadeia/.test(n) ? "cadeias" : /cacho/.test(n) ? "cachos" : /pares|diplococ/.test(n) ? "pares" : "" } : m[1]; };
+const exMicroTxt = m => m.f === "levedura" ? "Levedura (fungo)" : (m.f === "coco" ? "Coco" : m.f === "bacilo" ? "Bacilo" : "Cocobacilo") +
+  (m.g ? ` Gram-${m.g === "+" ? "positivo" : "negativo"}` : "") + (m.a ? ` · em ${m.a}` : "");
+// desenho: violeta = Gram-positivo, rosa = Gram-negativo (cores da coloração de Gram)
+function exMicroSvg(m){
+  const NS = "http://www.w3.org/2000/svg", cor = m.f === "levedura" ? "#8D6E63" : m.g === "+" ? "#5E35B1" : m.g === "-" ? "#D81B60" : "#78909C";
+  const mk = (tag, at) => { const e = document.createElementNS(NS, tag); Object.entries(at).forEach(([k, v]) => e.setAttribute(k, v)); return e; };
+  const svg = mk("svg", { viewBox: "0 0 48 48", role: "img", "aria-label": exMicroTxt(m) });
+  svg.append(mk("circle", { cx: 24, cy: 24, r: 23, fill: cor, "fill-opacity": .1, stroke: cor, "stroke-opacity": .35 }));
+  const at = { fill: cor, "fill-opacity": .85, stroke: cor, "stroke-width": 1 };
+  const bola = (x, y, r = 4.6) => svg.append(mk("circle", { cx: x, cy: y, r, ...at }));
+  const bast = (x, y, w, h, rot) => svg.append(mk("rect", { x: x - w / 2, y: y - h / 2, width: w, height: h, rx: h / 2, transform: `rotate(${rot} ${x} ${y})`, ...at }));
+  if (m.f === "coco"){
+    if (m.a === "cadeias") [[10, 30], [17.5, 25.5], [25, 22], [32.5, 19.5], [39.5, 18]].forEach(([x, y]) => bola(x, y, 3.9));
+    else if (m.a === "pares") { bola(19.5, 24, 5.4); bola(29, 24, 5.4); }
+    else if (m.a === "cachos") [[17, 18], [26, 16], [34, 22], [21, 26.5], [30, 30], [16, 33], [25, 35]].forEach(([x, y]) => bola(x, y, 4.3));
+    else [[16, 18], [32, 17], [24, 31]].forEach(([x, y]) => bola(x, y, 5));
+  } else if (m.f === "bacilo"){ bast(19, 18, 20, 7, -25); bast(28, 31, 20, 7, 15); }
+  else if (m.f === "cocobacilo"){ bast(17, 19, 11, 7, -20); bast(31, 20, 11, 7, 25); bast(23, 32, 11, 7, 5); }
+  else { svg.append(mk("ellipse", { cx: 21, cy: 26, rx: 9, ry: 7.5, ...at })); svg.append(mk("ellipse", { cx: 32, cy: 17, rx: 5, ry: 4.2, ...at })); }
+  return svg;
+}
+const EX_ABG_GRUPO = /antibiogram|sensibilidade|\btsa\b/;
+const EX_SIR_TXT = /^(s|i|r|sdd|sensivel|resistente|intermediari[oa]|sensivel dose[\s-]*dependente|sensivel,? aumentando (a )?exposicao)(\s*[(\[].*)?$/;
+const exSir = v => { const n = normTxt(v).trim(); if (!EX_SIR_TXT.test(n)) return null; return /^(r\b|resist)/.test(n) ? "R" : /^(i\b|interm|sdd|sensivel dose|sensivel,? aumentando)/.test(n) ? "I" : "S"; };
+const exAbgPend = r => EX_ABG_GRUPO.test(normTxt(`${r.grupo || ""} ${r.exame || ""}`));
+// linhas = culturas e antibiogramas na ordem do laudo (liberados e "em andamento"); um cartão por cultura,
+// com o antibiograma que vem logo depois dela no mesmo pedido
+const EX_SIR_NOME = { S: "Sensível", I: "Sensível aumentando a exposição", R: "Resistente" };
+function exCultCards(linhas){
+  const cards = []; let atual = null;
+  const novo = r => { atual = { ped: r.data.slice(0, 10) + "|" + (r.solicitacao || ""), g: r.grupo || r.exame, rs: [], pend: [] }; cards.push(atual); };
+  linhas.forEach(r => {
+    const g = r.grupo || r.exame, ng = normTxt(g), ped = r.data.slice(0, 10) + "|" + (r.solicitacao || "");
+    const abg = EX_ABG_GRUPO.test(ng) || (!r.pendente && !!exSir(exTxt(String(r.resultado))));
+    // antibiograma fica com a cultura anterior do mesmo pedido; outra cultura (outro grupo) abre outro cartão
+    if (!atual || atual.ped !== ped || (!abg && atual.g !== g)) novo(r);
+    (r.pendente ? atual.pend : atual.rs).push(r);
+  });
+  return cards.map(({ rs, pend, g: g0 }) => {
+    const textos = [], tabelas = [], micros = [];
+    rs.forEach(r => {
+      const g = r.grupo || r.exame, ng = normTxt(g), v = exTxt(String(r.resultado)), sir = exSir(v);
+      if (sir || (EX_ABG_GRUPO.test(ng) && !exMicro(v) && normTxt(r.exame) !== ng)){
+        let t = tabelas[tabelas.length - 1]; if (!t || t.g !== g) tabelas.push(t = { g, linhas: [] });
+        t.linhas.push({ atb: exNomeGrupo(r.exame), v, sir, cim: r.calculado ? exTxt(String(r.calculado)) : "" });
+        return;
+      }
+      const m = exMicro(v);
+      if (m && !micros.some(x => x.txt === v)) micros.push({ m, txt: v });
+      else textos.push({ r, v, rot: normTxt(r.exame) !== ng ? exNomeGrupo(r.exame) : "" });
+    });
+    const nome = EX_ABG_GRUPO.test(normTxt(g0)) ? "Antibiograma" : exNomeGrupo(g0) || "Cultura";
+    const lib = rs.filter(r => !exSir(exTxt(String(r.resultado))) && !EX_ABG_GRUPO.test(normTxt(r.grupo || r.exame)));
+    const tudo = normTxt(lib.map(r => r.resultado).join(" "));
+    const st = micros.length || (EX_POSI.test(tudo) && !EX_NEGA.test(tudo)) ? ["pos", "Positiva"]
+      : lib.length && EX_NEGA.test(tudo) ? ["neg", "Negativa"] : !rs.length || pend.some(r => !exAbgPend(r)) ? ["and", "Em andamento"] : ["res", "Resultado"];
+    const data = (rs[0] || pend[0]).data.slice(0, 5);
+    const andam = [...new Set(pend.map(r => exAbgPend(r) ? "Antibiograma em andamento" : (rs.length ? exNomeGrupo(r.exame || r.grupo) + " em andamento" : "Aguardando resultado")))];
+    return el("article", { class: "ex-cult " + st[0] + (tabelas.length ? " atb" : "") },
+      el("div", { class: "ex-cult-h" }, el("span", { class: "nm", text: nome }), el("span", { class: "ex-st " + st[0], text: st[1] }), el("span", { class: "dt", text: data })),
+      el("div", { class: "ex-cult-b" },
+        ...micros.map(({ m, txt }) => el("div", { class: "ex-micro" }, exMicroSvg(m), el("div", {}, el("strong", { text: txt }), el("small", { text: exMicroTxt(m) })))),
+        ...textos.map(({ v, r, rot }) => el("p", {}, rot ? el("strong", { text: rot + ": " }) : null, document.createTextNode(v + (r.unidade ? " " + r.unidade : "")))),
+        ...tabelas.map(t => { const cim = t.linhas.some(l => l.cim); return el("table", { class: "ex-atb" },
+          el("caption", { text: exNomeGrupo(t.g) }),
+          el("thead", {}, el("tr", {}, el("th", { scope: "col", text: "Antimicrobiano" }), cim ? el("th", { scope: "col", text: "CIM" }) : null, el("th", { scope: "col", text: "Resultado" }))),
+          el("tbody", {}, ...t.linhas.map(l => el("tr", { class: l.sir === "R" ? "r" : "" },
+            el("td", { text: l.atb.replace(/\//g, "/\u200b") }), cim ? el("td", { text: l.cim }) : null,
+            el("td", {}, el("span", { class: "ex-sir " + (l.sir ? l.sir.toLowerCase() : "x"), text: l.sir || "–" }),
+              document.createTextNode(l.sir && l.v.replace(/\W/g, "").length <= 3 ? EX_SIR_NOME[l.sir] : l.v)))))); }),
+        ...andam.map(t => el("p", { class: "ex-and", text: t }))));
   });
 }
+// legenda dos desenhos (só aparece quando há microrganismo)
+const exLegenda = () => el("p", { class: "ex-leg", text: "Desenho do microrganismo: violeta = Gram-positivo, rosa = Gram-negativo, marrom = levedura. S = sensível · I = sensível aumentando a exposição · R = resistente. Forma e Gram: Murray, Medical Microbiology, 9ª ed., 2021." });
 const exPos = sigla => EX_POS.has(sigla) ? EX_POS.get(sigla) : EX_POS.size;
-const exEhCultura = r => /cultur|antibiogram|bacterioscop|\bgram\b|teste de sensibilidade|\btsa\b/.test(normTxt(`${r.grupo || ""} ${r.exame || ""}`));
-function exMostra(){
-  const u = exUlt; if (!u) return;
-  $("#exOut").hidden = false;
-  const agora = new Date().toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-  $("#exCab").replaceChildren(el("div", { class: "t", text: "Exames laboratoriais · Biomega" }), el("div", { class: "n", text: u.rotulo }),
-    el("div", { class: "m" }, el("span", { text: "Prontuário " + u.pront }), el("span", { text: `Últimos ${u.dias} dias` }), el("span", { text: "Emitido em " + agora })));
+// cultura: pelo nome do exame/material ou, desde 27/11/2026, por um microrganismo no resultado em texto
+const exEhCultura = r => /cultur|antibiogram|bacterioscop|\bgram\b|teste de sensibilidade|\btsa\b|aspirado traqueal|ponta de cateter|lavado broncoalveolar|\bswab\b/.test(normTxt(`${r.grupo || ""} ${r.exame || ""}`))
+  || (!r.pendente && BIO.numero(String(r.resultado || "")) === null && !!exMicro(String(r.resultado || "")));
+// tabela evolutiva (um cartão por grupo) de uma busca; lim = últimas N datas (0 = todas)
+function exTabelas(u, lim){
   // exames nas linhas, datas nas colunas (mais recente à direita), um cartão por grupo
   // culturas e antibiogramas ficam fora da tabela (um "negativa após 48 h" não é valor numérico)
-  const todas = BIO.series(u.resultados.filter(r => !exEhCultura(r)), 1), lim = Number($("#exCols").value) || 0;
+  const todas = BIO.series(u.resultados.filter(r => !exEhCultura(r)), 1);
   const datas = [...new Set(todas.flatMap(s => s.pontos.map(p => p.ord + "|" + p.data)))].sort().map(x => x.split("|")[1]);
   const cols = lim ? datas.slice(-lim) : datas;
   const ordem = todas.slice().sort((a, b) => exPos(a.sigla) - exPos(b.sigla) || (a.sigla < b.sigla ? -1 : a.sigla > b.sigla ? 1 : 0));
   // até EX_MAXCOL datas por parte, para caber em A4 em pé; partes de tamanho parecido
   const nb = Math.ceil(cols.length / EX_MAXCOL), tam = Math.ceil(cols.length / (nb || 1)), blocos = [];
   for (let i = 0; i < cols.length; i += tam) blocos.push(cols.slice(i, i + tam));
-  $("#exTabs").replaceChildren(...(!cols.length
+  const nos = !cols.length
     ? [el("p", { class: "sub", text: "Nenhum resultado numérico no período." })]
     : blocos.flatMap((bc, bi) => {
       const grupos = new Map();
@@ -5371,7 +5538,20 @@ function exMostra(){
           }))))));
       return [blocos.length > 1 ? el("p", { class: "ex-parte", text: `Datas ${bc[0].slice(0, 5)} a ${bc[bc.length - 1].slice(0, 5)} (parte ${bi + 1} de ${blocos.length})` }) : null,
         el("div", { class: "ex-cards" + (bc.length <= 4 ? " dois" : " um") }, ...cards)].filter(Boolean);
-    })));
+    });
+  return { nos, ordem };
+}
+// culturas liberadas, culturas/antibiogramas em andamento e os demais pendentes
+const exCultLinhas = u => u.resultados.filter(r => exEhCultura(r) && (r.pendente || String(r.resultado).trim()));
+const exCultNos = u => { const c = exCultCards(exCultLinhas(u)); return c.length ? [el("div", { class: "ex-cults" }, ...c), c.some(a => a.querySelector(".ex-micro, .ex-atb")) ? exLegenda() : null].filter(Boolean) : []; };
+const exQuando = d => d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+function exMostra(){
+  const u = exUlt; if (!u) return;
+  $("#exOut").hidden = false; $("#exAll").hidden = true;
+  $("#exCab").replaceChildren(el("div", { class: "t", text: "Exames laboratoriais · Biomega" }), el("div", { class: "n", text: u.rotulo }),
+    el("div", { class: "m" }, el("span", { text: "Prontuário " + u.pront }), el("span", { text: `Últimos ${u.dias} dias` }), el("span", { text: "Emitido em " + exQuando(new Date()) })));
+  const { nos, ordem } = exTabelas(u, Number($("#exCols").value) || 0);
+  $("#exTabs").replaceChildren(...nos);
   $("#exTabNota").hidden = !u.resultados.some(r => r.alterado);
   // gráficos (2 ou mais datas)
   const graf = ordem.filter(s => s.pontos.length >= 2);
@@ -5379,19 +5559,103 @@ function exMostra(){
   $("#exGraf").replaceChildren(...graf.map(s => el("figure", { class: "ex-fig" },
     el("figcaption", {}, el("strong", { text: s.sigla }), s.unidade ? el("span", { class: "u", text: " " + s.unidade }) : null, el("span", { class: "ex-ult", text: ` · último: ${exTxt(s.pontos[s.pontos.length - 1].texto)} (${s.pontos[s.pontos.length - 1].data.slice(0, 5)})` })),
     exGrafico(s))));
-  // laudos em texto: culturas e antibiogramas (vão para a impressão) e os demais (só na tela); pendentes
-  const cult = u.resultados.filter(r => !r.pendente && exEhCultura(r) && String(r.resultado).trim());
+  // culturas e antibiogramas (vão para a impressão), outros laudos e pendentes (só na tela)
+  const cult = exCultNos(u);
   const outros = u.resultados.filter(r => !r.pendente && !exEhCultura(r) && BIO.numero(String(r.resultado)) === null && String(r.resultado).trim().length > 2);
   const li = r => el("li", {}, el("strong", { text: `${r.data.slice(0, 5)} – ${r.grupo && r.grupo !== r.exame ? r.grupo + " › " : ""}${r.exame}: ` }), el("span", { text: exTxt(String(r.resultado)) + (r.unidade ? " " + r.unidade : "") }));
-  $("#exCultBox").hidden = !cult.length; $("#exCult").replaceChildren(...exCultCards(cult));
+  $("#exCultBox").hidden = !cult.length; $("#exCult").replaceChildren(...cult);
   $("#exLaudosBox").hidden = !outros.length; $("#exLaudos").replaceChildren(...outros.map(li));
-  const pend = u.resultados.filter(r => r.pendente);
+  const pend = u.resultados.filter(r => r.pendente && !exEhCultura(r));
   $("#exPendBox").hidden = !pend.length;
   $("#exPend").replaceChildren(...pend.map(r => el("li", { text: `${r.data.slice(0, 5)} – ${r.exame} (em andamento)` })));
   $("#exAvisosBox").hidden = !u.avisos.length;
   $("#exAvisos").replaceChildren(...u.avisos.map(a => el("li", { text: a })));
 }
-$("#exGo").addEventListener("click", exBuscar);
+
+/* ---------- todos os leitos (pedido do autor, 27/11/2026) ----------
+   Busca de uma vez os exames de todos os pacientes marcados do CTI ou da enfermaria (padrão: últimos 7 dias),
+   um paciente por vez, com a mesma rotina da busca individual (bioCarregar). Resultado só na memória da tela. */
+let exTodos = null;
+const exModo = () => (document.querySelector('input[name="exModo"]:checked') || {}).value || "um";
+const exTodosPacs = mod => Object.entries(store.patients).filter(([, p]) => p.tpl === mod)
+  .sort((a, b) => String(a[1].data.leito || "~").localeCompare(String(b[1].data.leito || "~"), "pt-BR", { numeric: true }));
+const exTodosMarc = new Map();   // pid → marcado (lembrado enquanto a tela está aberta)
+function exTodosLista(){
+  const pts = exTodosPacs($("#exTMod").value), ul = $("#exTList");
+  ul.replaceChildren(...(!pts.length ? [el("li", { text: `Nenhum paciente em ${TPL_LABEL[$("#exTMod").value]}.` })] : pts.map(([id, p]) => {
+    const pront = p.data.bio_pront || "", marc = exTodosMarc.has(id) ? exTodosMarc.get(id) : !!pront;
+    const cb = el("input", { type: "checkbox", "data-pid": id }); cb.checked = marc;
+    cb.addEventListener("change", () => exTodosMarc.set(id, cb.checked));
+    const inp = el("input", { inputmode: "numeric", autocomplete: "off", value: pront, "aria-label": "Prontuário do Biomega – " + ptLabel(p), placeholder: "nº" });
+    inp.addEventListener("change", () => { const v = inp.value.replace(/\D/g, ""); inp.value = v; if (p.data.bio_pront !== v){ p.data.bio_pront = v; changed(id); } if (v && !cb.checked){ cb.checked = true; exTodosMarc.set(id, true); } });
+    return el("li", { "data-pid": id }, el("label", {}, cb, el("span", { text: ptLabel(p) })), el("span", { class: "pr" }, document.createTextNode("Prontuário"), inp), el("span", { class: "st", hidden: true }));
+  })));
+}
+function exModoMudou(){
+  const t = exModo() === "todos";
+  $("#exUmBox").hidden = t; $("#exTodosBox").hidden = !t;
+  $("#exGo").textContent = t ? "Buscar todos os leitos" : "Buscar exames";
+  if (t){ if (["cti", "enf"].includes(store.mode)) $("#exTMod").value = store.mode; $("#exDias").value = "7"; exTodosLista(); }
+  else $("#exDias").value = "30";
+  $("#exOut").hidden = t || !exUlt; $("#exAll").hidden = !t || !exTodos;
+  $("#exMsg").textContent = "";
+}
+async function exBuscarTodos(){
+  const msg = $("#exMsg"), go = $("#exGo"), mod = $("#exTMod").value;
+  const alvo = [...$("#exTList").querySelectorAll('input[type=checkbox][data-pid]')].filter(c => c.checked).map(c => c.dataset.pid).filter(id => store.patients[id]);
+  const sem = alvo.filter(id => !String(store.patients[id].data.bio_pront || "").replace(/\D/g, ""));
+  if (!alvo.length){ msg.textContent = "Marque ao menos um paciente."; return; }
+  if (sem.length){ msg.textContent = "Falta o prontuário do Biomega de: " + sem.map(id => ptLabel(store.patients[id])).join("; ") + "."; return; }
+  const dias = Number($("#exDias").value) || 7, unidade = $("#exUnid").value;
+  let cred = bioCred() ? null : { usuario: $("#exUser").value.trim(), senha: $("#exPass").value, lembrar: $("#exRem").checked };
+  if (cred && (!cred.usuario || !cred.senha)){ msg.textContent = "Informe o usuário e a senha do portal."; return; }
+  go.disabled = true; $("#exAll").hidden = true;
+  const itens = [], st = id => $(`#exTList li[data-pid="${id}"] .st`);
+  alvo.forEach(id => { const e = st(id); if (e){ e.hidden = false; e.className = "st"; e.textContent = "Na fila"; } });
+  try {
+    for (let n = 0; n < alvo.length; n++){
+      const id = alvo[n], p = store.patients[id], pront = String(p.data.bio_pront).replace(/\D/g, ""), e = st(id);
+      if (e) e.textContent = "Buscando…";
+      msg.textContent = `Paciente ${n + 1} de ${alvo.length}: ${ptLabel(p)}…`;
+      try {
+        const u = await bioCarregar(pront, dias, unidade, t => { msg.textContent = `Paciente ${n + 1} de ${alvo.length} (${ptLabel(p)}): ${t}`; }, cred);
+        if (cred && bioCred()) cred = null;   // senha aceita e lembrada: as próximas usam a lembrada
+        itens.push({ pid: id, rotulo: ptLabel(p), pront, u: { ...u, pid: id, rotulo: ptLabel(p) } });
+        if (e){ e.className = "st ok"; e.textContent = `${u.pedidos} pedido(s) · ${u.resultados.length} resultado(s)`; }
+      } catch(err){
+        const m = bioErroBusca(err);
+        itens.push({ pid: id, rotulo: ptLabel(p), pront, erro: m });
+        if (e){ e.className = "st erro"; e.textContent = m; }
+        if (/usu[aá]rio|senha|login/i.test(m) && n === 0) break;   // login recusado: não insiste nos demais
+      }
+    }
+    exTodos = { mod, dias, em: new Date(), itens };
+    const ok = itens.filter(x => x.u).length;
+    msg.textContent = `${ok} de ${alvo.length} paciente(s) com exames carregados.`;
+    exMostraTodos();
+  } finally { go.disabled = !session; }
+}
+function exMostraTodos(){
+  const t = exTodos; if (!t) return;
+  $("#exAll").hidden = false; $("#exOut").hidden = true;
+  $("#exAllInfo").textContent = `${TPL_LABEL[t.mod]} · ${t.itens.length} paciente(s) · últimos ${t.dias} dias · buscado em ${exQuando(t.em)}`;
+  $("#exAllPacs").replaceChildren(...t.itens.map(x => {
+    const cab = el("div", { class: "ex-head" }, el("div", { class: "t", text: `Exames laboratoriais · Biomega · ${TPL_LABEL[t.mod]}` }), el("div", { class: "n", text: x.rotulo }),
+      el("div", { class: "m" }, el("span", { text: "Prontuário " + x.pront }), el("span", { text: `Últimos ${t.dias} dias` }), el("span", { text: "Emitido em " + exQuando(t.em) })));
+    if (!x.u) return el("section", { class: "ex-pac" }, cab, el("p", { class: "ex-pac-erro", text: x.erro }));
+    const u = x.u, { nos } = exTabelas(u, 0), cult = exCultNos(u);
+    const pend = u.resultados.filter(r => r.pendente && !exEhCultura(r));
+    return el("section", { class: "ex-pac" }, cab, ...nos,
+      u.resultados.some(r => r.alterado) ? el("p", { class: "sub ex-nota", text: "* resultado sinalizado pelo laboratório · a última coluna mostra a evolução de cada exame" }) : null,
+      cult.length ? el("h3", { class: "ex-sec" }, el("span", { text: "Culturas e antibiogramas" })) : null, ...cult,
+      pend.length ? el("p", { class: "sub ex-nota ex-noprint", text: "Em andamento: " + pend.map(r => `${r.exame} (${r.data.slice(0, 5)})`).join("; ") }) : null,
+      u.avisos.length ? el("ul", { class: "ex-list ex-noprint" }, ...u.avisos.map(a => el("li", { class: "sub", text: a }))) : null);
+  }));
+}
+$("#exGo").addEventListener("click", () => exModo() === "todos" ? exBuscarTodos() : exBuscar());
+document.querySelectorAll('input[name="exModo"]').forEach(r => r.addEventListener("change", exModoMudou));
+$("#exTMod").addEventListener("change", exTodosLista);
+$("#exAllPrint").addEventListener("click", () => window.print());
 $("#exPac").addEventListener("change", exPacMudou);
 $("#exCols").addEventListener("change", exMostra);
 $("#exPrint").addEventListener("click", () => window.print());
