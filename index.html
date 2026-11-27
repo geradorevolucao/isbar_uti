@@ -273,6 +273,10 @@ body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .
 .ex-graf .pt.alt{fill:#C62828}
 .ex-list{margin:0;padding-left:20px}
 .ex-list li{margin:6px 0;white-space:pre-line}
+/* aviso de versão nova (27/11/2026) */
+.nova-versao{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom));z-index:60;display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;max-width:calc(100% - 32px);padding:10px 14px;border-radius:var(--radius);background:var(--card);border:1px solid var(--accent);box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:.9rem}
+.nova-versao[hidden]{display:none}
+@media print{.nova-versao{display:none!important}}
 /* todos os leitos e culturas (pedido do autor, 27/11/2026) */
 :root{--ex-pos:#B71C1C;--ex-neg:#2E7D32;--ex-and:#9A6700}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--ex-pos:#F28B82;--ex-neg:#81C995;--ex-and:#E3B764}}
@@ -1070,6 +1074,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 </dialog>
 
 <div class="toast" id="toast" role="status"></div>
+<div class="nova-versao" id="novaVersao" role="status" hidden><span>Há uma versão nova do Anamnesia.</span><button class="btn primary" type="button" id="novaVersaoGo">Recarregar</button></div>
 
 <script>
 (() => {
@@ -1082,6 +1087,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
    por natureza; a proteção vem do login + Row Level Security + criptografia.
    Se deixar em branco, o app pede esses dados em "Conta e sincronização".
    ===================================================================== */
+// versão do site: trocar a cada mudança publicada (o aviso de versão nova compara este texto com o do servidor)
+const APP_VERSAO = "2026-11-27c";
 const SYNC_URL = "https://lykqudxhjnvsiprrkinh.supabase.co";
 const SYNC_ANON_KEY = "sb_publishable_DR4jR2oJ8ll253P-7lwZsw_UhYI2KEI";   // chave publishable do projeto (pública por natureza)
 
@@ -5934,6 +5941,21 @@ $("#btnAdm").addEventListener("click", () => {
   $("#dlgTitle").textContent = "Texto de admissão"; dlg.showModal();
 });
 
+/* ---------- aviso de versão nova (27/11/2026) ----------
+   A página fica aberta por muito tempo (aba do PC, app do Android) e só troca de versão quando é recarregada.
+   Ao voltar para a aba e a cada 30 min, compara APP_VERSAO com a do servidor e, se mudou, oferece "Recarregar". */
+async function versaoConfere(){
+  if ((location.protocol !== "https:" && location.hostname !== "localhost") || !navigator.onLine) return;
+  try {
+    const r = await fetch(location.pathname + "?versao=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) return;
+    const m = /const APP_VERSAO = "([^"]+)"/.exec(await r.text());
+    if (m && m[1] !== APP_VERSAO) $("#novaVersao").hidden = false;
+  } catch(e){ /* sem conexão: tenta depois */ }
+}
+$("#novaVersaoGo").addEventListener("click", () => location.reload());
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") versaoConfere(); });
+setInterval(versaoConfere, 30 * 60 * 1000);
 /* =====================================================================
    INICIALIZAÇÃO
    ===================================================================== */
