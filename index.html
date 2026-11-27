@@ -144,6 +144,7 @@ body.locked #lock{display:block;max-width:460px;margin:24px auto;background:var(
 .vtabs{display:flex;gap:4px;max-width:var(--wmax);margin:8px auto 0;background:var(--band);padding:3px;border-radius:var(--radius)}
 .vtabs button{flex:1;border:0;background:transparent;color:var(--accent);font-weight:600;padding:8px;border-radius:var(--radius);cursor:pointer}
 .vtabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+@media (max-width:600px){.vtabs button{min-width:0;font-size:.72rem;padding:7px 2px;line-height:1.2}}
 body:not([data-view="chart"]) nav.jump{margin-bottom:8px}
 body[data-view="list"] header.top,body[data-view="rx"] header.top{padding-bottom:8px}
 .filters{display:flex;gap:6px;overflow-x:auto;margin:12px 0;scrollbar-width:none}
@@ -499,6 +500,13 @@ body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .
 .ps-nota{margin:10px 2px;color:var(--muted);font-size:.85rem}
 @media (max-width:640px){.ps-grid{grid-template-columns:1fr}.ps-c,.ps-c.s2,.ps-c.s3,.ps-c.s4,.ps-c.s6{grid-column:auto;border-right:0}}
 body[data-view="ps"] #jump{display:none}
+/* sumário de alta (27/11/2026) */
+#alta{max-width:var(--wmax);margin:0 auto}
+.sa-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;justify-content:space-between}
+.sa-top .sub{margin:0;flex:1 1 320px}
+.sa-sec .sec-h .sa-copy{min-height:36px;padding:0 14px;font-size:.85rem}
+.sa-sec textarea{resize:vertical;overflow-y:auto}
+.sa-sec fieldset.fld legend{padding:0;margin-bottom:6px}
 /* folha impressa do passômetro (ajuste do autor, 15/11/2026): identidade visual do site (cartão de cantos arredondados,
    faixa e títulos em vinho, Verdana) e largura limitada à A4, centralizada, para não cortar nas laterais */
 #psPrint{display:none;box-sizing:border-box;width:100%;max-width:184mm;margin:0 auto;padding:0;
@@ -701,6 +709,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   body[data-view="rx"] main,body[data-view="rx"] footer.refs,body[data-view="list"] main{display:none!important}
   body[data-view="rx"] #rxPrint{display:block}
   body[data-view="ps"] main,body[data-view="ps"] footer.refs{display:none!important}
+  body[data-view="alta"] .sa-top,body[data-view="alta"] .sa-copy{display:none!important}
   body[data-view="ps"] #psPrint{display:block;page:passometro}
   body[data-view="ps"]{padding:0;margin:0;width:auto;min-width:0}
   #psPrint *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -777,17 +786,17 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <button type="button" class="syncst" id="syncStatus" aria-live="polite"></button>
   </div>
   <div class="pt-row">
-    <button class="btn back" id="btnBack" type="button" data-views="chart rx ps ck">← Pacientes</button>
+    <button class="btn back" id="btnBack" type="button" data-views="chart rx ps alta ck">← Pacientes</button>
     <div class="search" data-views="list"><input id="search" type="search" placeholder="Buscar por nome ou leito" aria-label="Buscar paciente" autocomplete="off"></div>
-    <div class="ptname" id="ptName" data-views="chart rx ps"></div>
+    <div class="ptname" id="ptName" data-views="chart rx ps alta"></div>
     <select id="ptSelect" hidden aria-hidden="true" tabindex="-1"></select>
     <button id="btnNew" type="button" hidden tabindex="-1"></button>
     <details class="menu" id="menu">
       <summary class="btn" role="button" aria-label="Mais opções">⋯</summary>
       <div class="menu-list">
-        <button type="button" data-act="account" data-views="list chart rx ps ck">Conta e sincronização</button>
+        <button type="button" data-act="account" data-views="list chart rx ps alta ck">Conta e sincronização</button>
         <button type="button" data-act="opencode" data-views="list">Abrir texto por código</button>
-        <button type="button" data-act="edit" data-views="chart rx ps">Editar dados do paciente</button>
+        <button type="button" data-act="edit" data-views="chart rx ps alta">Editar dados do paciente</button>
         <button type="button" data-act="newday" hidden></button>
         <button type="button" data-act="std" hidden>Preencher com o texto padrão</button>
         <button type="button" data-act="rx-newday" data-views="rx">Nova proposta do dia</button>
@@ -797,22 +806,23 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
         <button type="button" data-act="ia-contexto" hidden>IA: atualizar o contexto</button>
         <button type="button" data-act="ia-escrita" hidden>IA: melhorar a escrita da evolução do dia</button>
         <button type="button" data-act="ia-condutas" hidden>IA: sugerir recomendações (com referências)</button>
-        <button type="button" data-act="print" data-views="chart rx ps">Imprimir / salvar PDF</button>
+        <button type="button" data-act="print" data-views="chart rx ps alta">Imprimir / salvar PDF</button>
         <button type="button" data-act="expand">Expandir todos os grupos</button>
         <button type="button" data-act="collapse">Recolher todos os grupos</button>
         <button type="button" data-act="export" data-views="list">Exportar backup (.json)</button>
         <button type="button" data-act="import" data-views="list">Importar backup (.json)</button>
         <button type="button" data-act="clear" class="danger" data-views="chart">Limpar campos do prontuário (mantém nome e leito)</button>
         <button type="button" data-act="rx-clear" class="danger" data-views="rx">Apagar proposta de prescrição</button>
-        <button type="button" data-act="delete" class="danger" data-views="chart rx ps">Excluir este paciente</button>
+        <button type="button" data-act="delete" class="danger" data-views="chart rx ps alta">Excluir este paciente</button>
       </div>
     </details>
     <input type="file" id="importFile" accept="application/json,.json" hidden>
   </div>
-  <div class="vtabs" id="vtabs" data-views="chart rx ps" role="group" aria-label="Seção do paciente">
+  <div class="vtabs" id="vtabs" data-views="chart rx ps alta" role="group" aria-label="Seção do paciente">
     <button type="button" data-go="chart" aria-pressed="true">Prontuário</button>
     <button type="button" data-go="rx" aria-pressed="false">Prescrição</button>
     <button type="button" data-go="ps" aria-pressed="false" hidden>Passômetro</button>
+    <button type="button" data-go="alta" aria-pressed="false">Sumário de alta</button>
   </div>
   <nav class="jump" id="jump" aria-label="Seções" data-views="chart"></nav>
 </header>
@@ -827,6 +837,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <div id="form" data-views="chart"></div>
   <div id="rx" data-views="rx"></div>
   <section id="ps" data-views="ps" aria-label="Passômetro do leito"></section>
+  <section id="alta" data-views="alta" aria-label="Sumário de alta"></section>
   <section id="ck" data-views="ck" aria-label="Checklist do CTI"></section>
   <section id="ex" data-views="ex" aria-label="Extração e análise de exames">
     <div class="ex-form">
@@ -926,6 +937,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <button class="btn primary" type="button" id="btnRxText" data-views="rx">Copiar como texto</button>
     <button class="btn" type="button" id="btnPsUm" data-views="ps">Imprimir este leito</button>
     <button class="btn primary" type="button" id="btnPsTodos" data-views="ps">Imprimir passômetro (todos os leitos)</button>
+    <button class="btn" type="button" id="btnSaPrint" data-views="alta">Imprimir</button>
+    <button class="btn primary" type="button" id="btnSaText" data-views="alta">Gerar texto do sumário</button>
   </div>
 </div>
 
@@ -1144,7 +1157,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
    Se deixar em branco, o app pede esses dados em "Conta e sincronização".
    ===================================================================== */
 // versão do site: trocar a cada mudança publicada (o aviso de versão nova compara este texto com o do servidor)
-const APP_VERSAO = "2026-11-27g";
+const APP_VERSAO = "2026-11-27h";
 const SYNC_URL = "https://lykqudxhjnvsiprrkinh.supabase.co";
 const SYNC_ANON_KEY = "sb_publishable_DR4jR2oJ8ll253P-7lwZsw_UhYI2KEI";   // chave publishable do projeto (pública por natureza)
 
@@ -3348,6 +3361,7 @@ function cleanupBlankPatients(){
 function setView(v){
   if (v !== "list" && v !== "ck" && v !== "sc" && v !== "ex" && !cur()) v = "list";
   if (v === "ps" && cur().tpl !== "cti") v = "chart";   // passômetro só no CTI
+  if (v === "alta" && cur().tpl === "nota") v = "chart";   // sumário de alta: CTI e enfermaria
   if (v === "list" || v === "ck") backTo = v;
   view = v;
   document.body.dataset.view = v;
@@ -3355,6 +3369,7 @@ function setView(v){
   document.querySelectorAll("[data-views]").forEach(x => x.hidden = !x.dataset.views.split(" ").includes(v));
   document.querySelectorAll("#vtabs button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.go === v)));
   $('#vtabs [data-go="ps"]').hidden = !(cur() && cur().tpl === "cti");
+  $('#vtabs [data-go="alta"]').hidden = !(cur() && cur().tpl !== "nota");
   $("#btnAdm").hidden = !(v === "chart" && cur() && cur().tpl === "cti");
   menuState();
   $("#btnBack").textContent = backTo === "ck" ? "← Checklist" : "← Pacientes";
@@ -3381,6 +3396,7 @@ function setView(v){
     $("#ptName").textContent = ptLabel(p);
     if (v === "chart"){ document.title = "Anamnesia · " + TPL[p.tpl].tab; fillForm(); }   // mostra o que foi escrito no passômetro
     else if (v === "ps"){ document.title = "Anamnesia · Passômetro"; renderPs(); }
+    else if (v === "alta"){ document.title = "Anamnesia · Sumário de alta"; renderSa(); }
     else { document.title = "Anamnesia · Prescrição"; renderRx(); }
   }
   window.scrollTo({ top: 0 });
@@ -3608,7 +3624,7 @@ window.anamnesiaBack = () => {
     return false;
   }
   if (locked()) return false;
-  if (view === "chart" || view === "rx" || view === "ps"){ saveNow(); setView(backTo); return true; }
+  if (view === "chart" || view === "rx" || view === "ps" || view === "alta"){ saveNow(); setView(backTo); return true; }
   showMenu(); return true;
 };
 if (APP){
@@ -4886,7 +4902,7 @@ function onRemoteChange(changedCurrent){
   if (!cur() || !id){ setView("list"); toast("Este paciente foi alterado em outro aparelho"); return; }
   const p = cur();
   if (p.tpl !== store.mode){ openPatient(id, view); return; }
-  fillForm(); if (view === "rx") renderRx(); if (view === "ps") renderPs();
+  fillForm(); if (view === "rx") renderRx(); if (view === "ps") renderPs(); if (view === "alta") renderSa();
   $("#ptName").textContent = ptLabel(p);
 }
 /* estado dos itens do menu que dependem do modelo */
@@ -5165,7 +5181,7 @@ const codeKey = code => deriveKey(code, b64(te.encode("anamnesia-share-key")), 1
 
 function shareSubject(){
   const p = cur(), d = p ? p.data : {};
-  const what = store.mode === "enf" ? enfMom(d) + " – Clínica Médica" : TPL[store.mode].title;
+  const what = view === "alta" ? "Sumário de alta – " + (store.mode === "enf" ? "Clínica Médica" : "CTI") : store.mode === "enf" ? enfMom(d) + " – Clínica Médica" : TPL[store.mode].title;
   return [what, d.leito ? "Leito " + d.leito : "", brDate(dataRef(d) || todayISO())].filter(Boolean).join(" – ");
 }
 async function sendMail(web){
@@ -6463,6 +6479,7 @@ function buildPsPrint(soId){
 }
 $("#btnPsTodos").addEventListener("click", () => { saveNow(); buildPsPrint(); window.print(); });
 $("#btnPsUm").addEventListener("click", () => { saveNow(); buildPsPrint(store.currentBy[store.mode]); window.print(); });
+$("#btnSaPrint").addEventListener("click", () => { saveNow(); doPrint(); });
 
 /* =====================================================================
    TEXTO DE ADMISSÃO DO CTI (pedido do autor, 16/11/2026)
@@ -6544,6 +6561,144 @@ $("#btnAdm").addEventListener("click", () => {
   $("#out").value = admCtiText(p.data); $("#codeOut").hidden = true;
   $("#mailTo").value = $("#mailTo").value || ls.get(MAIL_KEY) || "";
   $("#dlgTitle").textContent = "Texto de admissão"; dlg.showModal();
+});
+
+/* =====================================================================
+   SUMÁRIO DE ALTA (pedido do autor, 27/11/2026; CTI e enfermaria)
+   Mesmas seções e mesma ordem do sumário de alta do MV (fotos enviadas pelo autor): motivo da internação, resumo,
+   diagnóstico principal (CID), diagnósticos secundários, outras condições identificadas, condições prévias, tratamentos
+   realizados (clínico, cirúrgico, procedimentos e exames invasivos), exames complementares, medicamentos usados,
+   condições de alta e proposta/observações. No MV cada seção é um quadro: cada uma tem o próprio "Copiar".
+   Na primeira abertura (e em "Completar com a ficha", só nos campos vazios) entra o que já está escrito na ficha;
+   nada é inventado e tudo continua editável. Chaves sa_* (não entram no texto do ISBAR/evolução).
+   ===================================================================== */
+const SA_SIM = ["Sim", "Não"], SA_SIMNA = ["Sim", "Não", "NA"];
+const SA = [
+  { t: "Motivo da internação", c: [["sa_motivo", "", "area", 3]] },
+  { t: "Resumo da internação", c: [["sa_resumo", "", "area", 8]] },
+  { t: "Diagnóstico principal", c: [["sa_dx", "Diagnóstico", "text"], ["sa_cid", "CID", "text", 0, "s"]] },
+  { t: "Diagnósticos secundários", c: [["sa_sec", "Um por linha (no texto saem separados por “ | ”)", "area", 3]] },
+  { t: "Outras condições identificadas na internação", c: [["sa_outras", "", "area", 2]] },
+  { t: "Condições prévias", c: [["sa_previas", "", "area", 2]] },
+  { t: "Tratamentos realizados", c: [["sa_trat_cli", "Clínico", "area", 4], ["sa_trat_cir", "Cirúrgico", "area", 2], ["sa_proc", "Procedimentos e exames invasivos", "area", 3]] },
+  { t: "Exames complementares", c: [["sa_exames", "", "area", 6]] },
+  { t: "Resumo dos medicamentos usados", c: [["sa_meds", "", "area", 4]] },
+  { t: "Condições de alta", c: [["sa_data", "Data da alta", "date"], ["sa_restr", "Restrições funcionais ou incapacidades identificadas?", "radio", SA_SIM]] },
+  { t: "Proposta e observações para alta", c: [["sa_enc", "Encaminhamento?", "radio", SA_SIMNA], ["sa_rec", "Receituário fornecido?", "radio", SA_SIM], ["sa_obs", "Proposta e observações", "area", 4]] }
+];
+const SA_KEYS = SA.flatMap(s => s.c.map(c => c[0]));
+const saLinhas = t => String(t || "").split("\n").map(x => x.trimEnd()).filter(x => x.trim());
+// texto de cada quadro, como vai para o MV
+function saSecTxt(d, s){
+  const v = k => String(d[k] || "").trim();
+  switch (s.c[0][0]){
+    case "sa_dx": return [v("sa_dx"), v("sa_cid") ? "CID: " + v("sa_cid") : ""].filter(Boolean).join(" – ");
+    case "sa_sec": return saLinhas(d.sa_sec).map(x => x.replace(/^\s*(\d+\s*[).:-]|[-•*])\s*/, "").trim()).filter(Boolean).join(" | ");
+    case "sa_trat_cli": return [["Clínico", "sa_trat_cli"], ["Cirúrgico", "sa_trat_cir"], ["Procedimentos e exames invasivos", "sa_proc"]]
+      .map(([l, k]) => { const ls = saLinhas(d[k]); return ls.length > 1 ? `- ${l}:\n` + ls.join("\n") : `- ${l}:` + (ls[0] ? " " + ls[0] : ""); }).join("\n");
+    case "sa_data": return [`Data da alta: ${brDate(v("sa_data"))}`, `Restrições funcionais ou incapacidades identificadas? ${v("sa_restr")}`].join("\n");
+    case "sa_enc": return [`Encaminhamento? ${v("sa_enc")}`, `Receituário fornecido? ${v("sa_rec")}`, v("sa_obs")].filter((x, i) => i < 2 || x).join("\n");
+    default: return v(s.c[0][0]);
+  }
+}
+const saText = d => SA.map(s => s.t.toUpperCase() + "\n" + saSecTxt(d, s)).join("\n\n").trimEnd();
+
+// sugestões tiradas da ficha (só o que já está escrito)
+function saDaFicha(p){
+  const d = p.data, v = k => String(d[k] || "").trim(), o = {};
+  const probs = []; for (let i = 1; i <= 12; i++){ const t = v(`prob_${i}`); if (t) probs.push(t); }
+  o.sa_motivo = p.tpl === "enf" && v("motivo") ? v("motivo") : probs.map((x, i) => `${i + 1}) ${x}`).join("\n");
+  o.sa_resumo = p.tpl === "cti" ? v("motivo") : v("contexto");
+  o.sa_dx = probs[0] || "";
+  o.sa_sec = probs.slice(1).join("\n");
+  o.sa_previas = v("comorb");
+  // clínico: antimicrobianos, medicações em infusão contínua e suporte ventilatório, como estão na ficha
+  const atb = [psAtbTxt(d, "atbp"), psAtbTxt(d, "atbs").replace(/ \+ /g, " | ")].filter(Boolean).join(" | ");
+  const infs = []; for (let i = 1; i <= 15; i++){ const id = d[`inf_${i}_droga`]; const n = id === "outra" ? v(`inf_${i}_outra`) : INF[id] ? INF[id].nome : ""; if (n && !infs.includes(n)) infs.push(n); }
+  const cli = [];
+  if (atb) cli.push("Antimicrobianos: " + atb);
+  if (infs.length) cli.push("Medicações em infusão contínua: " + infs.join(", "));
+  if (p.tpl === "cti" && v("vent_modo") && v("vent_modo") !== "AA") cli.push("Suporte ventilatório: " + v("vent_modo"));
+  o.sa_trat_cli = cli.join("\n");
+  // procedimentos e dispositivos (CTI)
+  const pr = [], dt = k => v(k) ? " (" + brDate(v(k)) + ")" : "";
+  if (p.tpl === "cti"){
+    for (let i = 1; i <= 6; i++){ const c = ["sitio", "tipo"].map(x => v(`cvcs_${i}_${x}`)).filter(Boolean).join(", "); if (c) pr.push("CVC: " + c + dt(`cvcs_${i}_dt`)); }
+    if (v("pai_sitio")) pr.push("PAI: " + v("pai_sitio") + dt("pai_dt"));
+    if (v("svd") === "Sim") pr.push("SVD" + dt("svd_dt"));
+    if (v("tot") === "SIM") pr.push("TOT" + (v("tot_data") ? " (" + v("tot_data") + ")" : ""));
+    if (v("tqt") === "SIM") pr.push("TQT" + (v("tqt_data") ? " (" + v("tqt_data") + ")" : ""));
+    if (v("drenos")) pr.push("Drenos: " + v("drenos"));
+  }
+  o.sa_proc = pr.join("\n");
+  // exames: laboratoriais, imagem e culturas da ficha
+  const ex = [], bl = (l, t) => { if (String(t || "").trim()) ex.push(l + ":\n" + String(t).trim()); };
+  bl("Laboratoriais", v("ec_lab") || v("ext_lab"));
+  bl("Imagem", p.tpl === "cti" ? v("imagem") : (v("ec_img") || v("ext_img")));
+  bl(p.tpl === "cti" ? "Culturas" : "Outros", p.tpl === "cti" ? v("culturas") : v("ec_outros"));
+  o.sa_exames = ex.join("\n\n");
+  // medicamentos: antimicrobianos, infusões e itens da proposta de prescrição que não foram suspensos
+  const meds = [];
+  for (const k of ["atbp", "atbs"]) for (let i = 1; i <= 10; i++){ const n = v(`${k}_${i}_nome`); if (n && !meds.includes(n)) meds.push(n); }
+  infs.forEach(n => { if (!meds.includes(n)) meds.push(n); });
+  const rx = p.presc && Array.isArray(p.presc.items) ? p.presc.items : [];
+  rx.filter(x => x.st !== "suspender" && String(x.desc || "").trim()).forEach(x => { const t = [x.desc.trim(), x.dose, x.via, x.freq].filter(Boolean).join(" "); if (!meds.includes(t)) meds.push(t); });
+  o.sa_meds = meds.map(x => "- " + x).join("\n");
+  o.sa_data = todayISO();
+  return o;
+}
+function saCompleta(p, aviso){
+  const d = p.data, o = saDaFicha(p); let n = 0;
+  for (const [k, val] of Object.entries(o)) if (val && !String(d[k] || "").trim()){ d[k] = val; n++; }
+  d.sa_ini = "1";
+  if (n) changed();
+  if (aviso) toast(n ? `${n} campo(s) preenchido(s) com a ficha` : "Nada novo para trazer da ficha (campos já preenchidos ficam como estão)", 2600);
+}
+const saFit = x => { x.style.height = "auto"; x.style.height = x.scrollHeight + 2 + "px"; };
+// na impressão, cada quadro fica do tamanho do texto (sem o espaço livre da tela)
+addEventListener("beforeprint", () => { if (view !== "alta") return; $("#alta").querySelectorAll("textarea[data-sa]").forEach(x => { if (!x.dataset.rows) x.dataset.rows = x.rows; x.rows = 1; saFit(x); }); });
+addEventListener("resize", () => { if (view === "alta") $("#alta").querySelectorAll("textarea[data-sa]").forEach(saFit); });
+addEventListener("afterprint", () => { $("#alta").querySelectorAll("textarea[data-sa]").forEach(x => { if (x.dataset.rows){ x.rows = Number(x.dataset.rows); delete x.dataset.rows; saFit(x); } }); });
+function renderSa(){
+  const p = cur(), box = $("#alta"); if (!p || p.tpl === "nota"){ box.replaceChildren(); return; }
+  if (!p.data.sa_ini) saCompleta(p, false);
+  const d = p.data;
+  const campo = ([k, l, t, x, w]) => {
+    if (t === "radio") return el("fieldset", { class: "fld w-full" }, el("legend", { class: "lbl", text: l }),
+      el("div", { class: "opts" }, ...x.map(o => el("label", { class: "opt" }, el("input", { type: "radio", name: k, value: o, "data-sa": k, checked: d[k] === o ? true : null }), el("span", { text: o })))));
+    const ctl = t === "area" ? el("textarea", { id: "f_" + k, "data-sa": k, rows: String(x || 3), autocapitalize: "sentences" })
+      : el("input", { id: "f_" + k, "data-sa": k, type: t === "date" ? "date" : "text", autocapitalize: "sentences" });
+    return el("div", { class: "fld " + (w ? "w-" + w : t === "date" ? "w-m" : "w-full") }, l ? el("label", { for: "f_" + k, text: l }) : null, el("div", { class: "inp" }, ctl));
+  };
+  box.replaceChildren(
+    el("div", { class: "sa-top" },
+      el("p", { class: "sub", text: "Mesmas seções do sumário de alta do MV. O que já estava na ficha entrou preenchido; revise e complete. Cada quadro tem o próprio “Copiar”, para colar no quadro correspondente do MV." }),
+      el("button", { class: "btn", type: "button", id: "saFicha", text: "Completar com a ficha (campos vazios)" })),
+    ...SA.map((s, i) => el("section", { class: "sec sa-sec" },
+      el("div", { class: "sec-h" }, el("span", { class: "letter l2", text: String(i + 1) }), el("h2", { text: s.t.toUpperCase() }),
+        el("button", { class: "btn sa-copy", type: "button", "data-sa-copy": String(i), text: "Copiar" })),
+      el("div", { class: "sec-body" }, el("div", { class: "row" }, ...s.c.map(campo))))));
+  box.querySelectorAll("input[data-sa]:not([type=radio]),textarea[data-sa]").forEach(x => { x.value = d[x.dataset.sa] || ""; });
+  requestAnimationFrame(() => box.querySelectorAll("textarea[data-sa]").forEach(saFit));
+}
+$("#alta").addEventListener("input", e => {
+  const x = e.target.closest("[data-sa]"), p = cur(); if (!x || !p) return;
+  if (x.type === "radio" && !x.checked) return;
+  if (x.value === "") delete p.data[x.dataset.sa]; else p.data[x.dataset.sa] = x.value;
+  if (x.tagName === "TEXTAREA") saFit(x);
+  changed();
+});
+$("#alta").addEventListener("click", e => {
+  const p = cur(); if (!p) return;
+  if (e.target.closest("#saFicha")){ saCompleta(p, true); renderSa(); return; }
+  const c = e.target.closest("[data-sa-copy]");
+  if (c){ const t = saSecTxt(p.data, SA[Number(c.dataset.saCopy)]); copyText(t).then(ok => toast(ok ? (t ? "Quadro copiado" : "Quadro vazio copiado") : "Não foi possível copiar")); }
+});
+$("#btnSaText").addEventListener("click", () => {
+  const p = cur(); if (!p || p.tpl === "nota") return;
+  $("#out").value = saText(p.data); $("#codeOut").hidden = true;
+  $("#mailTo").value = $("#mailTo").value || ls.get(MAIL_KEY) || "";
+  $("#dlgTitle").textContent = "Sumário de alta"; dlg.showModal();
 });
 
 /* ---------- aviso de versão nova (27/11/2026) ----------
