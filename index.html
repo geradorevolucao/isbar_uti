@@ -4961,6 +4961,32 @@ const BIO = (() => {
 /* ---------- janela "Exames do Biomega" ---------- */
 const BIO_LOTE = 8;
 let bioUnidades = null, bioUltimo = null;
+// unidades do portal e a última escolhida ficam lembradas no aparelho (pedido do autor, 27/11/2026: antes era preciso
+// buscar uma vez com "Padrão do portal" só para a lista aparecer e depois buscar de novo na unidade certa)
+const bioUnids = () => bioUnidades || (store.settings && Array.isArray(store.settings.bioUnidades) && store.settings.bioUnidades.length ? store.settings.bioUnidades : null);
+function bioGuardaUnids(lista){
+  if (!Array.isArray(lista) || !lista.length) return;
+  bioUnidades = lista;
+  store.settings = store.settings || {};
+  if (JSON.stringify(store.settings.bioUnidades) !== JSON.stringify(lista)){ store.settings.bioUnidades = lista; saveNow(); }
+}
+function bioGuardaUnid(v){ if (!v) return; store.settings = store.settings || {}; if (store.settings.bioUnid !== v){ store.settings.bioUnid = v; saveNow(); } }
+// preenche um <select> de unidade: mantém a escolha atual; sem escolha, usa a última unidade usada
+function bioUnidSelect(s, sel){
+  const atual = sel != null ? sel : s.value, lista = bioUnids() || [], ult = store.settings && store.settings.bioUnid;
+  s.replaceChildren(el("option", { value: "", text: "Padrão do portal" }), ...lista.map(u => el("option", { value: u.valor, text: u.nome || u.valor })));
+  const tem = v => v && [...s.options].some(o => o.value === v);
+  s.value = tem(atual) ? atual : tem(ult) ? ult : "";
+}
+// sem lista lembrada e com a senha do portal lembrada: busca as unidades em segundo plano ao abrir a tela
+let bioUnidsPedindo = false;
+async function bioUnidsAuto(){
+  if (bioUnids() || bioUnidsPedindo || !session || !bioCred()) return;
+  bioUnidsPedindo = true;
+  try { const r = await bioChamar({ acao: "login" }); if (r && r.ok) { bioGuardaUnids(r.unidades); bioUnidSelect($("#exUnid")); bioUnidSelect($("#bioUnid")); } }
+  catch(e){ /* tenta de novo na próxima abertura */ }
+  finally { bioUnidsPedindo = false; }
+}
 function bioAlvos(){
   const p = cur(); if (!p) return [];
   const out = [];
@@ -4983,11 +5009,7 @@ function openBioDlg(){
   if (bioUltimo && bioUltimo.pid === store.currentBy[store.mode]) bioMostra(); else { bioUltimo = null; $("#bioOut").hidden = true; }
   $("#bioDlg").showModal();
 }
-function bioPreencheUnidades(sel){
-  const s = $("#bioUnid"), atual = sel != null ? sel : s.value;
-  s.replaceChildren(el("option", { value: "", text: "Padrão do portal" }), ...(bioUnidades || []).map(u => el("option", { value: u.valor, text: u.nome || u.valor })));
-  s.value = [...s.options].some(o => o.value === atual) ? atual : "";
-}
+function bioPreencheUnidades(sel){ bioUnidSelect($("#bioUnid"), sel); bioUnidsAuto(); }
 async function bioChamar(corpo, cred){
   const c = bioCred() || cred || { usuario: $("#bioUser").value.trim(), senha: $("#bioPass").value };
   if (!c.usuario || !c.senha) throw new Error("Informe usuário e senha do portal.");
@@ -4999,7 +5021,8 @@ async function bioCarregar(pront, dias, unidade, aviso, cred){
   const r1 = await bioChamar({ acao: "pedidos", prontuario: pront, dias, fim: todayISO(), unidade }, cred);
   if (!r1 || !r1.ok) throw new Error("Não foi possível buscar: " + bioErro(r1));
   if (!bioCred() && cred && cred.lembrar) setBioCred(cred.usuario, cred.senha);
-  if (Array.isArray(r1.unidades) && r1.unidades.length) bioUnidades = r1.unidades;
+  if (Array.isArray(r1.unidades) && r1.unidades.length) bioGuardaUnids(r1.unidades);
+  bioGuardaUnid(unidade || "");
   const pedidos = r1.pedidos || [], diag = [];
   if (r1.mensagem) diag.push("Mensagem do portal: " + r1.mensagem + (unidade ? "" : " (unidade: padrão do portal – tente escolher a unidade na lista)"));
   if (!pedidos.length && r1.forma) diag.push("Diagnóstico técnico (envie ao Claude) – pedidos: " + r1.forma + " · unidade usada: " + (r1.unidade || "?"));
@@ -5352,9 +5375,7 @@ function renderEx(){
   $("#exCredSaved").hidden = !c; $("#exCredForm").hidden = !!c;
   if (c) $("#exCredUser").textContent = c.usuario;
   $("#exRem").disabled = !canRemember(); $("#exRem").checked = canRemember();
-  const u = $("#exUnid"), uAtual = u.value;
-  u.replaceChildren(el("option", { value: "", text: "Padrão do portal" }), ...(bioUnidades || []).map(x => el("option", { value: x.valor, text: x.nome || x.valor })));
-  u.value = [...u.options].some(o => o.value === uAtual) ? uAtual : "";
+  bioUnidSelect($("#exUnid")); bioUnidsAuto();
   $("#exGo").disabled = !session;
   if (!session) $("#exMsg").textContent = "Para buscar exames, entre na sua conta (Conta e sincronização).";
   if (exModo() === "todos"){ exTodosLista(); if (exTodos) exMostraTodos(); }
@@ -5372,7 +5393,7 @@ async function exBuscar(){
     msg.textContent = "Entrando no portal e buscando pedidos…";
     const cred = bioCred() ? null : { usuario: $("#exUser").value.trim(), senha: $("#exPass").value, lembrar: $("#exRem").checked };
     exUlt = { ...(await bioCarregar(pront, dias, unidade, t => msg.textContent = t, cred)), pid, rotulo: p ? ptLabel(p) : "Prontuário " + pront };
-    msg.textContent = `${exUlt.pedidos} pedido(s) em ${dias} dias · ${exUlt.resultados.length} resultado(s).`;
+    msg.textContent = `${exUlt.pedidos} pedido(s) em ${dias} dias · ${exUlt.resultados.length} resultado(s).` + exDicaUnid(unidade, !exUlt.pedidos);
     renderEx();
   } catch(err){ msg.textContent = bioErroBusca(err); }
   finally { go.disabled = !session; }
@@ -5635,6 +5656,8 @@ function exMostra(){
    Busca de uma vez os exames de todos os pacientes marcados do CTI ou da enfermaria (padrão: últimos 7 dias),
    um paciente por vez, com a mesma rotina da busca individual (bioCarregar). Resultado só na memória da tela. */
 let exTodos = null;
+// busca sem unidade escolhida e sem nenhum pedido: o "Padrão do portal" pode não ser a unidade do hospital
+const exDicaUnid = (unidade, vazio) => !unidade && vazio && (bioUnids() || []).length ? " Nenhum pedido em \u201cPadrão do portal\u201d: escolha a unidade na lista (agora carregada) e busque de novo; ela fica lembrada." : "";
 const exModo = () => (document.querySelector('input[name="exModo"]:checked') || {}).value || "um";
 const exTodosPacs = mod => Object.entries(store.patients).filter(([, p]) => p.tpl === mod)
   .sort((a, b) => String(a[1].data.leito || "~").localeCompare(String(b[1].data.leito || "~"), "pt-BR", { numeric: true }));
@@ -5690,7 +5713,8 @@ async function exBuscarTodos(){
     }
     exTodos = { mod, dias, em: new Date(), itens };
     const ok = itens.filter(x => x.u).length;
-    msg.textContent = `${ok} de ${alvo.length} paciente(s) com exames carregados.`;
+    msg.textContent = `${ok} de ${alvo.length} paciente(s) com exames carregados.` + exDicaUnid(unidade, itens.filter(x => x.u).every(x => !x.u.pedidos));
+    bioUnidSelect($("#exUnid"));
     exMostraTodos();
   } finally { go.disabled = !session; }
 }
