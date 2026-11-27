@@ -81,6 +81,14 @@ details.menu .menu-list button:hover{background:var(--band)}
 .prob-h .inp{flex:1}
 .prob-h .inp input{font-weight:600}
 .prob-subs{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:8px 12px}
+.prob-sub{position:relative}
+.prob-sub[hidden],.prob-addsub-w[hidden]{display:none}
+.prob-delsub{position:absolute;top:-4px;right:0;min-width:30px;min-height:30px;padding:0 8px;font-size:1rem;line-height:1}
+.prob-sub>label{padding-right:36px}
+.prob-xl{margin:0 40px 4px 0}
+.prob-xl input{font-size:.85rem;font-weight:600;padding:6px 10px;min-height:0}
+.prob-addsub-w{margin-top:8px}
+.prob-addsub{width:auto;max-width:100%;border:1px dashed var(--accent);border-radius:var(--radius);background:var(--card);color:var(--accent);font:inherit;font-size:.9rem;padding:8px 12px;min-height:40px}
 .add-prob{align-self:flex-start}
 .cond-sub{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--band) 45%,transparent);border-radius:0 var(--radius) var(--radius) 0}
 .cond-sub[hidden],.diary-row[hidden]{display:none}
@@ -688,7 +696,11 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   body[data-view="ps"]{padding:0;margin:0;width:auto;min-width:0}
   #psPrint *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #rxPrint *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .add-prob,.prob[hidden]{display:none}
+  .add-prob,.prob[hidden],.prob-delsub,.prob-addsub-w,.prob-sub[hidden]{display:none!important}
+  .prob-xl{margin:0;flex:none;display:flex;align-items:flex-end;padding-bottom:3px;font-size:11px;font-weight:600;color:#000}
+  .prob-subs .inp.prob-xl{flex:none;min-width:0}
+  .prob-xl::before{content:"- "}.prob-xl::after{content:":"}
+  .prob-xl input{border:0;padding:0;font-size:11px;font-weight:600;background:none;field-sizing:content;min-width:2ch;color:#000}
   .prob{border:0;padding:0;background:none;margin-bottom:8px}
   /* situação / problema no mesmo formato do texto gerado: "1. Título" e uma linha "- Subtópico:" para cada item */
   .prob-h{margin-bottom:2px}
@@ -1103,7 +1115,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
    Se deixar em branco, o app pede esses dados em "Conta e sincronização".
    ===================================================================== */
 // versão do site: trocar a cada mudança publicada (o aviso de versão nova compara este texto com o do servidor)
-const APP_VERSAO = "2026-11-27e";
+const APP_VERSAO = "2026-11-27f";
 const SYNC_URL = "https://lykqudxhjnvsiprrkinh.supabase.co";
 const SYNC_ANON_KEY = "sb_publishable_DR4jR2oJ8ll253P-7lwZsw_UhYI2KEI";   // chave publishable do projeto (pública por natureza)
 
@@ -1364,6 +1376,13 @@ Object.assign(CTI[3], { nav: "A · Avaliação" });
 Object.assign(CTI[4], { nav: "R · Plano" });
 
 /* ---------------- EVOLUÇÃO – ENFERMARIA DE CLÍNICA MÉDICA ---------------- */
+// antimicrobianos na enfermaria (pedido do autor, 27/11/2026): mesmo bloco e mesmas chaves do CTI (atbs, atbp)
+const ATB_SEC = () => ({ id: "ATB", letter: "ATB", title: "ANTIMICROBIANOS", nav: "Antimicrobianos", groups: [ { rows: [
+   [F("atbs","Antimicrobianos em uso","repeat",{n:10,item:"antimicrobiano",hl:"Antimicrobiano",lista:true,cols:[
+     F("nome","Antimicrobiano","text",{w:"l",tl:""}), F("d1","D1","date",{w:"auto",dcalc:true})]})],
+   [F("atbp","Antimicrobianos prévios","repeat",{n:10,item:"antimicrobiano",hl:"Antimicrobiano prévio",lista:true,cols:[
+     F("nome","Antimicrobiano","text",{w:"l",tl:""}), F("ini","Início","date",{w:"auto"}), F("fim","Término","date",{w:"auto"})]})]
+ ]}]});
 const ENF = [
  { id: "ID", letter: "ID", title: "IDENTIFICAÇÃO", nav: "Identificação", groups: [ { rows: [
    [F("nome","Nome","text",{w:"l"}), F("idade","Idade","num",{u:"anos"}), F("sexo","Sexo","radio",{opts:["M","F"]}), F("leito","Leito","text",{w:"xs"})],
@@ -1376,6 +1395,7 @@ const ENF = [
    [F("motivo","Motivo da internação","text",{w:"full"})],
    [F("contexto","Contexto / história da internação","area",{tl:"",rows:5})]
  ]}]},
+ ATB_SEC(),
  { id: "HPP", letter: "HPP", title: "HISTÓRIA PATOLÓGICA PREGRESSA", nav: "HPP", groups: [ { rows: [
    [F("comorb","Comorbidades","area")],
    [F("cirurgias","Cirurgias/internações prévias","text",{w:"full"})],
@@ -1428,6 +1448,7 @@ const ENF_ADM = [
  { id: "CT", letter: "CT", title: "CONTEXTO", nav: "Contexto", groups: [ { rows: [
    [F("contexto","Contexto","area",{rows:5,ph:"Trata-se de paciente de, X anos, ..."})]
  ]}]},
+ ATB_SEC(),
  { id: "HP", letter: "HPP", title: "HISTÓRIA PREGRESSA", nav: "HPP", groups: [ { rows: [
    [F("comorb","HPP","area",{rows:2,ph:"Doença 1; Doença 2"})],
    [F("muc","MUC","area",{rows:2,ph:"Medicamento 1 X mg; Medicamento 2 Y mg"})],
@@ -1449,30 +1470,61 @@ const enfMom = d => ENF_MOM_OPTS.includes(d.enf_mom) ? d.enf_mom : "Evolução";
 const newData = tpl => tpl === "enf" ? { data_aval: todayISO(), enf_mom: "Admissão" } : { data_aval: todayISO() };
 const enfModel = d => enfMom(d) === "Admissão" ? [ENF[0], ENF_MOM, ...ENF_ADM] : [ENF[0], ENF_MOM, ...ENF.slice(1)];
 
-/* texto da admissão, no formato do autor */
-function admText(d){
-  if (enfMom(d) !== "Admissão") return null;
-  const v = k => String(d[k] == null ? "" : d[k]).trim();
-  const blocks = [];
-  const fP = ENF_ADM[0].groups[0].rows[0][0];
-  const sit = [];
-  let n = 0;
-  for (let i = 1; i <= fP.n; i++){
+/* Texto da enfermaria (pedido do autor, 27/11/2026): mesmo modelo do texto de admissão do CTI (admCtiText), na
+   admissão e na evolução: "# ADMISSÃO/EVOLUÇÃO - CLÍNICA MÉDICA #", blocos "| Título:" (aparecem mesmo vazios,
+   como no modelo do CTI), situação/problemas " 1) título" com os subtópicos ativos embaixo, antecedentes com "»",
+   exames complementares a) b) c) e condutas com "- ". */
+function enfText(d){
+  const v = k => String(d[k] == null ? "" : d[k]).trim(), out = [], adm = enfMom(d) === "Admissão";
+  const bloco = (titulo, linhas) => { out.push("| " + titulo + ":"); linhas.filter(x => x != null).forEach(x => out.push(x)); out.push(""); };
+  out.push(adm ? "# ADMISSÃO - CLÍNICA MÉDICA #" : "# EVOLUÇÃO - CLÍNICA MÉDICA #", "");
+  const idade = v("idade") ? (/anos?$/i.test(v("idade")) ? v("idade") : v("idade") + " anos") : "";
+  bloco("Identificação", [
+    admJ([v("nome") && "Nome: " + v("nome"), idade && "Idade: " + idade, d.sexo && "Sexo: " + (d.sexo === "F" ? "Feminino" : d.sexo === "M" ? "Masculino" : d.sexo)]),
+    admJ([v("leito") && "Leito: " + v("leito"), !adm && v("data_aval") && "Data: " + brDate(v("data_aval")), v("adm_hosp") && "Admissão: " + brDate(v("adm_hosp")), !adm && v("dih") && "DIH: " + v("dih")])].filter(Boolean));
+  // situação / lista de problemas, com os subtópicos ativos (os apagados não saem)
+  const fP = modelOf(TPL.enf, d).flatMap(sec => sec.groups.flatMap(g => g.rows.flat())).find(f => f.t === "problems");
+  const probs = [];
+  if (fP) for (let i = 1; i <= fP.n; i++){
     if (!probFilled(fP, d, i)) continue;
-    sit.push((sit.length ? "\n" : "") + `${++n}. ${v("prob_" + i) || "Situação a esclarecer"}`);
-    ADM_SUBS.forEach(([sk, sl]) => { const x = v(`prob_${i}_${sk}`); if (x) sit.push(` - ${sl}: ${x.replace(/\n/g, "\n   ")}`); });
+    probs.push(` ${probs.filter(x => /^ \d+\)/.test(x)).length + 1}) ${v("prob_" + i) || (adm ? "Situação a esclarecer" : "(problema sem título)")}`);
+    subsDe(fP, d, i).forEach(([sk, sl]) => { const x = v(`prob_${i}_${sk}`); if (x) probs.push(`   - ${sl}: ${x.replace(/\n/g, "\n     ")}`); });
   }
-  if (sit.length) blocks.push("| Situação:\n\n" + sit.join("\n"));
-  if (v("contexto")) blocks.push("| Contexto:\n" + v("contexto"));
-  [["comorb","HPP"],["muc","MUC"],["alergias","Alergias"],["hf","HF"],["hse","HSE"],["cirurgias","Cirurgias prévias"]]
-    .forEach(([k, l]) => { if (v(k)) blocks.push(`| ${l}: ${v(k)}`); });
-  const ex = [];
-  if (v("ext_lab")) ex.push("a) Laboratório:\n" + v("ext_lab"));
-  if (v("ext_img")) ex.push("b) Imagem:\n" + v("ext_img"));
-  if (ex.length) blocks.push("| Exames externos:\n" + ex.join("\n\n"));
-  const cd = Array.from({ length: 10 }, (_, i) => v("cond_" + (i + 1))).filter(Boolean);
-  if (cd.length) blocks.push("| Condutas:\n" + cd.map(x => "- " + x).join("\n"));
-  return blocks.join("\n\n");
+  bloco(adm ? "Situação" : "Lista de problemas", probs);
+  bloco("Contexto", [!adm && v("motivo") && "Motivo da internação: " + v("motivo"), ...admLinhas(v("contexto"))].filter(Boolean));
+  const atb = [], atbp = [];
+  for (let i = 1; i <= 10; i++){
+    const n = v(`atbs_${i}_nome`); if (n) atb.push(`  - ${n}` + (v(`atbs_${i}_d1`) ? ` | D1: ${brDate(v(`atbs_${i}_d1`))}` : ""));
+    const m = v(`atbp_${i}_nome`); if (m) atbp.push(`  - ${m}` + (v(`atbp_${i}_ini`) ? ` | Início: ${brDate(v(`atbp_${i}_ini`))}` : "") + (v(`atbp_${i}_fim`) ? ` | Término: ${brDate(v(`atbp_${i}_fim`))}` : ""));
+  }
+  bloco("Antimicrobianos em uso", atb);
+  bloco("Antimicrobianos prévios", atbp);
+  bloco("Antecedentes prévios", adm
+    ? ["» HPP: " + admUmaLinha(v("comorb")), "» MUC: " + admUmaLinha(v("muc")), "» Alergias: " + v("alergias"), "» HF: " + v("hf"), "» HSE: " + v("hse"), "» Cirurgias prévias: " + v("cirurgias")]
+    : ["» Comorbidades: " + admUmaLinha(v("comorb")), "» Medicações de uso contínuo: " + admUmaLinha(v("muc")), "» Alergias: " + v("alergias"),
+       "» Cirurgias/internações prévias: " + v("cirurgias"), "» Hábitos: " + v("habitos")]);
+  if (!adm){
+    bloco("Evolução", [...admLinhas(v("evol")), admJ([v("dieta_acc") && "Aceitação da dieta: " + v("dieta_acc"), v("diurese_q") && "Diurese: " + v("diurese_q"), v("evac_q") && "Evacuações: " + v("evac_q")]) || null]);
+    const pa = v("pas") && v("pad") ? `PA: ${v("pas")}/${v("pad")} mmHg` : "";
+    const vitais = admJ([pa, CALC.pam(d) && "PAM: " + CALC.pam(d), v("fc") && `FC: ${v("fc")} bpm`, v("fr") && `FR: ${v("fr")} irpm`, v("tax") && `Tax: ${v("tax")}°C`,
+      v("spo2") && `SpO2: ${v("spo2")} %`, v("o2") && "O2: " + v("o2"), v("dor_evn") && "Dor (EVN): " + v("dor_evn"), v("hgt") && "Glicemias capilares: " + v("hgt")]);
+    bloco("Ao exame", ["» Dados vitais: " + vitais, "» Ectoscopia: " + admUmaLinha(v("ef_geral")), "» Cardiovascular: " + admUmaLinha(v("ef_acv")),
+      "» Respiratório: " + admUmaLinha(v("ef_ar")), "» Abdome: " + admUmaLinha(v("ef_abd")), "» Extremidades: " + admUmaLinha(v("ef_ext")),
+      "» Neurológico: " + admUmaLinha(v("ef_neuro")), v("ef_outros") ? "» Outros: " + v("ef_outros") : null]);
+  }
+  const lab = k => admLinhas(v(k)).map(x => /^[-•*]/.test(x) ? x : "- " + x);
+  const txt = k => String(v(k)).split("\n").map(x => x.trimEnd()).filter((x, i, a) => x || (i > 0 && a[i - 1]));
+  bloco("Exames complementares", adm
+    ? ["a) Laboratoriais:", ...lab("ext_lab"), "", "b) Imagem:", ...txt("ext_img")]
+    : ["a) Laboratoriais:", ...lab("ec_lab"), "", "b) Imagem:", ...txt("ec_img"), "", "c) Outros:", ...admLinhas(v("ec_outros"))]);
+  const cond = [];
+  if (adm) for (let i = 1; i <= 10; i++){ const t = v("cond_" + i); if (t) cond.push("- " + t); }
+  else for (let i = 1; i <= 20; i++){
+    const t = v(`cdl_${i}`), subs = Array.from({ length: 8 }, (_, j) => v(`cdl_${i}_${j + 1}`)).filter(Boolean);
+    if (t) cond.push("- " + t); subs.forEach(x => cond.push((t ? "   - " : "- ") + x));
+  }
+  bloco("Condutas", cond);
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd();
 }
 
 /* ---------------- NOTAS ----------------
@@ -1517,7 +1569,7 @@ const REFS_ENF = [
 
 const TPL = {
   cti: { recolher: true, limparAR: true, tab: "CTI", title: "ISBAR · CTI", textTitle: "ISBAR – CTI", btn: "Gerar texto ISBAR", model: CTI, refs: REFS_CTI, grpWord: "sistemas" },
-  enf: { tab: "Enfermaria", title: "Clínica Médica", textTitle: "EVOLUÇÃO – CLÍNICA MÉDICA", btn: "Gerar texto", model: ENF, build: enfModel, sig: enfMom, text: admText, refs: REFS_ENF,
+  enf: { tab: "Enfermaria", title: "Clínica Médica", textTitle: "EVOLUÇÃO – CLÍNICA MÉDICA", btn: "Gerar texto", model: ENF, build: enfModel, sig: enfMom, text: enfText, refs: REFS_ENF,
          newDay: "Nova evolução do dia", newDayMsg: "Os campos de Evolução diária, Dados vitais e Exame físico serão apagados, a data passa para hoje e o DIH aumenta em 1. Se a ficha estiver em Admissão, passa para Evolução e as situações viram a lista de problemas. Problemas, contexto, HPP, MUC, exames e condutas são mantidos." },
   nota: { tab: "Notas", title: "Notas", textTitle: "NOTA", btn: "Copiar / enviar", dlg: "Nota", model: NOTA, text: d => String(d.nota || ""), refs: [] }
 };
@@ -1748,8 +1800,21 @@ const D = () => (cur() ? cur().data : {});
 const olKeys = f => Array.from({ length: f.n }, (_, i) => [f.k + "_" + (i + 1), ...Array.from({ length: f.ns }, (_, j) => `${f.k}_${i + 1}_${j + 1}`)]).flat();
 const listKeys = f => Array.from({ length: f.n }, (_, i) => f.k + "_" + (i + 1));
 const subsOf = f => f.subs || PROB_SUBS;
-const probKeysOne = (f, i) => [f.k + "_" + i, ...subsOf(f).map(([s]) => f.k + "_" + i + "_" + s)];
-const probKeys = f => Array.from({ length: f.n }, (_, i) => probKeysOne(f, i + 1)).flat();
+/* Subtópicos editáveis por problema (pedido do autor, 27/11/2026): cada subtópico padrão pode ser apagado ("×"; a chave
+   vai para k_i_off) e voltar pelo "+ Subtópico"; também há até PROB_XN subtópicos com nome livre (k_i_xN e o nome em
+   k_i_xN_l; k_i_xn = quantos estão abertos). Só nos problemas com subtópicos (enfermaria). */
+const PROB_XN = 4;
+const probOff = (d, f, i) => String(d[`${f.k}_${i}_off`] || "").split(",").filter(Boolean);
+const probXn = (d, f, i) => Math.min(PROB_XN, Number(d[`${f.k}_${i}_xn`]) || 0);
+function subsDe(f, d, i){
+  if (!subsOf(f).length) return [];
+  const off = probOff(d, f, i), out = subsOf(f).filter(([sk]) => !off.includes(sk)).map(x => x.slice());
+  for (let x = 1; x <= probXn(d, f, i); x++) out.push(["x" + x, String(d[`${f.k}_${i}_x${x}_l`] || "").trim() || "Subtópico"]);
+  return out;
+}
+const probKeysOne = (f, i) => [f.k + "_" + i, ...subsOf(f).map(([s]) => f.k + "_" + i + "_" + s), ...(subsOf(f).length ? Array.from({ length: PROB_XN }, (_, x) => `${f.k}_${i}_x${x + 1}`) : [])];
+const probMeta = (f, i) => subsOf(f).length ? [`${f.k}_${i}_off`, `${f.k}_${i}_xn`, ...Array.from({ length: PROB_XN }, (_, x) => `${f.k}_${i}_x${x + 1}_l`)] : [];
+const probKeys = f => Array.from({ length: f.n }, (_, i) => [...probKeysOne(f, i + 1), ...probMeta(f, i + 1)]).flat();
 const probFilled = (f, d, i) => probKeysOne(f, i).some(k => d[k] != null && String(d[k]).trim() !== "");
 const diaryKeys = f => Array.from({ length: f.n }, (_, i) => [`${f.k}_${i + 1}_d`, `${f.k}_${i + 1}`]).flat();
 const repKeys = f => Array.from({ length: f.n }, (_, i) => f.cols.map(c => `${f.k}_${i + 1}_${c.k}`)).flat();
@@ -1867,14 +1932,22 @@ function renderField(f){
           el("div", { class: "prob-h" },
             el("span", { class: "n", text: i + "." }),
             el("div", { class: "inp" }, inputFor(f.k + "_" + i, { autocapitalize: "sentences", placeholder: f.itemPh || (f.item || "Problema") + " " + i, "aria-label": (f.item || "Problema") + " " + i }))));
-        const grid = el("div", { class: "prob-subs" });
+        const grid = el("div", { class: "prob-subs" }), edit = subsOf(f).length > 0;
+        const del = (sk, nome) => edit ? el("button", { class: "btn icon prob-delsub", type: "button", "data-del-psub": `${f.k}|${i}|${sk}`, title: "Apagar subtópico", "aria-label": `Apagar ${nome} do ${(f.item || "problema").toLowerCase()} ${i}`, text: "×" }) : null;
         subsOf(f).forEach(([sk, sl]) => {
           const k = f.k + "_" + i + "_" + sk;
-          grid.append(el("div", { class: "fld" },
-            el("label", { for: "f_" + k, text: sl }),
+          grid.append(el("div", { class: "fld prob-sub", "data-sub": sk },
+            el("label", { for: "f_" + k, text: sl }), del(sk, sl),
             el("div", { class: "inp" }, el("textarea", { id: "f_" + k, "data-k": k, rows: "2", autocapitalize: "sentences" }))));
         });
+        if (edit) for (let x = 1; x <= PROB_XN; x++){
+          const k = `${f.k}_${i}_x${x}`;
+          grid.append(el("div", { class: "fld prob-sub prob-x", "data-sub": "x" + x, hidden: true },
+            el("div", { class: "inp prob-xl" }, inputFor(k + "_l", { placeholder: "Nome do subtópico", "aria-label": `Nome do subtópico livre ${x}`, autocapitalize: "sentences" })), del("x" + x, "subtópico livre " + x),
+            el("div", { class: "inp" }, el("textarea", { id: "f_" + k, "data-k": k, rows: "2", autocapitalize: "sentences", "aria-label": `Subtópico livre ${x}` }))));
+        }
         card.append(grid);
+        if (edit) card.append(el("div", { class: "prob-addsub-w" }, el("select", { class: "prob-addsub", "data-add-psub": `${f.k}|${i}`, "aria-label": `Adicionar subtópico ao ${(f.item || "problema").toLowerCase()} ${i}` })));
         box.append(card);
       }
       box.append(el("button", { class: "btn add-prob", type: "button", "data-add-prob": f.k, text: "+ Adicionar " + (f.item || "problema").toLowerCase() }));
@@ -2066,7 +2139,15 @@ function updateProbs(){
     const f = fi ? fi.f : { k, n: max };
     let last = 0; for (let i = 1; i <= max; i++) if (probFilled(f, d, i)) last = i;
     const shown = Math.min(max, Math.max(1, last, Number(d[k + "_n"]) || 0));
-    box.querySelectorAll(".prob").forEach(c => c.hidden = Number(c.dataset.i) > shown);
+    box.querySelectorAll(".prob").forEach(c => {
+      c.hidden = Number(c.dataset.i) > shown;
+      const sel = c.querySelector(".prob-addsub"); if (!sel) return;
+      const i = Number(c.dataset.i), off = probOff(d, f, i), xn = probXn(d, f, i);
+      c.querySelectorAll(".prob-sub").forEach(x => { const sk = x.dataset.sub; x.hidden = sk[0] === "x" && /^x\d+$/.test(sk) ? Number(sk.slice(1)) > xn : off.includes(sk); });
+      const opcoes = [...subsOf(f).filter(([sk]) => off.includes(sk)).map(([sk, sl]) => ["r:" + sk, sl]), ...(xn < PROB_XN ? [["x", "Outro (escrever o nome)"]] : [])];
+      sel.replaceChildren(el("option", { value: "", text: "+ Subtópico" }), ...opcoes.map(([v, l]) => el("option", { value: v, text: l })));
+      sel.value = ""; sel.parentElement.hidden = !opcoes.length;
+    });
     box.querySelector(".add-prob").hidden = shown >= max;
   });
 }
@@ -2279,6 +2360,31 @@ function onAddProb(e){
   const inp = document.getElementById("f_" + k + "_" + (shown + 1)); if (inp) inp.focus();
 }
 
+function onDelPsub(e){
+  const b = e.target.closest("[data-del-psub]"); if (!b || !cur()) return;
+  const [k, i, sk] = b.dataset.delPsub.split("|"), d = cur().data, f = { k, subs: (fieldsIndex.find(x => x.f.k === k && x.f.t === "problems") || {}).f?.subs };
+  const txt = String(d[`${k}_${i}_${sk}`] || "").trim() + (sk[0] === "x" ? String(d[`${k}_${i}_${sk}_l`] || "").trim() : "");
+  if (txt && !confirm("Apagar este subtópico e o que está escrito nele?")) return;
+  if (/^x\d+$/.test(sk)){
+    const n = probXn(d, f, i);
+    for (let y = Number(sk.slice(1)); y < n; y++){ d[`${k}_${i}_x${y}`] = d[`${k}_${i}_x${y + 1}`] || ""; d[`${k}_${i}_x${y}_l`] = d[`${k}_${i}_x${y + 1}_l`] || ""; }
+    delete d[`${k}_${i}_x${n}`]; delete d[`${k}_${i}_x${n}_l`]; d[`${k}_${i}_xn`] = String(Math.max(0, n - 1));
+  } else {
+    delete d[`${k}_${i}_${sk}`];
+    const off = probOff(d, f, i); if (!off.includes(sk)) off.push(sk); d[`${k}_${i}_off`] = off.join(",");
+  }
+  fillForm(); changed();
+}
+function onAddPsub(e){
+  const sel = e.target.closest("[data-add-psub]"); if (!sel || !cur() || !sel.value) return;
+  const [k, i] = sel.dataset.addPsub.split("|"), d = cur().data, f = { k }, v = sel.value;
+  let foco;
+  if (v === "x"){ const n = probXn(d, f, i) + 1; d[`${k}_${i}_xn`] = String(n); foco = `f_${k}_${i}_x${n}_l`; }
+  else { const sk = v.slice(2); d[`${k}_${i}_off`] = probOff(d, f, i).filter(x => x !== sk).join(","); foco = `f_${k}_${i}_${sk}`; }
+  fillForm(); changed();
+  const inp = document.getElementById(foco); if (inp) inp.focus();
+}
+
 function fillForm(){
   if (renderedSig !== store.mode + "|" + sigOf(TPL[store.mode], D())){ const y = window.scrollY; renderForm(); window.scrollTo({ top: y }); }
   const d = D();
@@ -2431,7 +2537,7 @@ function buildText(p = cur()){
               idx++;
               const title = String(d[f.k + "_" + i] || "").trim();
               gLines.push(`${idx}. ${title || "(problema sem título)"}`);
-              subsOf(f).forEach(([sk, sl]) => {
+              subsDe(f, d, i).forEach(([sk, sl]) => {
                 const v = String(d[f.k + "_" + i + "_" + sk] || "").trim();
                 if (v) gLines.push(`   - ${sl}: ${v.replace(/\n/g, "\n     ")}`);
               });
@@ -2580,6 +2686,8 @@ function fitProbAreas(on){
     t.style.height = "";
     if (on && t.value) t.style.height = (t.scrollHeight + 2) + "px";
   });
+  // nome dos subtópicos livres: largura do texto, para o ":" ficar colado
+  document.querySelectorAll("#form .prob-xl input").forEach(i => { i.style.width = on ? Math.max(2, i.value.length + 1) + "ch" : ""; });
 }
 addEventListener("beforeprint", () => fitProbAreas(true));
 addEventListener("afterprint", () => fitProbAreas(false));
@@ -6204,6 +6312,8 @@ form.addEventListener("input", onInput);
 form.addEventListener("change", onInput);
 form.addEventListener("click", onRadioClick);
 form.addEventListener("click", onAddProb);
+form.addEventListener("click", onDelPsub);
+form.addEventListener("change", onAddPsub);
 form.addEventListener("click", onAddOutline);
 form.addEventListener("click", onAddDiary);
 form.addEventListener("click", onAddRep);
