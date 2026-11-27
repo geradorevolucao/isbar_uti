@@ -1,7 +1,7 @@
 // Service worker do Anamnesia: permite instalar como aplicativo e abrir sem internet.
 // Página: rede primeiro (sempre a versão mais nova quando há conexão), cópia guardada sem conexão.
 // Pedidos a outros endereços (Supabase etc.) passam direto, sem cache.
-const CACHE = "anamnesia-v1";
+const CACHE = "anamnesia-v2";
 const ASSETS = ["./", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/maskable-512.png", "./icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
@@ -19,6 +19,7 @@ self.addEventListener("fetch", e => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  if (url.searchParams.has("versao")) return;   // conferência de versão nova: sempre da rede
   if (req.mode === "navigate") {
     e.respondWith(fetch(req).then(res => {
       if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put("./", copy)); }

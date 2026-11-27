@@ -37,12 +37,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 /* ---------- barra superior ---------- */
 header.top{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);padding:8px 16px 0;padding-top:calc(8px + env(safe-area-inset-top))}
-.top-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;max-width:980px;margin:0 auto}
+.top-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;max-width:var(--wmax);margin:0 auto}
 .brand{font-weight:700;color:var(--accent);font-size:1.05rem;margin-right:auto;white-space:nowrap}
 .status{font-size:.78rem;color:var(--muted);white-space:nowrap}
-.pt-row{display:flex;gap:8px;align-items:center;max-width:980px;margin:8px auto 0}
+.pt-row{display:flex;gap:8px;align-items:center;max-width:var(--wmax);margin:8px auto 0}
 .pt-row select{flex:1;min-width:0;height:40px;border:1px solid var(--line);border-radius:var(--radius);background:var(--field);padding:0 10px}
-nav.jump{display:flex;gap:6px;max-width:980px;margin:8px auto 0;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+nav.jump{display:flex;gap:6px;max-width:var(--wmax);margin:8px auto 0;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
 nav.jump a{flex:0 0 auto;text-decoration:none;color:var(--accent);background:var(--band);border-radius:999px;padding:5px 12px;font-size:.85rem;font-weight:600}
 
 .btn{height:40px;border:1px solid var(--line);background:var(--card);border-radius:var(--radius);padding:0 12px;cursor:pointer;white-space:nowrap}
@@ -133,7 +133,7 @@ body.locked #lock{display:block;max-width:460px;margin:24px auto;background:var(
 .search input{flex:1;min-width:0;height:40px;border:1px solid var(--line);border-radius:var(--radius);background:var(--field);padding:0 12px}
 .ptname{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .btn.back{padding:0 10px}
-.vtabs{display:flex;gap:4px;max-width:980px;margin:8px auto 0;background:var(--band);padding:3px;border-radius:var(--radius)}
+.vtabs{display:flex;gap:4px;max-width:var(--wmax);margin:8px auto 0;background:var(--band);padding:3px;border-radius:var(--radius)}
 .vtabs button{flex:1;border:0;background:transparent;color:var(--accent);font-weight:600;padding:8px;border-radius:var(--radius);cursor:pointer}
 .vtabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 body:not([data-view="chart"]) nav.jump{margin-bottom:8px}
@@ -199,6 +199,16 @@ body[data-view="list"] header.top,body[data-view="rx"] header.top{padding-bottom
 .h-note{font-size:.85rem;color:var(--muted);text-align:center;margin:8px 0 0}
 .h-first{margin:-8px 0 14px}
 #homeMenuStep{max-width:960px}
+/* telas largas (pedido do autor, 27/11/2026: no PC sobrava muito espaço em branco): o conteúdo usa mais da largura
+   e o menu inicial passa a 3 colunas */
+:root{--wmax:980px}
+@media (min-width:1280px){:root{--wmax:1220px}}
+@media (min-width:1600px){:root{--wmax:1440px}}
+@media (min-width:1100px){
+  #homeMenuStep{max-width:min(1320px,94vw)}
+  #homeMenuStep .h-menu{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #homeMenuStep .h-card{min-height:clamp(150px,26vh,240px)}
+}
 #homeMenuStep .h-step-t{font-size:clamp(1.6rem,3.4vw,2.4rem);margin-bottom:8px}
 #homeMenuStep .h-sub{max-width:none;margin:0 auto 32px;font-size:clamp(1rem,1.6vw,1.15rem);overflow-wrap:anywhere}
 .h-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
@@ -211,7 +221,7 @@ body[data-view="list"] header.top,body[data-view="rx"] header.top{padding-bottom
 .h-card-s{font-size:clamp(.95rem,1.4vw,1.08rem);color:var(--muted)}
 .h-card-n{margin-top:auto;font-size:.95rem;color:var(--muted)}
 body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .bottom{display:none}
-#ex{max-width:1100px;margin:0 auto}
+#ex{max-width:max(1100px,var(--wmax));margin:0 auto}
 .ex-form{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
 .ex-cab{margin:18px 2px 8px;font-weight:700;color:var(--accent)}
 .ex-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
@@ -243,6 +253,7 @@ body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .
 .ex-tab .u{display:block;color:var(--muted);font-weight:400;font-size:.68rem;line-height:1.1}
 .ex-tab td.alt{font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 11%,transparent)}
 .ex-tab td.vazio{color:var(--line)}
+.ex-emo{display:block;font-size:.95em;line-height:1;margin:0 0 1px;letter-spacing:1px}
 .ex-tab td.sp{width:1%;padding:3px 8px}
 .ex-spark{display:block;width:64px;height:20px}
 .ex-spark polyline{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
@@ -273,6 +284,10 @@ body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .
 .ex-graf .pt.alt{fill:#C62828}
 .ex-list{margin:0;padding-left:20px}
 .ex-list li{margin:6px 0;white-space:pre-line}
+/* aviso de versão nova (27/11/2026) */
+.nova-versao{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom));z-index:60;display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;max-width:calc(100% - 32px);padding:10px 14px;border-radius:var(--radius);background:var(--card);border:1px solid var(--accent);box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:.9rem}
+.nova-versao[hidden]{display:none}
+@media print{.nova-versao{display:none!important}}
 /* todos os leitos e culturas (pedido do autor, 27/11/2026) */
 :root{--ex-pos:#B71C1C;--ex-neg:#2E7D32;--ex-and:#9A6700}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--ex-pos:#F28B82;--ex-neg:#81C995;--ex-and:#E3B764}}
@@ -387,7 +402,7 @@ body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .
   body[data-view="ex"] .ex-sir{font-size:7pt}
   body[data-view="ex"] .ex-leg{font-size:6.8pt}
 }
-#sc{max-width:900px;margin:0 auto}
+#sc{max-width:max(900px,var(--wmax));margin:0 auto}
 .sc-cat h3{margin:18px 2px 8px;font-size:.95rem;color:var(--muted);font-weight:600}
 .sc-chips{display:flex;flex-wrap:wrap;gap:8px}
 .sc-chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:10px 16px;font:inherit;cursor:pointer;min-height:44px}
@@ -444,7 +459,7 @@ body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .
 @media (min-width:760px){.rxi-grid{grid-template-columns:repeat(12,minmax(0,1fr))}.rxf-desc{grid-column:span 12}.rxf-dose{grid-column:span 2}.rxf-via{grid-column:span 2}.rxf-freq{grid-column:span 2}.rxf-ini{grid-column:span 2}.rxf-hor{grid-column:span 4}.rxf-obs{grid-column:span 12}}
 #rxPrint{display:none}
 /* passômetro (pedido do autor, 15/11/2026): um box por leito, como a folha do CTI */
-#ps{max-width:980px;margin:0 auto}
+#ps{max-width:var(--wmax);margin:0 auto}
 .ps-box{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);overflow:hidden}
 .ps-h{background:var(--band);color:var(--accent);font-weight:700;text-align:center;padding:9px;letter-spacing:.04em;border-bottom:1px solid var(--line)}
 .ps-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr))}
@@ -563,7 +578,7 @@ body[data-view="ps"] #jump{display:none}
 .homebtn:hover{background:var(--band)}
 
 /* ---------- conteúdo ---------- */
-main{max-width:980px;margin:0 auto;padding:12px 16px}
+main{max-width:var(--wmax);margin:0 auto;padding:12px 16px}
 .notice{background:var(--warn-bg);color:var(--warn);border-radius:var(--radius);padding:10px 12px;font-size:.85rem;margin:8px 0 4px}
 section.sec{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin:18px 0;overflow:hidden;scroll-margin-top:180px}
 .sec-h{display:flex;align-items:center;gap:12px;background:var(--band);padding:0 14px 0 0}
@@ -617,7 +632,7 @@ fieldset.fld{border:0;margin:0;padding:0}
 .opt input:focus-visible+span{outline:3px solid var(--focus);outline-offset:2px}
 .hint{font-size:.72rem;color:var(--muted);margin:-4px 0 10px}
 
-footer.refs{max-width:980px;margin:0 auto;padding:0 16px 24px;font-size:.8rem;color:var(--muted)}
+footer.refs{max-width:var(--wmax);margin:0 auto;padding:0 16px 24px;font-size:.8rem;color:var(--muted)}
 footer.refs details{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px}
 footer.refs summary{cursor:pointer;font-weight:600;color:var(--accent)}
 footer.refs ol{padding-left:1.3rem;margin:8px 0 0}
@@ -625,7 +640,7 @@ footer.refs li{margin:4px 0}
 
 /* ---------- barra inferior ---------- */
 .bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
-.bottom .in{max-width:980px;margin:0 auto;display:flex;gap:8px}
+.bottom .in{max-width:var(--wmax);margin:0 auto;display:flex;gap:8px}
 .bottom .btn{flex:1;height:46px}
 @media (max-width:600px){.bottom .in{gap:6px}.bottom .btn{min-width:0;padding:4px 8px;white-space:normal;line-height:1.15;font-size:.88rem}}
 
@@ -1070,6 +1085,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 </dialog>
 
 <div class="toast" id="toast" role="status"></div>
+<div class="nova-versao" id="novaVersao" role="status" hidden><span>Há uma versão nova do Anamnesia.</span><button class="btn primary" type="button" id="novaVersaoGo">Recarregar</button></div>
 
 <script>
 (() => {
@@ -1082,6 +1098,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
    por natureza; a proteção vem do login + Row Level Security + criptografia.
    Se deixar em branco, o app pede esses dados em "Conta e sincronização".
    ===================================================================== */
+// versão do site: trocar a cada mudança publicada (o aviso de versão nova compara este texto com o do servidor)
+const APP_VERSAO = "2026-11-27d";
 const SYNC_URL = "https://lykqudxhjnvsiprrkinh.supabase.co";
 const SYNC_ANON_KEY = "sb_publishable_DR4jR2oJ8ll253P-7lwZsw_UhYI2KEI";   // chave publishable do projeto (pública por natureza)
 
@@ -5589,6 +5607,26 @@ const exPos = sigla => EX_POS.has(sigla) ? EX_POS.get(sigla) : EX_POS.size;
 // cultura: pelo nome do exame/material ou, desde 27/11/2026, por um microrganismo no resultado em texto
 const exEhCultura = r => /cultur|antibiogram|bacterioscop|\bgram\b|teste de sensibilidade|\btsa\b|aspirado traqueal|ponta de cateter|lavado broncoalveolar|\bswab\b/.test(normTxt(`${r.grupo || ""} ${r.exame || ""}`))
   || (!r.pendente && BIO.numero(String(r.resultado || "")) === null && !!exMicro(String(r.resultado || "")));
+// marcadores na tabela (pedido do autor, 27/11/2026): 🔥 potássio acima de 6, 🩸 hemoglobina abaixo de 7 e ⚠️ mudança brusca
+// em relação ao exame anterior (creatinina subindo, hemoglobina caindo). Limiares:
+//  - K > 6,0 mmol/L (limiar do autor; hipercalemia moderada a partir de 6,0 – UK Kidney Association, Clinical Practice
+//    Guidelines: Treatment of Acute Hyperkalaemia in Adults, 2020);
+//  - Hb < 7 g/dL (limiar do autor; limiar transfusional restritivo – Carson JL et al., AABB International Guidelines, JAMA 2023);
+//  - creatinina: aumento ≥ 0,3 mg/dL em até 48 h ou ≥ 1,5 × o valor anterior em até 7 dias (critério de LRA do KDIGO 2012);
+//  - hemoglobina: queda ≥ 2 g/dL em relação ao exame anterior, até 7 dias antes (critério de sangramento maior da ISTH,
+//    Schulman S, Kearon C. J Thromb Haemost 2005).
+const EX_EMO_LEG = "🔥 potássio > 6 mmol/L · 🩸 hemoglobina < 7 g/dL · ⚠️ mudança brusca em relação ao exame anterior: creatinina ↑ ≥ 0,3 mg/dL em até 48 h ou ≥ 1,5× em até 7 dias (KDIGO 2012); hemoglobina ↓ ≥ 2 g/dL em até 7 dias (ISTH, Schulman 2005). Limiares de K e Hb: UKKA 2020; AABB 2023.";
+const exNum = v => String(v).replace(".", ",");
+function exEmojis(s, pt){
+  const out = [], i = s.pontos.indexOf(pt), ant = i > 0 ? s.pontos[i - 1] : null, dias = ant ? pt.ord - ant.ord : Infinity;
+  if (s.sigla === "K" && pt.valor > 6) out.push(["🔥", "Potássio acima de 6"]);
+  if (s.sigla === "Hb" && pt.valor < 7) out.push(["🩸", "Hemoglobina abaixo de 7"]);
+  if (ant && s.sigla === "Cr" && ((pt.valor - ant.valor >= 0.3 - 1e-9 && dias <= 2) || (ant.valor > 0 && pt.valor >= 1.5 * ant.valor - 1e-9 && dias <= 7)))
+    out.push(["⚠️", `Creatinina subiu de ${exNum(ant.valor)} (${ant.data.slice(0, 5)}) para ${exNum(pt.valor)}`]);
+  if (ant && s.sigla === "Hb" && ant.valor - pt.valor >= 2 - 1e-9 && dias <= 7)
+    out.push(["⚠️", `Hemoglobina caiu de ${exNum(ant.valor)} (${ant.data.slice(0, 5)}) para ${exNum(pt.valor)}`]);
+  return out;
+}
 // tabela evolutiva (um cartão por grupo) de uma busca; lim = últimas N datas (0 = todas)
 function exTabelas(u, lim){
   // exames nas linhas, datas nas colunas (mais recente à direita), um cartão por grupo
@@ -5598,6 +5636,7 @@ function exTabelas(u, lim){
   const cols = lim ? datas.slice(-lim) : datas;
   const ordem = todas.slice().sort((a, b) => exPos(a.sigla) - exPos(b.sigla) || (a.sigla < b.sigla ? -1 : a.sigla > b.sigla ? 1 : 0));
   // até EX_MAXCOL datas por parte, para caber em A4 em pé; partes de tamanho parecido
+  let usouEmo = false;
   const nb = Math.ceil(cols.length / EX_MAXCOL), tam = Math.ceil(cols.length / (nb || 1)), blocos = [];
   for (let i = 0; i < cols.length; i += tam) blocos.push(cols.slice(i, i + tam));
   const nos = !cols.length
@@ -5613,12 +5652,17 @@ function exTabelas(u, lim){
             const pts = bc.map(d => s.pontos.find(p => p.data === d)), ult = pts.reduce((k, p, i) => p ? i : k, -1);
             return el("tr", {},
               el("th", { scope: "row", title: s.nome || s.sigla }, el("span", { text: s.sigla }), s.unidade ? el("span", { class: "u", text: s.unidade }) : null),
-              ...pts.map((pt, i) => el("td", { class: pt ? [pt.alterado ? "alt" : "", i === ult ? "ult" : ""].join(" ").trim() : "vazio", text: pt ? exTxt(pt.texto) + (pt.alterado ? "*" : "") : "–" })),
+              ...pts.map((pt, i) => { if (!pt) return el("td", { class: "vazio", text: "–" });
+                const emo = exEmojis(s, pt); if (emo.length) usouEmo = true;
+                return el("td", { class: [pt.alterado ? "alt" : "", i === ult ? "ult" : ""].join(" ").trim(), title: emo.map(e => e[1]).join(" · ") || null },
+                  emo.length ? el("span", { class: "ex-emo", "aria-label": emo.map(e => e[1]).join(". "), text: emo.map(e => e[0]).join("") }) : null,
+                  document.createTextNode(exTxt(pt.texto) + (pt.alterado ? "*" : ""))); }),
               el("td", { class: "sp" }, exSpark(pts.filter(Boolean))));
           }))))));
       return [blocos.length > 1 ? el("p", { class: "ex-parte", text: `Datas ${bc[0].slice(0, 5)} a ${bc[bc.length - 1].slice(0, 5)} (parte ${bi + 1} de ${blocos.length})` }) : null,
         el("div", { class: "ex-cards" + (bc.length <= 4 ? " dois" : " um") }, ...cards)].filter(Boolean);
     });
+  if (usouEmo) nos.push(el("p", { class: "sub ex-nota ex-emo-leg", text: EX_EMO_LEG }));
   return { nos, ordem };
 }
 // culturas liberadas, culturas/antibiogramas em andamento e os demais pendentes
@@ -5934,6 +5978,21 @@ $("#btnAdm").addEventListener("click", () => {
   $("#dlgTitle").textContent = "Texto de admissão"; dlg.showModal();
 });
 
+/* ---------- aviso de versão nova (27/11/2026) ----------
+   A página fica aberta por muito tempo (aba do PC, app do Android) e só troca de versão quando é recarregada.
+   Ao voltar para a aba e a cada 30 min, compara APP_VERSAO com a do servidor e, se mudou, oferece "Recarregar". */
+async function versaoConfere(){
+  if ((location.protocol !== "https:" && location.hostname !== "localhost") || !navigator.onLine) return;
+  try {
+    const r = await fetch(location.pathname + "?versao=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) return;
+    const m = /const APP_VERSAO = "([^"]+)"/.exec(await r.text());
+    if (m && m[1] !== APP_VERSAO) $("#novaVersao").hidden = false;
+  } catch(e){ /* sem conexão: tenta depois */ }
+}
+$("#novaVersaoGo").addEventListener("click", () => location.reload());
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") versaoConfere(); });
+setInterval(versaoConfere, 30 * 60 * 1000);
 /* =====================================================================
    INICIALIZAÇÃO
    ===================================================================== */
