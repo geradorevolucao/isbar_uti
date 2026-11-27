@@ -355,6 +355,15 @@ body[data-view="ck"] .bottom,body[data-view="sc"] .bottom,body[data-view="ex"] .
 .ex-and::before{content:"";width:9px;height:9px;border-radius:50%;background:#C99A00;flex:none}
 .ex-leg{margin:6px 2px 0;font-size:.74rem;color:var(--muted)}
 #exAll[hidden],#exTodosBox[hidden],#exUmBox[hidden]{display:none}
+/* colar do MV (pedido do autor, 27/11/2026) */
+.mv-h{margin:14px 0 6px;font-size:.85rem;color:var(--accent)}
+.mv-rows{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.mv-rows label{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);cursor:pointer}
+.mv-rows input{width:20px;height:20px;flex:none;margin-top:2px;accent-color:var(--accent)}
+.mv-rows b{display:block;color:var(--accent);font-size:.85rem}
+.mv-rows small{display:block;color:var(--muted);font-size:.8rem;white-space:pre-line;overflow-wrap:anywhere;max-height:5.6em;overflow:hidden}
+.mv-rows .ja{color:#9A6700;font-size:.75rem}
+#mvPrev[hidden],#mvSobraBox[hidden]{display:none}
 .ia-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:700px){.ia-cols{grid-template-columns:1fr}}
 .ia-cols textarea{min-height:12em}
@@ -782,6 +791,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
         <button type="button" data-act="newday" hidden></button>
         <button type="button" data-act="std" hidden>Preencher com o texto padrão</button>
         <button type="button" data-act="rx-newday" data-views="rx">Nova proposta do dia</button>
+        <button type="button" data-act="colarmv" data-views="chart">Colar do MV (preencher os blocos)</button>
         <button type="button" data-act="biomega" data-views="chart">Exames do Biomega</button>
         <button type="button" data-act="escores" data-views="chart">Calcular escores deste paciente</button>
         <button type="button" data-act="ia-contexto" hidden>IA: atualizar o contexto</button>
@@ -1026,6 +1036,25 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   </div>
 </dialog>
 
+<dialog id="mvDlg" aria-labelledby="mvDlgTitle">
+  <div class="dlg">
+    <header>
+      <h3 id="mvDlgTitle">Colar do MV</h3>
+      <button class="btn" type="button" id="mvClose" aria-label="Fechar">✕</button>
+    </header>
+    <div class="acct-body acct">
+      <p class="sub">Copie a evolução no MV (Ctrl+A, Ctrl+C) e cole abaixo. Cada tópico vai para o bloco correspondente da ficha. Confira a lista antes de aplicar: campos já preenchidos só são trocados se você marcar.</p>
+      <div class="fld"><label for="mvTxt">Texto copiado do MV</label><div class="inp"><textarea id="mvTxt" rows="9" spellcheck="false"></textarea></div></div>
+      <div id="mvPrev" hidden>
+        <h4 class="mv-h">O que vai para cada bloco</h4>
+        <ul class="mv-rows" id="mvRows"></ul>
+        <div id="mvSobraBox" hidden><h4 class="mv-h">Trechos sem bloco correspondente (não entram; copie se precisar)</h4><div class="inp"><textarea id="mvSobra" rows="4" readonly></textarea></div></div>
+      </div>
+      <p class="msg" id="mvMsg" role="status"></p>
+      <div class="acts"><button class="btn primary" type="button" id="mvApply" disabled>Aplicar na ficha</button></div>
+    </div>
+  </div>
+</dialog>
 <dialog id="iaDlg" aria-labelledby="iaDlgTitle">
   <div class="dlg">
     <header>
@@ -1115,7 +1144,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
    Se deixar em branco, o app pede esses dados em "Conta e sincronização".
    ===================================================================== */
 // versão do site: trocar a cada mudança publicada (o aviso de versão nova compara este texto com o do servidor)
-const APP_VERSAO = "2026-11-27f";
+const APP_VERSAO = "2026-11-27g";
 const SYNC_URL = "https://lykqudxhjnvsiprrkinh.supabase.co";
 const SYNC_ANON_KEY = "sb_publishable_DR4jR2oJ8ll253P-7lwZsw_UhYI2KEI";   // chave publishable do projeto (pública por natureza)
 
@@ -2737,6 +2766,7 @@ function onMenu(act){
     case "opencode": openCodeDlg(); break;
     case "biomega": openBioDlg(); break;
     case "escores": scPac = store.currentBy[store.mode] || ""; setView("sc"); break;
+    case "colarmv": mvAbre(); break;
     case "ia-contexto": iaAbrir("contexto"); break;
     case "ia-escrita": iaAbrir("escrita"); break;
     case "ia-condutas": iaAbrir("condutas"); break;
@@ -4865,11 +4895,259 @@ function menuState(){
   const nd = $('[data-act="newday"]');
   nd.hidden = !(view === "chart" && t && t.newDay); if (t && t.newDay) nd.textContent = t.newDay;
   $('[data-act="std"]').hidden = !(view === "chart" && t && hasStd(t, p.data));
+  $('[data-act="colarmv"]').hidden = !(view === "chart" && p && (p.tpl === "cti" || p.tpl === "enf"));
   ["contexto", "escrita", "condutas"].forEach(k => { $(`[data-act="ia-${k}"]`).hidden = !(view === "chart" && iaOk && p && iaCampo(k, p)); });
   $('[data-act="clear"]').textContent = t && t.limparAR ? "Limpar avaliação e recomendações (A e R)" : "Limpar campos do prontuário (mantém nome e leito)";
   const hasGroups = !!(t && modelOf(t, p.data).some(s => s.groups.some(g => g.title)));
   $('[data-act="expand"]').hidden = $('[data-act="collapse"]').hidden = !(view === "chart" && hasGroups);
 }
+
+/* =====================================================================
+   COLAR DO MV (pedido do autor, 27/11/2026)
+   O autor copia a evolução do MV e cola aqui; cada tópico vai para o bloco da ficha. O texto do MV vem com as linhas
+   quebradas no meio das frases (largura fixa) e mistura os títulos do modelo do MV ("Antibióticos:", "Evolução diária:",
+   "Descrição do exame:", "Alergia: Não") com os do texto do Anamnesia ("| Situação:", "| Contexto:", "» Comorbidades:",
+   "a) Laboratoriais:", "| Condutas:"). Antes de aplicar, mostra o destino de cada trecho; campo já preenchido só é
+   trocado se o autor marcar. Trechos sem bloco correspondente aparecem à parte para copiar à mão.
+   ===================================================================== */
+const MV_TIT = [
+  [/^(?:situa[cç][aã]o|lista de problemas(?:\s*\/\s*hma)?|problemas)\s*:?\s*$/i, "prob"],
+  [/^identifica[cç][aã]o\s*:?\s*$/i, "ident"],
+  [/^(?:contexto|hma|hist[oó]ria da doen[cç]a atual)\s*:?\s*$/i, "ctx"],
+  [/^antimicrobianos em uso\s*:\s*(.*)$/i, "atbs"],
+  [/^antimicrobianos pr[eé]vios\s*:\s*(.*)$/i, "atbp"],
+  [/^antecedentes(?: pr[eé]vios)?\s*:?\s*$/i, "ant"],
+  [/^(?:evolu[cç][aã]o di[aá]ria|evolu[cç][aã]o)\s*:?\s*$/i, "evol"],
+  [/^(?:descri[cç][aã]o do exame|ao exame|exame f[ií]sico)\s*:?\s*$/i, "exame"],
+  [/^exames complementares\s*:?\s*$/i, "ec"],
+  [/^(?:condutas?|conduta do dia|plano)\s*:?\s*$/i, "cond"],
+  [/^(?:antibi[oó]ticos|hist[oó]ria pregressa.*|subst[aâ]ncias al[eé]rgicas|sinais vitais|protocolos multidisciplinares|avalia[cç][aã]o do risco.*|evolu[cç][aã]o m[eé]dica|#.*)\s*:?\s*$/i, "skip"]];
+const MV_NOVO = /^\s*([-•»#]|\d{1,2}[).]\s|[a-e]\)\s|\(\d{1,2}\/\d{1,2}|\d{2}\/\d{2}\/\d{4}\s*[-–])/i;
+// junta as linhas quebradas pelo MV: linha nova só quando começa com marcador, número, data ou depois de linha vazia
+function mvJunta(ls){
+  const out = [];
+  ls.forEach(l => {
+    const t = l.trim();
+    if (!t){ if (out.length && out[out.length - 1].t !== "") out.push({ t: "", ind: 0 }); return; }
+    const ind = l.length - l.trimStart().length;
+    if (!out.length || out[out.length - 1].t === "" || MV_NOVO.test(l)) out.push({ t, ind });
+    else out[out.length - 1].t += " " + t;
+  });
+  while (out.length && out[out.length - 1].t === "") out.pop();
+  return out;
+}
+const mvData = t => { const m = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(t || ""); return m ? `${m[3]}-${pad2(m[2])}-${pad2(m[1])}` : ""; };
+const mvPara = its => its.map(x => x.t).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+function mvParse(txt, p){
+  const d = p.data, cti = p.tpl === "cti", adm = !cti && enfMom(d) === "Admissão";
+  const model = modelOf(TPL[p.tpl], d), mk = new Set(), fk = {};
+  eachField(model, f => { keysOf(f).forEach(k => mk.add(k)); fk[f.k] = f; });
+  const tem = k => mk.has(k), ach = (...ks) => ks.find(tem);
+  // 1) separa por títulos
+  const secs = {}; let sec = "topo";
+  txt.replace(/\r/g, "").split("\n").forEach(raw => {
+    const t = raw.trim().replace(/^\|\s*/, "");
+    const h = MV_TIT.find(([re]) => re.test(t));
+    if (h){ sec = h[1]; secs[sec] = secs[sec] || []; const m = t.match(h[0]); if (m[1] && m[1].trim()) secs[sec].push(m[1].trim()); return; }
+    (secs[sec] = secs[sec] || []).push(raw.replace(/\s+$/, ""));
+  });
+  const rows = [], sobras = [], vals = {};   // vals: chave → valor dos campos simples
+  const sobra = (onde, t) => { if (t && t.trim() && !/^-$/.test(t.trim())) sobras.push((onde ? onde + ": " : "") + t.trim()); };
+  const put = (k, v, rotulo) => { if (k && tem(k) && v != null && String(v).trim() !== "") vals[k] = { v: String(v).trim(), rotulo: rotulo || (fk[k] && fk[k].l) || k }; else if (v) sobra(rotulo, String(v)); };
+  // 2) identificação e cabeçalho do MV (só para campos vazios por padrão)
+  const ident = [...(secs.ident || []), ...(secs.topo || []), ...(secs.skip || [])];
+  [...(secs.prob || []).filter(l => /^\s*(nome|idade|sexo|peso|leito)\s*:/i.test(l))].forEach(l => ident.push(l));
+  // linha a linha (sem juntar): no MV os sinais vitais vêm em colunas separadas por vários espaços
+  ident.map(l => l.trim().replace(/^\|\s*/, "")).filter(Boolean).forEach(t => t.split(/\s+\|\s+|\s{3,}/).forEach(par => {
+    const m = /^\s*([A-Za-zÀ-ú0-9. \/-]+?)\s*:\s*(.+)$/.exec(par); if (!m) return;
+    const c = normTxt(m[1]), v = m[2].trim();
+    if (/^(nome|paciente)$/.test(c)) put("nome", v, "Nome");
+    else if (c === "idade") put("idade", (v.match(/\d+/) || [""])[0], "Idade");
+    else if (c === "sexo") put("sexo", /^f/i.test(v) ? "F" : /^m/i.test(v) ? "M" : "", "Sexo");
+    else if (c === "peso") put("peso", (v.match(/[\d,.]+/) || [""])[0], "Peso");
+    else if (c === "altura") put("altura", (v.match(/[\d,.]+/) || [""])[0], "Altura");
+    else if (c === "leito") put("leito", v, "Leito");
+    else if (c === "dih") put("dih", (v.match(/\d+/) || [""])[0], "DIH");
+    else if (/^(admissao scbh|admissao|dt\. internacao|data de admissao)$/.test(c)) put("adm_hosp", mvData(v), "Admissão hospitalar");
+    else if (/^admissao (cti|uec)$/.test(c)) put("adm_cti", mvData(v), "Admissão no CTI");
+    else if (c === "pa"){ const q = /(\d{2,3})\s*\/\s*(\d{2,3})/.exec(v); if (q){ put("pas", q[1], "PA sistólica"); put("pad", q[2], "PA diastólica"); } }
+    else if (c === "fc") put("fc", (v.match(/\d+/) || [""])[0], "FC");
+    else if (c === "fr") put(ach("fr_pac", "fr"), (v.match(/\d+/) || [""])[0], "FR");
+    else if (c === "spo2") put("spo2", (v.match(/\d+/) || [""])[0], "SpO2");
+    else if (/^(tax|tmax|temperatura)$/.test(c) && /^\d/.test(v)) put(ach("tmax", "tax"), (v.match(/\d+(?:[.,]\d)?/) || [""])[0], "Temperatura");
+    else if (c === "alergia" && /^(nao|não|nega)/i.test(v) && !vals.alergias_sn) { if (cti) put("alergias_sn", "Não", "Alergias"); else put("alergias", "Nega", "Alergias"); }
+  }));
+  // 3) problemas / situações
+  const probs = []; const fP = fk.prob;
+  mvJunta((secs.prob || []).filter(l => !/^\s*(nome|idade|sexo|peso|leito)\s*:/i.test(l))).forEach(({ t }) => {
+    if (!t || /^#/.test(t)) return;
+    let m = /^(\d{1,2})[).]\s*(.+)$/.exec(t);
+    if (m){ probs.push({ t: m[2].trim(), subs: [] }); return; }
+    m = /^[-•»]\s*([^:]{1,40}):\s*(.*)$/.exec(t);
+    if (m && probs.length && fP && subsOf(fP).length){ probs[probs.length - 1].subs.push([m[1].trim(), m[2].trim()]); return; }
+    if (m && probs.length){ sobra("Problema " + probs.length, t); return; }
+    probs.push({ t: t.replace(/^[-•»]\s*/, ""), subs: [] });
+  });
+  if (probs.length && fP) rows.push({ id: "prob", rotulo: adm ? "Situação" : (cti ? "Lista de problemas ativos" : "Lista de problemas"), resumo: probs.map((x, i) => `${i + 1}) ${x.t}` + x.subs.map(([l, v]) => `\n   - ${l}: ${v}`).join("")).join("\n"),
+    vazio: () => !Array.from({ length: fP.n }, (_, i) => probFilled(fP, d, i + 1)).some(Boolean),
+    aplicar(){ probKeys(fP).forEach(k => delete d[k]);
+      probs.slice(0, fP.n).forEach((x, n) => { const i = n + 1; d[`prob_${i}`] = x.t; let xn = 0;
+        x.subs.forEach(([l, v]) => { const sd = subsOf(fP).find(([, sl]) => normTxt(sl) === normTxt(l));
+          if (sd) d[`prob_${i}_${sd[0]}`] = v; else if (xn < PROB_XN){ xn++; d[`prob_${i}_x${xn}_l`] = l; d[`prob_${i}_x${xn}`] = v; } });
+        if (xn) d[`prob_${i}_xn`] = String(xn); });
+      d.prob_n = String(Math.min(fP.n, probs.length)); } });
+  // 4) contexto
+  if (secs.ctx) put(ach(cti ? "motivo" : "contexto", "contexto", "motivo"), mvPara(mvJunta(secs.ctx)), "Contexto");
+  // 5) antimicrobianos
+  const atbLista = (k, linhas) => {
+    const its = mvJunta(linhas || []).map(x => x.t.replace(/^[-•»]\s*/, "")).filter(x => x && x !== "-"); if (!its.length || !fk[k]) return;
+    const itens = its.map(x => { const partes = x.split(/\s*\|\s*/); const o = { nome: partes[0] };
+      partes.slice(1).forEach(q => { if (/^d1/i.test(q)) o.d1 = mvData(q); else if (/^in[ií]cio/i.test(q)) o.ini = mvData(q); else if (/^t[eé]rmino|^fim/i.test(q)) o.fim = mvData(q); }); return o; });
+    rows.push({ id: k, rotulo: fk[k].l, resumo: itens.map(o => "- " + [o.nome, o.d1 && "D1 " + brDate(o.d1), o.ini && "início " + brDate(o.ini), o.fim && "término " + brDate(o.fim)].filter(Boolean).join(" | ")).join("\n"),
+      vazio: () => !Array.from({ length: fk[k].n }, (_, i) => String(d[`${k}_${i + 1}_nome`] || "").trim()).some(Boolean),
+      aplicar(){ keysOf(fk[k]).forEach(x => delete d[x]); itens.slice(0, fk[k].n).forEach((o, n) => Object.entries(o).forEach(([c, v]) => { if (v) d[`${k}_${n + 1}_${c}`] = v; })); d[k + "_n"] = String(Math.min(fk[k].n, itens.length)); } });
+  };
+  atbLista("atbs", secs.atbs); atbLista("atbp", secs.atbp);
+  // 6) antecedentes (linhas "» Rótulo: valor")
+  mvJunta(secs.ant || []).forEach(({ t }) => {
+    const m = /^[-•»]?\s*([^:]{1,40}):\s*(.*)$/.exec(t); if (!m){ sobra("Antecedentes", t); return; }
+    const c = normTxt(m[1]), v = m[2].trim(); if (!v) return;
+    if (/^(comorbidades|hpp)/.test(c)) put("comorb", v, "Comorbidades");
+    else if (/^(medicac|muc)/.test(c)) put(ach("meds", "muc"), v, "Medicações de uso contínuo");
+    else if (/^alergia/.test(c)){ if (cti){ if (/^(nega|nao|não)/i.test(v)) put("alergias_sn", "Não", "Alergias"); else { put("alergias_sn", "Sim", "Alergias"); put("alergias", v, "Alergias – quais"); } } else put("alergias", v, "Alergias"); }
+    else if (/^social|^habitos/.test(c)) put(ach("social", adm ? "hse" : "habitos", "habitos", "hse"), v, cti ? "Social" : adm ? "HSE" : "Hábitos");
+    else if (c === "hse") put(ach("hse", "habitos", "social"), v, "HSE");
+    else if (c === "hf") put("hf", v, "HF");
+    else if (/^cirurgias/.test(c)) put("cirurgias", v, "Cirurgias prévias");
+    else sobra("Antecedentes", t);
+  });
+  // 7) evolução do dia
+  if (secs.evol){
+    const its = mvJunta(secs.evol);
+    if (cti && fk.evint){
+      const ent = []; its.forEach(({ t }) => { const m = /^(\d{2}\/\d{2}\/\d{4})\s*[-–]\s*(.+)$/.exec(t); if (m) ent.push({ dt: mvData(m[1]), t: m[2] }); else if (t) { if (ent.length && !ent[ent.length - 1].novo) ent.push({ dt: todayISO(), t, novo: true }); else if (ent.length) ent[ent.length - 1].t += "\n" + t; else ent.push({ dt: todayISO(), t, novo: true }); } });
+      if (ent.length) rows.push({ id: "evint", rotulo: "Evolução da internação (novos registros)", resumo: ent.map(x => brDate(x.dt) + " – " + x.t).join("\n"), vazio: () => true,
+        aplicar(){ const n0 = Number(d.evint_n) || 0, tem = new Set(Array.from({ length: 40 }, (_, i) => String(d[`evint_${i + 1}`] || "").trim()).filter(Boolean)); let n = 0;
+          for (let i = 1; i <= 40; i++) if (String(d[`evint_${i}`] || "").trim()) n = i; n = Math.max(n, 0);
+          ent.forEach(x => { if (tem.has(x.t.trim()) || n >= 40) return; n++; d[`evint_${n}`] = x.t; d[`evint_${n}_d`] = x.dt; });
+          d.evint_n = String(Math.max(n0, n)); } });
+    } else put(ach("evol"), mvPara(its), "Evolução diária");
+  }
+  // 8) exame físico (linhas "» Sistema: achados")
+  mvJunta(secs.exame || []).forEach(({ t }) => {
+    const m = /^[-•»]?\s*([^:]{2,40}):\s*(.*)$/.exec(t); if (!m){ sobra("Exame", t); return; }
+    const c = normTxt(m[1]), v = m[2].trim(), seg = v.split(/\s+\|\s+/); if (!v) return;
+    if (/^dados vitais|^sinais vitais/.test(c)){ seg.forEach(x => { const q = /^([^:]+):\s*(.+)$/.exec(x); if (!q) return; const cc = normTxt(q[1]);
+      if (cc === "pa"){ const pq = /(\d{2,3})\s*\/\s*(\d{2,3})/.exec(q[2]); if (pq){ put("pas", pq[1], "PA sistólica"); put("pad", pq[2], "PA diastólica"); } }
+      else if (cc === "fc") put("fc", (q[2].match(/\d+/) || [""])[0], "FC"); else if (cc === "fr") put(ach("fr_pac", "fr"), (q[2].match(/\d+/) || [""])[0], "FR");
+      else if (cc === "spo2") put("spo2", (q[2].match(/\d+/) || [""])[0], "SpO2"); else if (/^(tmax|tax)$/.test(cc)) put(ach("tmax", "tax"), (q[2].match(/\d+(?:[.,]\d)?/) || [""])[0], "Temperatura");
+      else if (/glicemias/.test(cc)) put("hgt", q[2], "Glicemias capilares"); else if (cc === "o2") put("o2", q[2], "Suporte de O2"); else if (/^dor/.test(cc)) put("dor_evn", q[2], "Dor (EVN)"); });
+      return; }
+    if (!cti){   // enfermaria: cada sistema no seu campo de texto
+      const alvo = /^ectoscopia|^geral/.test(c) ? "ef_geral" : /^cardio/.test(c) ? "ef_acv" : /^respir/.test(c) ? "ef_ar" : /^abdome|^gastro/.test(c) ? "ef_abd" : /^extrem/.test(c) ? "ef_ext" : /^neuro/.test(c) ? "ef_neuro" : /^outros|^pele/.test(c) ? "ef_outros" : null;
+      if (alvo) put(alvo, v, m[1].trim()); else sobra("Exame", t); return; }
+    // CTI: campos estruturados quando o texto é claro; o resto no texto livre do sistema ou à parte
+    if (/^neuro/.test(c)){ const resto = [];
+      seg.forEach(x => { let q;
+        if ((q = /glasgow\s*\d*T?\s*\(\s*O\s*(\d)\s*V\s*(\d|T)\s*M\s*(\d)\s*\)/i.exec(x))){ put("neuro_escala", "Glasgow", "Escala neurológica"); put("gcs_o", q[1], "Glasgow O"); put("gcs_v", q[2].toUpperCase(), "Glasgow V"); put("gcs_m", q[3], "Glasgow M"); }
+        else if ((q = /^RASS\s*([+−-]?\s*\d)/i.exec(x))){ put("neuro_escala", "RASS", "Escala neurológica"); put("rass", q[1].replace(/\s/g, "").replace("−", "-").replace(/^(\d)/, m0 => m0 === "0" ? "0" : "+" + m0), "RASS"); }
+        else if ((q = /^pupilas\s+(\S+)/i.exec(x)) && ["Miose", "Isocóricas", "Midríase", "Anisocóricas"].find(o => normTxt(o) === normTxt(q[1]))) put("pupilas", ["Miose", "Isocóricas", "Midríase", "Anisocóricas"].find(o => normTxt(o) === normTxt(q[1])), "Pupilas");
+        else if ((q = /^CAM-ICU\s+(.+)/i.exec(x))) put("cam", q[1].toLowerCase(), "CAM-ICU");
+        else resto.push(x); });
+      if (resto.length) sobra("Neurológico", resto.join(" | ")); return; }
+    if (/^respir/.test(c)){ const resto = [];
+      seg.forEach(x => { let q;
+        if (/^em ar ambiente$/i.test(x)) put("vent_modo", "AA", "Suporte ventilatório");
+        else if ((q = /^suporte ventilat[oó]rio com CNBF(?: a ([\d,.]+) L\/min)?/i.exec(x))){ put("vent_modo", "CNBF", "Suporte ventilatório"); if (q[1]) put("cn_l", q[1], "Fluxo do CNBF"); }
+        else if ((q = /^TOT(?: \((.+)\))?$/.exec(x))){ put("tot", "SIM", "TOT"); if (q[1]) put("tot_data", q[1], "TOT – data"); }
+        else if ((q = /^TQT(?: \((.+)\))?$/.exec(x))){ put("tqt", "SIM", "TQT"); if (q[1]) put("tqt_data", q[1], "TQT – data"); }
+        else resto.push(x); });
+      if (resto.length) put("ausculta", resto.join(" | "), "Ausculta"); return; }
+    if (/^cardio/.test(c)){ const resto = [];
+      seg.forEach(x => { let q;
+        if (/^ritmo/i.test(x)) put("ritmo", x, "Ritmo");
+        else if ((q = /^TEC:\s*([\d,.]+)\s*s?$/i.exec(x))) put("tec", q[1], "TEC");
+        else if ((q = /^livedo\s+(.+)/i.exec(x))) put("livedo", q[1], "Livedo");
+        else if ((q = /^fluidorresponsividade\/POCUS:\s*(.+)/i.exec(x))) put("pocus", q[1], "POCUS");
+        else resto.push(x); });
+      if (resto.length) put("cardio_ex", resto.join(" | "), "Hemodinâmica"); return; }
+    if (/^extrem/.test(c)){ put("extrem", v, "Extremidades"); return; }
+    sobra(m[1].trim(), v);   // gastrointestinal e outros: o CTI usa campos de seleção (dieta etc.)
+  });
+  // 9) exames complementares: a) laboratoriais, b) imagem, c) culturas/outros
+  const ecs = {}; let sub = null;
+  mvJunta(secs.ec || []).forEach(({ t }) => {
+    const m = /^([a-e])\)\s*([^:]+):?\s*(.*)$/i.exec(t);
+    if (m){ const c = normTxt(m[2]); sub = /^lab/.test(c) ? "lab" : /^imagem/.test(c) ? "img" : /^cultura/.test(c) ? "cult" : "out"; ecs[sub] = ecs[sub] || []; if (m[3]) ecs[sub].push(m[3]); return; }
+    (ecs[sub || "out"] = ecs[sub || "out"] || []).push(t);
+  });
+  if (ecs.lab) put(ach("ec_lab", "ext_lab"), ecs.lab.filter(Boolean).map(x => x.replace(/^-\s*(?=\()/, "")).join("\n"), "Laboratoriais");
+  if (ecs.img) put(ach("imagem", "ec_img", "ext_img"), ecs.img.join("\n").replace(/\n{3,}/g, "\n\n").trim(), "Imagem");
+  if (ecs.cult) put(ach("culturas", "ec_outros"), ecs.cult.join("\n").trim(), "Culturas");
+  if (ecs.out) put(ach("ec_outros"), ecs.out.join("\n").trim(), "Outros exames");
+  // 10) condutas ("- conduta" e, embaixo, "» sub" ou "   - sub")
+  const conds = [];
+  mvJunta(secs.cond || []).forEach(({ t, ind }) => {
+    if (!t) return;
+    const ehSub = /^»/.test(t) || (ind >= 2 && /^[-•]/.test(t) && conds.length);
+    const txt = t.replace(/^[-•»]\s*/, "");
+    if (ehSub && conds.length) conds[conds.length - 1].subs.push(txt); else conds.push({ t: txt, subs: [] });
+  });
+  if (conds.length){
+    if (fk.cdl) rows.push({ id: "cdl", rotulo: "Condutas", resumo: conds.map(x => "- " + x.t + x.subs.map(y => "\n   - " + y).join("")).join("\n"),
+      vazio: () => !keysOf(fk.cdl).some(k => !/_n$/.test(k) && String(d[k] || "").trim()),
+      aplicar(){ keysOf(fk.cdl).forEach(k => delete d[k]); conds.slice(0, fk.cdl.n).forEach((x, n) => { const i = n + 1; d[`cdl_${i}`] = x.t; x.subs.slice(0, fk.cdl.ns).forEach((y, j) => d[`cdl_${i}_${j + 1}`] = y); if (x.subs.length) d[`cdl_${i}_n`] = String(Math.min(fk.cdl.ns, x.subs.length)); }); d.cdl_n = String(Math.min(fk.cdl.n, conds.length)); } });
+    else if (fk.cond) rows.push({ id: "cond", rotulo: "Condutas", resumo: conds.map(x => "- " + x.t + (x.subs.length ? " (" + x.subs.join("; ") + ")" : "")).join("\n"),
+      vazio: () => !Array.from({ length: fk.cond.n }, (_, i) => String(d[`cond_${i + 1}`] || "").trim()).some(Boolean),
+      aplicar(){ for (let i = 1; i <= fk.cond.n; i++) delete d[`cond_${i}`]; conds.slice(0, fk.cond.n).forEach((x, n) => d[`cond_${n + 1}`] = x.t + (x.subs.length ? " (" + x.subs.join("; ") + ")" : "")); } });
+  }
+  // campos simples viram linhas da lista; os do mesmo sistema ficam juntos numa linha só
+  const GRUPOS = [["Identificação", /^(nome|idade|sexo|leito|peso|altura|adm_hosp|adm_cti|dih)$/], ["Sinais vitais", /^(pas|pad|fc|fr|fr_pac|spo2|tmax|tax|hgt|o2|dor_evn)$/],
+    ["Alergias", /^alergias/], ["Neurológico", /^(neuro_escala|gcs_[ovm]|rass|pupilas|cam)$/], ["Respiratório", /^(vent_modo|cn_l|tot|tot_data|tqt|tqt_data|ausculta)$/],
+    ["Cardiovascular", /^(ritmo|tec|livedo|pocus|cardio_ex)$/]];
+  const mostra = (k, v) => k === "sexo" ? (v === "F" ? "Feminino" : "Masculino") : (k === "adm_hosp" || k === "adm_cti") ? brDate(v) : v;
+  const grupos = new Map(), soltos = [];
+  Object.entries(vals).forEach(([k, o]) => { const g = GRUPOS.find(([, re]) => re.test(k)); if (g){ if (!grupos.has(g[0])) grupos.set(g[0], []); grupos.get(g[0]).push([k, o]); } else soltos.push([k, o]); });
+  const linhaDe = (rotulo, itens) => ({ id: rotulo, rotulo, resumo: itens.length === 1 && itens[0][1].rotulo === rotulo ? mostra(itens[0][0], itens[0][1].v) : itens.map(([k, o]) => `${o.rotulo}: ${mostra(k, o.v)}`).join(" | "),
+    vazio: () => itens.every(([k]) => d[k] == null || String(d[k]).trim() === ""), aplicar(){ itens.forEach(([k, o]) => { d[k] = o.v; }); } });
+  const gl = rot => grupos.has(rot) ? [linhaDe(rot, grupos.get(rot))] : [];
+  return { rows: [...gl("Identificação"), ...rows.filter(r => r.id === "prob"), ...soltos.filter(([k]) => /^(motivo|contexto)$/.test(k)).map(([k, o]) => linhaDe(o.rotulo, [[k, o]])),
+    ...rows.filter(r => /^atb/.test(r.id)), ...soltos.filter(([k]) => /^(comorb|meds|muc|social|habitos|hse|hf|cirurgias)$/.test(k)).map(([k, o]) => linhaDe(o.rotulo, [[k, o]])), ...gl("Alergias"),
+    ...rows.filter(r => r.id === "evint"), ...soltos.filter(([k]) => k === "evol").map(([k, o]) => linhaDe(o.rotulo, [[k, o]])),
+    ...gl("Sinais vitais"), ...gl("Neurológico"), ...gl("Respiratório"), ...gl("Cardiovascular"),
+    ...soltos.filter(([k]) => !/^(motivo|contexto|comorb|meds|muc|social|habitos|hse|hf|cirurgias|evol)$/.test(k)).map(([k, o]) => linhaDe(o.rotulo, [[k, o]])),
+    ...rows.filter(r => /^(cdl|cond)$/.test(r.id))], sobras };
+}
+let mvRes = null;
+function mvAbre(){
+  const p = cur(); if (!p || !(p.tpl === "cti" || p.tpl === "enf")) return;
+  $("#mvTxt").value = ""; $("#mvPrev").hidden = true; $("#mvApply").disabled = true; $("#mvMsg").textContent = ""; mvRes = null;
+  $("#mvDlg").showModal(); $("#mvTxt").focus();
+}
+function mvPrevia(){
+  const p = cur(), txt = $("#mvTxt").value;
+  if (!p || !txt.trim()){ $("#mvPrev").hidden = true; $("#mvApply").disabled = true; mvRes = null; return; }
+  mvRes = mvParse(txt, p);
+  $("#mvRows").replaceChildren(...mvRes.rows.map((r, n) => { const vazio = r.vazio();
+    const cb = el("input", { type: "checkbox", "data-mv": String(n) }); cb.checked = vazio;
+    return el("li", {}, el("label", {}, cb, el("span", {}, el("b", { text: r.rotulo }), !vazio ? el("span", { class: "ja", text: "Já preenchido na ficha: marque para substituir" }) : null, el("small", { text: r.resumo }))));
+  }));
+  $("#mvSobraBox").hidden = !mvRes.sobras.length; $("#mvSobra").value = mvRes.sobras.join("\n");
+  $("#mvPrev").hidden = false;
+  $("#mvApply").disabled = !mvRes.rows.length;
+  $("#mvMsg").textContent = mvRes.rows.length ? `${mvRes.rows.length} bloco(s) reconhecido(s).` : "Nenhum tópico reconhecido. Confira se o texto tem os títulos (Situação, Contexto, Condutas…).";
+}
+$("#mvTxt").addEventListener("input", () => { clearTimeout(mvPrevia.t); mvPrevia.t = setTimeout(mvPrevia, 250); });
+$("#mvClose").addEventListener("click", () => $("#mvDlg").close());
+$("#mvApply").addEventListener("click", () => {
+  const p = cur(); if (!p || !mvRes) return;
+  const marcados = [...document.querySelectorAll("#mvRows input[data-mv]")].filter(c => c.checked).map(c => mvRes.rows[Number(c.dataset.mv)]);
+  if (!marcados.length){ $("#mvMsg").textContent = "Marque ao menos um bloco."; return; }
+  marcados.forEach(r => r.aplicar());
+  changed(); fillForm();
+  $("#mvDlg").close();
+  toast(`Colado do MV: ${marcados.length} bloco(s) preenchido(s).`, 3000);
+});
 
 /* =====================================================================
    ENVIAR O TEXTO PARA OUTRO COMPUTADOR
